@@ -61,8 +61,8 @@ func (chain *BeaconChain) GetLastProposerIndex() int {
 }
 
 func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	// chain.lock.Lock()
-	// defer chain.lock.Unlock()
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
 	newBlock, err := chain.BlockGen.NewBlockBeacon(round, chain.Blockchain.Synker.GetClosestShardToBeaconPoolState())
 	if err != nil {
 		return nil, err
@@ -101,22 +101,6 @@ func (chain *BeaconChain) GetPubkeyRole(pubkey string, round int) (string, byte)
 func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) error {
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }
-
-// func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-// 	var beaconBestState BeaconBestState
-// 	beaconBlock := block.(*BeaconBlock)
-// 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
-// 	producerPublicKey := beaconBlock.Header.Producer
-// 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-// 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
-// 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-// 	}
-// 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
-// 		return err
-// 	}
-// 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
-// }
 
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
