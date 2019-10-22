@@ -94,34 +94,42 @@ type FeeEstimator interface {
 }
 
 type ChainInterface interface {
+	// GetChainName - get nam of this chain
 	GetChainName() string
+	// GetConsensusType - get what type of consensus this chain run
 	GetConsensusType() string
+	// GetLastBlockTimeStamp - get last block timestamp
 	GetLastBlockTimeStamp() int64
-	GetMinBlkInterval() time.Duration
-	GetMaxBlkCreateTime() time.Duration
+	// GetMinBlockInterval - get minimum time interval between block
+	GetMinBlockInterval() time.Duration
+	// GetMaxBlockCreateTime - get maximum time to create block
+	GetMaxBlockCreateTime() time.Duration
+	// IsReady - check whether this chain is synced
 	IsReady() bool
-	GetActiveShardNumber() int
+	// GetPubkeyRole - get public key role in this chain
 	GetPubkeyRole(pubkey string, round int) (string, byte)
+	// CurrentHeight - get the current height of this chain
 	CurrentHeight() uint64
+	// GetCommitteeSize - get committee size of this chain
 	GetCommitteeSize() int
+	// GetCommittee -  get committee list of this chain
 	GetCommittee() []incognitokey.CommitteePublicKey
+	// GetPubKeyCommitteeIndex - get publickey index in committee list of this chain
 	GetPubKeyCommitteeIndex(string) int
+	// GetLastProposerIndex - get last proposer index
 	GetLastProposerIndex() int
+	// UnmarshalBlock - unmarshal block belong to this type chain
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
+	// CreateNewBlock - create new block belong to this type of chain
 	CreateNewBlock(round int) (common.BlockInterface, error)
-	InsertBlk(block common.BlockInterface) error
+	// InsertBlock - insert block but skip validation
+	InsertBlock(block common.BlockInterface) error
+	// InsertAndBroadcastBlock - insert block to chain then broadcast block (used by consensus)
 	InsertAndBroadcastBlock(block common.BlockInterface) error
-	// ValidateAndInsertBlock(block common.BlockInterface) error
+	// ValidateBlockSignatures - validate block signatures base-on a committee pubkey list
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
+	// ValidatePreSignBlock - validate block data that not signed by committee yet
 	ValidatePreSignBlock(block common.BlockInterface) error
+	// GetShardID - get shardID of this chain
 	GetShardID() int
-}
-
-type BestStateInterface interface {
-	GetLastBlockTimeStamp() uint64
-	GetBlkMinInterval() time.Duration
-	GetBlkMaxCreateTime() time.Duration
-	CurrentHeight() uint64
-	GetCommittee() []string
-	GetLastProposerIdx() int
 }

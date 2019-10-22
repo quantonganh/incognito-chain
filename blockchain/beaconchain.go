@@ -23,11 +23,11 @@ func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
-func (chain *BeaconChain) GetMinBlkInterval() time.Duration {
+func (chain *BeaconChain) GetMinBlockInterval() time.Duration {
 	return chain.BestState.BlockInterval
 }
 
-func (chain *BeaconChain) GetMaxBlkCreateTime() time.Duration {
+func (chain *BeaconChain) GetMaxBlockCreateTime() time.Duration {
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -70,7 +70,7 @@ func (chain *BeaconChain) CreateNewBlock(round int) (common.BlockInterface, erro
 	return newBlock, nil
 }
 
-func (chain *BeaconChain) InsertBlk(block common.BlockInterface) error {
+func (chain *BeaconChain) InsertBlock(block common.BlockInterface) error {
 	if chain.Blockchain.config.ConsensusEngine.IsOngoing(common.BeaconChainKey) {
 		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(common.BeaconChainKey, block.Hash())))
 	}
@@ -84,10 +84,6 @@ func (chain *BeaconChain) InsertAndBroadcastBlock(block common.BlockInterface) e
 		return err
 	}
 	return nil
-}
-
-func (chain *BeaconChain) GetActiveShardNumber() int {
-	return chain.BestState.ActiveShards
 }
 
 func (chain *BeaconChain) GetChainName() string {

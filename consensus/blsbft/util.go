@@ -21,12 +21,11 @@ func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 
 func (e *BLSBFT) waitForNextRound() bool {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
-	if timeSinceLastBlk >= e.Chain.GetMinBlkInterval() {
+	if timeSinceLastBlk >= e.Chain.GetMinBlockInterval() {
 		return false
-	} else {
-		//fmt.Println("\n\nWait for", e.Chain.GetMinBlkInterval()-timeSinceLastBlk, "\n\n")
-		return true
 	}
+	//fmt.Println("\n\nWait for", e.Chain.GetMinBlockInterval()-timeSinceLastBlk, "\n\n")
+	return true
 }
 
 func (e *BLSBFT) setState(state string) {
@@ -34,7 +33,7 @@ func (e *BLSBFT) setState(state string) {
 }
 
 func (e *BLSBFT) getCurrentRound() int {
-	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
+	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlockInterval().Seconds())) / timeout.Seconds())
 	if round < 0 {
 		return 1
 	}
@@ -55,8 +54,6 @@ func (e *BLSBFT) isInTimeFrame() bool {
 }
 
 func (e *BLSBFT) isHasMajorityVotes() bool {
-	// e.RoundData.lockVotes.Lock()
-	// defer e.RoundData.lockVotes.Unlock()
 	e.lockEarlyVotes.Lock()
 	defer e.lockEarlyVotes.Unlock()
 	roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)

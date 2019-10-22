@@ -23,11 +23,11 @@ func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
 	return chain.BestState.BestBlock.Header.Timestamp
 }
 
-func (chain *ShardChain) GetMinBlkInterval() time.Duration {
+func (chain *ShardChain) GetMinBlockInterval() time.Duration {
 	return chain.BestState.BlockInterval
 }
 
-func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
+func (chain *ShardChain) GetMaxBlockCreateTime() time.Duration {
 	return chain.BestState.BlockMaxCreateTime
 }
 
@@ -94,7 +94,7 @@ func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, co
 	return nil
 }
 
-func (chain *ShardChain) InsertBlk(block common.BlockInterface) error {
+func (chain *ShardChain) InsertBlock(block common.BlockInterface) error {
 	if chain.Blockchain.config.ConsensusEngine.IsOngoing(chain.ChainName) {
 		return NewBlockChainError(ConsensusIsOngoingError, errors.New(fmt.Sprint(chain.ChainName, block.Hash())))
 	}
@@ -108,10 +108,6 @@ func (chain *ShardChain) InsertAndBroadcastBlock(block common.BlockInterface) er
 		return err
 	}
 	return nil
-}
-
-func (chain *ShardChain) GetActiveShardNumber() int {
-	return 0
 }
 
 func (chain *ShardChain) GetChainName() string {
