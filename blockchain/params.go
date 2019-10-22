@@ -40,10 +40,11 @@ type Params struct {
 	EthContractAddressStr            string // smart contract of ETH for bridge
 	Offset                           int    // default offset for swap policy, is used for cases that good producers length is less than max committee size
 	SwapOffset                       int    // is used for case that good producers length is equal to max committee size
-	DevAddress                       string
+	IncognitoDAOAddress              string
 	CentralizedWebsitePaymentAddress string //centralized website's pubkey
 	CheckForce                       bool   // true on testnet and false on mainnet
 	ChainVersion                     string
+	AssignOffset                     int
 }
 
 type GenesisParams struct {
@@ -86,8 +87,8 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, genesisParamsTestnetNew),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, genesisParamsTestnetNew),
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet, genesisParamsTestnetNew),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet, genesisParamsTestnetNew),
 		MinShardBlockInterval:            TestNetMinShardBlkInterval,
 		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
@@ -97,9 +98,10 @@ func init() {
 		Epoch:                            TestnetEpoch,
 		RandomTime:                       TestnetRandomTime,
 		Offset:                           TestnetOffset,
+		AssignOffset:                     TestnetAssignOffset,
 		SwapOffset:                       TestnetSwapOffset,
 		EthContractAddressStr:            TestnetETHContractAddressStr,
-		DevAddress:                       TestnetDevAddress,
+		IncognitoDAOAddress:              TestnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: TestnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
@@ -127,8 +129,8 @@ func init() {
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, genesisParamsMainnetNew),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, genesisParamsMainnetNew),
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Mainnet, genesisParamsMainnetNew),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, Mainnet, genesisParamsMainnetNew),
 		MinShardBlockInterval:            MainnetMinShardBlkInterval,
 		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,
@@ -139,8 +141,9 @@ func init() {
 		RandomTime:                       MainnetRandomTime,
 		Offset:                           MainnetOffset,
 		SwapOffset:                       MainnetSwapOffset,
+		AssignOffset:                     MainnetAssignOffset,
 		EthContractAddressStr:            MainETHContractAddressStr,
-		DevAddress:                       MainnetDevAddress,
+		IncognitoDAOAddress:              MainnetIncognitoDAOAddress,
 		CentralizedWebsitePaymentAddress: MainnetCentralizedWebsitePaymentAddress,
 		SlashLevels: []SlashLevel{
 			//SlashLevel{MinRange: 20, PunishedEpoches: 1},
