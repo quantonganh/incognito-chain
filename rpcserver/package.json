@@ -1,0 +1,11 @@
+{
+  "name": "rpcserver",
+  "version": "1.0.0",
+  "description": "This package provide list api feature to interact with blockchain node Using http server to provide a api service",
+  "main": "ws_test.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

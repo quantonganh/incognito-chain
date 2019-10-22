@@ -85,17 +85,17 @@ const (
 	Testnet             = 0x16
 	TestnetName         = "testnet"
 	TestnetDefaultPort  = "9444"
-	TestnetEpoch        = 100
-	TestnetRandomTime   = 50
+	TestnetEpoch        = 50
+	TestnetRandomTime   = 25
 	TestnetOffset       = 1
 	TestnetSwapOffset   = 1
 	TestnetAssignOffset = 2
 
-	TestNetShardCommitteeSize     = 63
+	TestNetShardCommitteeSize     = 6
 	TestNetMinShardCommitteeSize  = 4
 	TestNetBeaconCommitteeSize    = 4
 	TestNetMinBeaconCommitteeSize = 4
-	TestNetActiveShards           = 8
+	TestNetActiveShards           = 2
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
@@ -177,16 +177,16 @@ const (
 // ---------------------------------------------
 var TestnetInitPRV = []string{
 	`{
-		"Version":1,
-		"Type":"s",
-		"LockTime":1570159128,
-		"Fee":0,
-		"Info":null,
-		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
-		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
-		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
-		"PubKeyLastByteSender":0,
-		"Metadata":null
+		"Version": 1,
+		"Type": "s",
+		"LockTime": 1571732216,
+		"Fee": 0,
+		"Info": null,
+		"SigPubKey": "ee6Oy8Y2k+aRXf5BkNfyonTC5Q84uT2RGnyzPHohEwA=",
+		"Sig": "4ji87oIw5/1ReYCbF7wnDSOoHH3i+SQrWGm1ZgO8cQjlEWxKJY9WGfnr2JfakN2LnPY4dT1wSEuR7bIBCv+KCg==",
+		"Proof": "AAAAAAAAAbAAriB57o7LxjaT5pFd/kGQ1/KidMLlDzi5PZEafLM8eiETACCF9ppXx18QFBkT9mcuAlYIH8222KMkASJwgrz+N+C1PyBVeCPZUiIcpBtlPMEhneOXjkSvaY3gKJNV9jJObkyPDiABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBdI5vyesvgRHZ5rHXlpWkx6u6hgENEefqeCm4VQ8zDDAcDjX6kxoAAAAAAAAAAAAA=",
+		"PubKeyLastByteSender": 0,
+		"Metadata": null
 	}`,
 }
 var IntegrationTestInitPRV = []string{`{"Version":1,"Type":"s","LockTime":1564213226,"Fee":0,"Info":null,"SigPubKey":"A6zmFqIlTKgsV23Qk9jz2roo3VhisVy5Flg6EGuOKaQA","Sig":"f+JDTKpO7+veF6DVYobNp6l0l6rAYxCZjYCNRrsFN0lx7aOMOwXhZK0OGrKiDLfqSIMX7CXr9ProBz7TIx3yqg==","Proof":"1111111dP9RnNnGCD9afUsg4bvrBHNWfjZijttFU2bkFYLYFGqCoK6i6RCeSEk2NUmv7p8B4kyhi1qaoMjvYCotjhDogGiuYrEqUT4NQLXatq2xqkfxgX8DURcv9xCgrgqVceQ2DrBR5NcgbMQHHBnW1xV3Dte2kmq837EeufP3KoQpz3m5N3oN6x1UssfWSeHAuw4t2dUinKDTe7SgRnFFhfF59dvy","PubKeyLastByteSender":0,"Metadata":null}`,
