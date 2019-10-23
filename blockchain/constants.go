@@ -28,38 +28,40 @@ const (
 	LowerBoundPercentForIncDAO = 3
 	UpperBoundPercentForIncDAO = 10
 	GetValidBlock              = 20
-	GenesisBlockTime           = "2019-10-07T11:00:00.000Z"
 	TestRandom                 = true
 )
 
 // CONSTANT for network MAINNET
 const (
 	// ------------- Mainnet ---------------------------------------------
-	Mainnet             = 0x01
-	MainetName          = "mainnet"
-	MainnetDefaultPort  = "9333"
-	MainnetEpoch        = 30000
-	MainnetRandomTime   = 15000
-	MainnetOffset       = 2
-	MainnetSwapOffset   = 1
-	MainnetAssignOffset = 4
+	Mainnet                 = 0x01
+	MainetName              = "mainnet"
+	MainnetDefaultPort      = "9333"
+	MainnetGenesisBlockTime = "2019-10-31T00:00:00.000Z"
+	MainnetEpoch            = 350
+	MainnetRandomTime       = 175
+	MainnetOffset           = 4
+	MainnetSwapOffset       = 4
+	MainnetAssignOffset     = 8
 
-	MainNetShardCommitteeSize  = 3
-	MainNetBeaconCommitteeSize = 3
-	MainNetActiveShards        = 2
-	MainNetStakingAmountShard  = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
+	MainNetShardCommitteeSize     = 32
+	MainNetMinShardCommitteeSize  = 4
+	MainNetBeaconCommitteeSize    = 32
+	MainNetMinBeaconCommitteeSize = 4
+	MainNetActiveShards           = 8
+	MainNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
-	MainnetMinBeaconBlkInterval = 10 * time.Second //second
-	MainnetMaxBeaconBlkCreation = 8 * time.Second  //second
-	MainnetMinShardBlkInterval  = 10 * time.Second //second
-	MainnetMaxShardBlkCreation  = 6 * time.Second  //second
+	MainnetMinBeaconBlkInterval = 40 * time.Second //second
+	MainnetMaxBeaconBlkCreation = 10 * time.Second //second
+	MainnetMinShardBlkInterval  = 40 * time.Second //second
+	MainnetMaxShardBlkCreation  = 10 * time.Second //second
 
 	//board and proposal parameters
-	MainnetBasicReward                      = 400000000 //40 mili PRV
-	MainnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
+	MainnetBasicReward                      = 1386666000 //1.386666 PRV
+	MainnetRewardHalflife                   = 3155760    //1 year, reduce 12.5% per year
 	MainETHContractAddressStr               = "0x10e492e6383DfE37d0d0B7B86015AE0876e88663"
-	MainnetIncognitoDAOAddress              = "1Uv2vrb74e6ScxuQiXvW9UcKoEbXnRMbuBJ6W2FBWxqhtHNGHi3sUP1D14rNEnWWzkYSMsZCmA4DKV6igmjd7qaJfj9TuMmyqz2ZG2SNx"
-	MainnetCentralizedWebsitePaymentAddress = "1Uv2zzR4LgfX8ToQe8ub3bYcCLk3uDU1sm9U9hiu9EKYXoS77UdikfT9s8d5YjhsTJm61eazsMwk2otFZBYpPHwiMn8z6bKWWJRspsLky"
+	MainnetIncognitoDAOAddress              = "" // community fund
+	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 	// ------------- end Mainnet --------------------------------------
 )
 
@@ -82,14 +84,15 @@ var (
 
 // CONSTANT for network TESTNET
 const (
-	Testnet             = 0x16
-	TestnetName         = "testnet"
-	TestnetDefaultPort  = "9444"
-	TestnetEpoch        = 100
-	TestnetRandomTime   = 50
-	TestnetOffset       = 1
-	TestnetSwapOffset   = 1
-	TestnetAssignOffset = 2
+	Testnet                 = 0x16
+	TestnetName             = "testnet"
+	TestnetDefaultPort      = "9444"
+	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	TestnetEpoch            = 100
+	TestnetRandomTime       = 50
+	TestnetOffset           = 1
+	TestnetSwapOffset       = 1
+	TestnetAssignOffset     = 2
 
 	TestNetShardCommitteeSize     = 16
 	TestNetMinShardCommitteeSize  = 4
@@ -107,7 +110,7 @@ const (
 	TestnetBasicReward                      = 400000000 //40 mili PRV
 	TestnetRewardHalflife                   = 3155760   //1 year, reduce 12.5% per year
 	TestnetETHContractAddressStr            = "0x717B5F3667A21a0b5e09A8d0E8648C1D525503C4"
-	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
+	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
 
@@ -122,9 +125,19 @@ func init() {
 	if len(os.Args) > 0 && (strings.Contains(os.Args[0], "test") || strings.Contains(os.Args[0], "Test")) {
 		return
 	}
-	keyData, err := ioutil.ReadFile("keylist.json")
-	if err != nil {
-		panic(err)
+	var keyData []byte
+	var err error
+	var IsTestNet = true
+	if IsTestNet {
+		keyData, err = ioutil.ReadFile("keylist.json")
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		keyData, err = ioutil.ReadFile("keylist-mainnet.json")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	type AccountKey struct {
@@ -145,15 +158,30 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
-		PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
-		PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
-	}
 
-	for i := 0; i < TestNetActiveShards; i++ {
-		for j := 0; j < TestNetMinShardCommitteeSize; j++ {
-			PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
-			PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+	if IsTestNet {
+		for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
+			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+			PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		}
+
+		for i := 0; i < TestNetActiveShards; i++ {
+			for j := 0; j < TestNetMinShardCommitteeSize; j++ {
+				PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+				PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			}
+		}
+	} else {
+		for i := 0; i < MainNetMinBeaconCommitteeSize; i++ {
+			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
+			PreSelectBeaconNodeTestnetSerializedPaymentAddress = append(PreSelectBeaconNodeTestnetSerializedPaymentAddress, keylist.Beacon[i].PaymentAddress)
+		}
+
+		for i := 0; i < MainNetActiveShards; i++ {
+			for j := 0; j < MainNetMinShardCommitteeSize; j++ {
+				PreSelectShardNodeTestnetSerializedPubkey = append(PreSelectShardNodeTestnetSerializedPubkey, keylist.Shard[i][j].CommitteePublicKey)
+				PreSelectShardNodeTestnetSerializedPaymentAddress = append(PreSelectShardNodeTestnetSerializedPaymentAddress, keylist.Shard[i][j].PaymentAddress)
+			}
 		}
 	}
 }
