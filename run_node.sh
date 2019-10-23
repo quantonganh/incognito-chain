@@ -3,42 +3,42 @@
 ###### MULTI_MEMBERS
 # Shard 0
 if [ "$1" == "shard0-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL" --nodemode "auto" --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "0.0.0.0:19334" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXfotCdLe7Gb8z13Qr2QqAneRYQPYN8faYTp8WLZCbd2JY2iSdB2qgxhhrkQ2PNZxrxZAj8944TjEEdjzPbhUTKUspxhA4vTFDW6aV" --nodemode "auto" --datadir "data/shard0-0" --listen "0.0.0.0:9434" --externaladdress "0.0.0.0:9434" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "0.0.0.0:19334" 
 fi
 if [ "$1" == "shard0-1" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5" --nodemode "auto" --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXx5fajo5CJHWw9HVkHtXzZDzwffhPrwKEewEpoHb9prz1F1117DS6YWCXDkQo9zhmhkGMqHSgoJ2AozqhDeKTasi6vySMwDJ87Z55" --nodemode "auto" --datadir "data/shard0-1" --listen "0.0.0.0:9435" --externaladdress "0.0.0.0:9435" --norpcauth --rpclisten "0.0.0.0:9335" --rpcwslisten "0.0.0.0:19335" 
 fi
 if [ "$1" == "shard0-2" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXi8eKJ5RYJjyQYcFMThfbXHgaL6pq5AF5bWsDXwfsw8pqQUreDv6qgWyiABoDdphvqE7NFr9K92aomX7Gi5Nm1e4tEoV3qRLVdfSR" --nodemode "auto" --datadir "data/shard0-2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnYJMhDwppXuLGDDQkqn3r7nne3G6nFuKWGAKTqtxEtQQSF4ChCNQKjPY1BCbx2FE7mX9LpdtDcJEcBfbDo3jnDLVsygPadA5NrqWCq" --nodemode "auto" --datadir "data/shard0-2" --listen "0.0.0.0:9436" --externaladdress "0.0.0.0:9436" --norpcauth --rpclisten "0.0.0.0:9336" 
 fi
 if [ "$1" == "shard0-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnY42xRqJghQX3zvhgEa2ZJBwSzJ46SXyVQEam1yNpN4bfAqJwh1SsobjHAz8wwRvwnqJBfxrbwUuTxqgEbuEE8yMu6F14QmwtwyM43" --nodemode "auto" --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnYhQqyMBZLHXQDgZXQ5i51PuCyCqj9PKxy393rE8TfGFDLXufjr2fkJHtMxGhhfDZKrSzESaMHPHQLB8fmVbqAqpy3PBGCFCmUfH6b" --nodemode "auto" --datadir "data/shard0-3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337" 
 fi
 # Shard 1
 if [ "$1" == "shard1-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXBPJQWJTyPdzWsfsUCFTDhcas3y2MYsauKo66euh1udG8dSh2ZszSbfqHwCpYHPRSpFTxYkUcVa619XUM6DjdV7FfUWvYoziWE2Bm" --nodemode "auto" --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "127.0.0.1:19338" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXoEWG5H8x1odKxSj6sbLXowTBsVVkAxNWr5WnsbSTDkRiVrSdPy8QfMujntKRYBqywKMJCyhMpdr93T3XiUD5QJR1QFtTpYKpjBEx" --nodemode "auto" --datadir "data/shard1-0" --listen "0.0.0.0:9438" --externaladdress "0.0.0.0:9438" --norpcauth --rpclisten "0.0.0.0:9338" --enablewallet --wallet "wallet2" --walletpassphrase "12345678" --walletautoinit --rpcwslisten "127.0.0.1:19338" 
 fi
 if [ "$1" == "shard1-1" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXN2SLxQncPYvFdzEivznKjBxK5byYmPbAhnEEv8TderLG7NUD7nwAEDu7DJ7pnCKw9N5PuTuELCHz8qKc7z9S9jF8QG41u7Vomc6L" --nodemode "auto" --datadir "data/shard1-1" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnY7EyGkLjADf5zJtgWwUg1LMUrdQd6znLyhATKDeD7KrDq5zrBAvJQwiPgwYdJPfCNJdZydnzqBbVHYavNi13KY5Yhm1YxRSFQHdAF" --nodemode "auto" --datadir "data/shard1-1" --listen "0.0.0.0:9439" --externaladdress "0.0.0.0:9439" --norpcauth --rpclisten "0.0.0.0:9339" --rpcwslisten "127.0.0.1:19339" 
 fi
 if [ "$1" == "shard1-2" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXs5os49h71E7utfHatnWGQnirbVF2b5Ua8h1ttidk1S5AFcUqHCDmpMziiFC15BG8W1LQKK5tYcvr2CM7DyYgsfVmAWYh4kQ6f33T" --nodemode "auto" --datadir "data/shard1-2" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnYRE1zDgXnormrqWFBDmnhey6WN3NBpviM3Qj1fZwvdFs7RxWYsaGXjpvBGbZ4HHARx7BW1ob1RqKZgLUsUq7NAoSjo7gRihpM6bfu" --nodemode "auto" --datadir "data/shard1-2" --listen "0.0.0.0:9440" --externaladdress "0.0.0.0:9440" --norpcauth --rpclisten "0.0.0.0:9340" 
 fi
 if [ "$1" == "shard1-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXvcE6sxwt7nQ6mH6KdPMWyQRv6xAd3WWorzS7k26YPjm4mvFtC51bRaU18yubQm1N3gBeDJJyXqWmxi5QdCkqYExCEkSqNpD1Wzpz" --nodemode "auto" --datadir "data/shard1-3" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnYjhQ4KdEdgLVyuf8XYGFjrxqoqgSr9uVwAwRnR8g1A34woKjWsr26bsXZ6bJXKcwANxZTPcn5FVf9W7zbYp7tL4qeJVfSkaZXDji8" --nodemode "auto" --datadir "data/shard1-3" --listen "0.0.0.0:9441" --externaladdress "0.0.0.0:9441" --norpcauth --rpclisten "0.0.0.0:9341" 
 fi
 # Beacon
 if [ "$1" == "beacon-0" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXCerQX2RRd8KhPfsFCj2rrBYUx42FZJKgRFcdBfg36Mid3ygKyMn5LSc5LBHsxqapRaN6xMav7bGhA6VtGUzNNYuA9Y78CB5oGkti" --nodemode "auto" --datadir "data/beacon-0" --listen "0.0.0.0:9450" --externaladdress "0.0.0.0:9450" --norpcauth --rpclisten "0.0.0.0:9350" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnX6USJnBzswUeuuanesuEEUGsxE8Pj3kkxkqvGRedUUPyocmtsqETX2WMBSvfBCwwsmMpxonhfQm2N5wy3SrNk11eYxEyDtwuGxw2E" --nodemode "auto" --datadir "data/beacon-0" --listen "0.0.0.0:9450" --externaladdress "0.0.0.0:9450" --norpcauth --rpclisten "0.0.0.0:9350" 
 fi
 if [ "$1" == "beacon-1" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXYgxipKvTJJfHg7tQhcdmA2R1jPpCPmXg37Xi1VfgrFzWFuNy4U6828q1yfbD7VEdutD63HfVYAqL6U32joXVjqdkfUP52LnNGXda" --nodemode "auto" --datadir "data/beacon-1" --listen "0.0.0.0:9451" --externaladdress "0.0.0.0:9451" --norpcauth --rpclisten "0.0.0.0:9351" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXWRThUTJQgoyH6evV8w19dFZfKWpCh8rZpfymW9JTgKPEVQS44nDRPpsooJiGStHxu81m3HA84t9DBVobz8hgBKRMcz2hddPWNX9N" --nodemode "auto" --datadir "data/beacon-1" --listen "0.0.0.0:9451" --externaladdress "0.0.0.0:9451" --norpcauth --rpclisten "0.0.0.0:9351" 
 fi
 if [ "$1" == "beacon-2" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXe3Jxg5d1Rejg2fB1NwnqNsr94RCT3PX14h5NNDjrdgLeEWFkqcMNamKCHask1Gx46g5WYZDKHKx7kzLVD7h1cgvU6NxNijkyGmA9" --nodemode "auto" --datadir "data/beacon-2" --listen "0.0.0.0:9452" --externaladdress "0.0.0.0:9452" --norpcauth --rpclisten "0.0.0.0:9352" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnX2FzscSBNqNAMuQfeSQhMPamSAKDX9f7X7Nft6JR4hfxNh5WJ8r9jeAmbmzTytW8hvpeXVn9FwLD8fjuvn4k7oHtXeh2YxnMDUzZv" --nodemode "auto" --datadir "data/beacon-2" --listen "0.0.0.0:9452" --externaladdress "0.0.0.0:9452" --norpcauth --rpclisten "0.0.0.0:9352" 
 fi
 if [ "$1" == "beacon-3" ]; then
-./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnY2gqonwhnhGD6rKeEXkbJDB7DHUtZQKC8SfLci6ABb5eCEj4o7ezWBZWaGbu7CJ1R1mrADGqmRjugg42GeA6jhaXbNDeP2HUr8udw" --nodemode "auto" --datadir "data/beacon-3" --listen "0.0.0.0:9453" --externaladdress "0.0.0.0:9453" --norpcauth --rpclisten "0.0.0.0:9353" 
+./incognito --discoverpeersaddress "0.0.0.0:9330" --privatekey "112t8rnXS3BtxiS9tW5e2pZB3Qvvvxp7eX8mt5dsqKwiWDgj2bxp49w2NbjhwTLXu7kuDbowTq7oe5guDpf2fQKHH2hs21Xra1Zx6jAaCCHZ" --nodemode "auto" --datadir "data/beacon-3" --listen "0.0.0.0:9453" --externaladdress "0.0.0.0:9453" --norpcauth --rpclisten "0.0.0.0:9353" 
 fi
 # FullNode
 if [ "$1" == "full_node" ]; then
