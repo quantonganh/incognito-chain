@@ -300,9 +300,9 @@ func (blockchain *BlockChain) verifyPreProcessingBeaconBlock(beaconBlock *Beacon
 	beaconLock.RLock()
 	defer beaconLock.RUnlock()
 
-	// if len(beaconBlock.Header.Producer) == 0 {
-	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
-	// }
+	if len(beaconBlock.Header.Producer) == 0 {
+		return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(beaconBlock.Header.Producer)))
+	}
 	//verify version
 	if beaconBlock.Header.Version != BEACON_BLOCK_VERSION {
 		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect block version to be equal to %+v but get %+v", BEACON_BLOCK_VERSION, beaconBlock.Header.Version))

@@ -295,9 +295,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	if shardBlock.Header.ShardID != shardID {
 		return NewBlockChainError(WrongShardIDError, fmt.Errorf("Expect receive shardBlock from Shard ID %+v but get %+v", shardID, shardBlock.Header.ShardID))
 	}
-	// if len(shardBlock.Header.ProducerAddress.Bytes()) != 66 {
-	// 	return NewBlockChainError(ProducerError, fmt.Errorf("Expect has length 66 but get %+v", len(shardBlock.Header.ProducerAddress.Bytes())))
-	// }
+
 	if shardBlock.Header.Version != SHARD_BLOCK_VERSION {
 		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect shardBlock version %+v but get %+v", SHARD_BLOCK_VERSION, shardBlock.Header.Version))
 	}
