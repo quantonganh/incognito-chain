@@ -182,8 +182,8 @@ func (blockchain *BlockChain) OnShardToBeaconBlockReceived(block *ShardToBeaconB
 			}
 		}
 		if from != 0 && to != 0 {
-			fmt.Printf("Message/SyncBlkShardToBeacon, from %+v to %+v \n", from, to)
-			blockchain.Synker.SyncBlkShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
+			fmt.Printf("Message/SyncBlockShardToBeacon, from %+v to %+v \n", from, to)
+			blockchain.Synker.SyncBlockShardToBeacon(block.Header.ShardID, false, false, false, nil, nil, from, to, "")
 		}
 	}
 }
@@ -207,7 +207,7 @@ func (blockchain *BlockChain) OnCrossShardBlockReceived(block *CrossShardBlock) 
 	expectedHeight, toShardID, err := blockchain.config.CrossShardPool[block.ToShardID].AddCrossShardBlock(block)
 	for fromShardID, height := range expectedHeight {
 		// fmt.Printf("Shard %+v request CrossShardBlock with Height %+v from shard %+v \n", toShardID, height, fromShardID)
-		blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
+		blockchain.Synker.SyncBlockCrossShard(false, false, []common.Hash{}, []uint64{height}, fromShardID, toShardID, "")
 	}
 	if err != nil {
 		if err.Error() != "receive old block" && err.Error() != "receive duplicate block" {

@@ -314,7 +314,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 				shardBlock.Hash().String(),
 				previousBlockHash.String())
 
-			blockchain.Synker.SyncBlkShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
+			blockchain.Synker.SyncBlockShard(shardID, true, false, false, []common.Hash{previousBlockHash}, nil, 0, 0, "")
 			Logger.log.Critical("SEND REQUEST FOR BLOCK HASH", previousBlockHash.String(), shardBlock.Header.Height, shardBlock.Header.ShardID)
 			revertErr := blockchain.revertShardState(shardID)
 			if revertErr != nil {
@@ -531,7 +531,7 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 			for _, crossTransaction := range crossTransactions {
 				heights = append(heights, crossTransaction.BlockHeight)
 			}
-			blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
+			blockchain.Synker.SyncBlockCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
 			return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Cross Shard Block From Shard %+v Not Found in Pool", fromShard))
 		}
 		sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
