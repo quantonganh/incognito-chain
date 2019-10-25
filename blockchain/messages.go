@@ -25,10 +25,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	if userRole == common.ShardRole {
 		userShardID = byte(userShardIDInt)
 	}
-	// miningKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
-	// if miningKey != "" {
-	// 	userRole, userShardID = blockchain.BestState.Beacon.GetPubkeyRole(miningKey, blockchain.BestState.Beacon.BestBlock.Header.Round)
-	// }
+
 	pState := &peerState{
 		Shard:  make(map[byte]*ChainState),
 		Beacon: beacon,
@@ -46,8 +43,6 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		}
 	}
 	if userRole == common.ShardRole && (nodeMode == common.NodeModeAuto || nodeMode == common.NodeModeBeacon) {
-		// userShardRole = blockchain.BestState.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestState.Shard[userShardID].BestBlock.Header.Round)
-		// if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
 		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestState.Shard[userShardID].ShardHeight {
 			pState.Shard[userShardID] = &shardState
 			if pool, ok := (*crossShardPool)[userShardID]; ok {
@@ -55,7 +50,6 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 				pState.CrossShardPool[userShardID] = &pool
 			}
 		}
-		// }
 	}
 	blockchain.Synker.Status.Lock()
 	for shardID := 0; shardID < blockchain.BestState.Beacon.ActiveShards; shardID++ {
@@ -66,7 +60,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		}
 	}
 	blockchain.Synker.Status.Unlock()
-	//TODO hy
+
 	blockchain.Synker.States.Lock()
 	if blockchain.Synker.States.PeersState != nil {
 		blockchain.Synker.States.PeersState[pState.Peer] = pState
@@ -94,8 +88,6 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
-			//layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
-			//fmt.Println("Shard block received 0", layer, role)
 			currentShardBestState := blockchain.BestState.Shard[newBlk.Header.ShardID]
 
 			if currentShardBestState.ShardHeight == newBlk.Header.Height && currentShardBestState.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentShardBestState.BestBlock.Header.Round < newBlk.Header.Round {
