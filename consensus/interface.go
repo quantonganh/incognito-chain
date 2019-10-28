@@ -11,9 +11,13 @@ type NodeInterface interface {
 	PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error
 	// PushMessageToBlockToAll(msg wire.Message) error
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
+	// IsEnableMining - check whether node is enable mining mode
 	IsEnableMining() bool
+	// GetMiningKeys - get mining keys set by user
 	GetMiningKeys() string
+	// GetPrivateKey - get private key set by user
 	GetPrivateKey() string
+	// DropAllConnections - request node to drop all connections
 	DropAllConnections()
 }
 
@@ -52,9 +56,14 @@ type ConsensusInterface interface {
 
 type BeaconInterface interface {
 	blockchain.ChainInterface
+	// GetAllCommittees - get all committees of chains
 	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey
+	// GetBeaconPendingList - get beacon validator pending list
 	GetBeaconPendingList() []incognitokey.CommitteePublicKey
+	// GetShardsPendingList - get all shard validator pending list
 	GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey
+	// GetShardsWaitingList - get all shard validator waiting list
 	GetShardsWaitingList() []incognitokey.CommitteePublicKey
+	// GetBeaconWaitingList - get beacon validator waiting list
 	GetBeaconWaitingList() []incognitokey.CommitteePublicKey
 }
