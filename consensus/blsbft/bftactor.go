@@ -145,7 +145,7 @@ func (e *BLSBFT) Start() error {
 							// committeeArr = append(committeeArr, e.RoundData.Committee...)
 							e.RoundData.lockVotes.Unlock()
 							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
-								if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
+								if err := e.validateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
 									e.logger.Error(err)
 									return
 								}

@@ -90,7 +90,7 @@ func (e *BLSBFT) confirmVote(Vote *vote) error {
 	return err
 }
 
-func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
+func (e *BLSBFT) validateVote(blockHash []byte, Vote *vote, candidate []byte) error {
 	data := []byte{}
 	data = append(data, blockHash...)
 	data = append(data, Vote.BLS...)

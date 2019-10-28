@@ -67,7 +67,7 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 			go func(validatorKey string, voteData vote) {
 				defer wg.Done()
 				validatorIdx := common.IndexOfStr(validatorKey, e.RoundData.CommitteeBLS.StringList)
-				if err := e.preValidateVote(blockHashBytes, &voteData, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
+				if err := e.validateVote(blockHashBytes, &voteData, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
 					// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
 					// 	e.logger.Error(err)
 					// 	continue
