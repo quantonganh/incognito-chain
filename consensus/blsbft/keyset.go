@@ -13,11 +13,6 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
-// type blsKeySet struct {
-// 	Publickey  []byte
-// 	PrivateKey []byte
-// }
-
 type MiningKey struct {
 	PriKey map[string][]byte
 	PubKey map[string][]byte
@@ -55,7 +50,7 @@ func (miningKey *MiningKey) BLSSignData(
 	return sigBytes, nil
 }
 
-func (miningKey *MiningKey) BriSignData(
+func (miningKey *MiningKey) BridgeSignData(
 	data []byte,
 ) (
 	[]byte,
@@ -112,7 +107,7 @@ func (e BLSBFT) GetUserPublicKey() *incognitokey.CommitteePublicKey {
 }
 
 func (e BLSBFT) SignData(data []byte) (string, error) {
-	result, err := e.UserKeySet.BriSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
+	result, err := e.UserKeySet.BridgeSignData(data) //, 0, []blsmultisig.PublicKey{e.UserKeySet.PubKey[common.BlsConsensus]})
 	if err != nil {
 		return "", consensus.NewConsensusError(consensus.SignDataError, err)
 	}

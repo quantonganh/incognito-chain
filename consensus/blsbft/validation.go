@@ -54,7 +54,7 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData
 	// selfPublicKey := e.UserKeySet.GetPublicKey()
 	// keyByte, _ := selfPublicKey.GetMiningKey(consensusName)
 	// valData.ProducerBLSSig, _ = e.UserKeySet.BLSSignData(block.Hash().GetBytes(), 0, []blsmultisig.PublicKey{keyByte})
-	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes()) //, 0, []blsmultisig.PublicKey{keyByte})
+	valData.ProducerBLSSig, _ = e.UserKeySet.BridgeSignData(block.Hash().GetBytes()) //, 0, []blsmultisig.PublicKey{keyByte})
 	return valData
 }
 

@@ -86,7 +86,7 @@ func (e *BLSBFT) confirmVote(Vote *vote) error {
 	data = append(data, Vote.BRI...)
 	data = common.HashB(data)
 	var err error
-	Vote.Confirmation, err = e.UserKeySet.BriSignData(data)
+	Vote.Confirmation, err = e.UserKeySet.BridgeSignData(data)
 	return err
 }
 
@@ -112,7 +112,7 @@ func (e *BLSBFT) sendVote() error {
 	}
 	bridgeSig := []byte{}
 	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
-		bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+		bridgeSig, err = e.UserKeySet.BridgeSignData(e.RoundData.Block.Hash().GetBytes())
 		if err != nil {
 			return consensus.NewConsensusError(consensus.UnExpectedError, err)
 		}

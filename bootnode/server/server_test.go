@@ -26,7 +26,7 @@ func TestRpcServer_AddOrUpdatePeer(t *testing.T) {
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(blsPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BriSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
+	signDataInByte, err := blsBft.UserKeySet.BridgeSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,7 +55,7 @@ func TestRpcServer_RemovePeerByPbk(t *testing.T) {
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(briPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BriSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
+	signDataInByte, err := blsBft.UserKeySet.BridgeSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
@@ -90,7 +90,7 @@ func TestRpcServer_PeerHeartBeat(t *testing.T) {
 		RawAddress: "localhost:9333",
 		PublicKey:  base58.Base58Check{}.Encode(briPublicKeyBytes, common.ZeroByte),
 	}
-	signDataInByte, err := blsBft.UserKeySet.BriSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
+	signDataInByte, err := blsBft.UserKeySet.BridgeSignData([]byte(args.RawAddress)) //, 0, []blsmultisig.PublicKey{blsBft.UserKeySet.GetPublicKey().MiningPubKey[common.BlsConsensus]})
 	if err != nil {
 		t.Error(err)
 	}
