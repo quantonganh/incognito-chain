@@ -50,7 +50,6 @@ type Params struct {
 type GenesisParams struct {
 	InitialIncognito                            []string // init tx for genesis block
 	FeePerTxKb                                  uint64
-	RandomNumber                                uint64
 	PreSelectBeaconNodeSerializedPubkey         []string
 	PreSelectBeaconNodeSerializedPaymentAddress []string
 	PreSelectBeaconNode                         []string
@@ -66,7 +65,6 @@ var ChainMainParam = Params{}
 // FOR TESTNET
 func init() {
 	var genesisParamsTestnetNew = GenesisParams{
-		RandomNumber:                                0,
 		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeTestnetSerializedPubkey,
 		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeTestnetSerializedPaymentAddress,
 		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeTestnetSerializedPubkey,
@@ -87,8 +85,8 @@ func init() {
 		StakingAmountShard:     TestNetStakingAmountShard,
 		ActiveShards:           TestNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet, genesisParamsTestnetNew),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet, genesisParamsTestnetNew),
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, Testnet, TestnetGenesisBlockTime, genesisParamsTestnetNew),
 		MinShardBlockInterval:            TestNetMinShardBlkInterval,
 		MaxShardBlockCreation:            TestNetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           TestNetMinBeaconBlkInterval,
@@ -114,23 +112,26 @@ func init() {
 	// END TESTNET
 	// FOR MAINNET
 	var genesisParamsMainnetNew = GenesisParams{
-		RandomNumber:                        0,
-		PreSelectBeaconNodeSerializedPubkey: PreSelectBeaconNodeMainnetSerializedPubkey,
-		PreSelectShardNodeSerializedPubkey:  PreSelectShardNodeMainnetSerializedPubkey,
-		InitialIncognito:                    MainnetInitPRV,
-		ConsensusAlgorithm:                  common.BlsConsensus,
+		PreSelectBeaconNodeSerializedPubkey:         PreSelectBeaconNodeMainnetSerializedPubkey,
+		PreSelectBeaconNodeSerializedPaymentAddress: PreSelectBeaconNodeMainnetSerializedPaymentAddress,
+		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeMainnetSerializedPubkey,
+		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeMainnetSerializedPaymentAddress,
+		InitialIncognito:                            MainnetInitPRV,
+		ConsensusAlgorithm:                          common.BlsConsensus,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,
 		Net:                    Mainnet,
 		DefaultPort:            MainnetDefaultPort,
-		MaxShardCommitteeSize:  MainNetShardCommitteeSize,  //MainNetShardCommitteeSize,
+		MaxShardCommitteeSize:  MainNetShardCommitteeSize, //MainNetShardCommitteeSize,
+		MinShardCommitteeSize:  MainNetMinShardCommitteeSize,
 		MaxBeaconCommitteeSize: MainNetBeaconCommitteeSize, //MainNetBeaconCommitteeSize,
+		MinBeaconCommitteeSize: MainNetMinBeaconCommitteeSize,
 		StakingAmountShard:     MainNetStakingAmountShard,
 		ActiveShards:           MainNetActiveShards,
 		// blockChain parameters
-		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Mainnet, genesisParamsMainnetNew),
-		GenesisShardBlock:                CreateShardGenesisBlock(1, Mainnet, genesisParamsMainnetNew),
+		GenesisBeaconBlock:               CreateBeaconGenesisBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
+		GenesisShardBlock:                CreateShardGenesisBlock(1, Mainnet, MainnetGenesisBlockTime, genesisParamsMainnetNew),
 		MinShardBlockInterval:            MainnetMinShardBlkInterval,
 		MaxShardBlockCreation:            MainnetMaxShardBlkCreation,
 		MinBeaconBlockInterval:           MainnetMinBeaconBlkInterval,

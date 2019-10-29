@@ -221,20 +221,31 @@ func (txService TxService) EstimateFee(
 
 // EstimateFeeWithEstimator - only estimate fee by estimator and return fee per kb
 func (txService TxService) EstimateFeeWithEstimator(defaultFee int64, shardID byte, numBlock uint64, tokenId *common.Hash) uint64 {
+	if defaultFee == 0 {
+		return uint64(defaultFee)
+	}
 	estimateFeeCoinPerKb := uint64(0)
 	if defaultFee == -1 {
+		// estimate fee on the blocks before
 		if _, ok := txService.FeeEstimator[shardID]; ok {
 			temp, _ := txService.FeeEstimator[shardID].EstimateFee(numBlock, tokenId)
 			estimateFeeCoinPerKb = uint64(temp)
 		}
-		if estimateFeeCoinPerKb == 0 {
-			if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
-				estimateFeeCoinPerKb = feeEstimator.GetLimitFee()
-			}
-		}
 	} else {
+		// get default fee
 		estimateFeeCoinPerKb = uint64(defaultFee)
 	}
+
+	// check with limit fee
+	limitFee := uint64(0)
+	if feeEstimator, ok := txService.FeeEstimator[shardID]; ok {
+		limitFee = feeEstimator.GetLimitFee()
+	}
+
+	if estimateFeeCoinPerKb < limitFee {
+		estimateFeeCoinPerKb = limitFee
+	}
+
 	return estimateFeeCoinPerKb
 }
 
