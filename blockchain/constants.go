@@ -127,16 +127,16 @@ var PreSelectShardNodeTestnetSerializedPubkey = []string{}
 var PreSelectShardNodeTestnetSerializedPaymentAddress = []string{}
 var TestnetInitPRV = []string{
 	`{
-		"Version":1,
-		"Type":"s",
-		"LockTime":1570159128,
-		"Fee":0,
-		"Info":null,
-		"SigPubKey":"5xVSzcZpA3uHmBO5ejENk13iayexILopySACdieLugA=",
-		"Sig":"oMJPBLxKgTnfQhMgfvvH68ed0UTuTfl3ofOoWgk8dgvfhovgvued9HH4dXz60rY32H4Y4c85Zd8bSXSnvNhZAA==",
-		"Proof":"AAAAAAAAAbAAriDnFVLNxmkDe4eYE7l6MQ2TXeJrJ7EguinJIAJ2J4u6ACARCc1/qyLEePe1zSthzmRSqf2VNOlo036JwtDgbNg24yAb6hGuk1tRBVMO4ruHaNEasY09ZiBc4iuK/dpDSyNTCCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACDMoX8yNBbY68SO44umD1CMfz/r0T4YiXhDgDgT6+k4BgdY0V4XYoAAAAAAAAAAAAA=",
-		"PubKeyLastByteSender":0,
-		"Metadata":null
+		"Version": 1,
+		"Type": "s",
+		"LockTime": 1572344959,
+		"Fee": 0,
+		"Info": null,
+		"SigPubKey": "ee6Oy8Y2k+aRXf5BkNfyonTC5Q84uT2RGnyzPHohEwA=",
+		"Sig": "rmBo1+V5VWQHOkEsy+d9X/IlCZzlEaUzbd4chpJsRwXJb1gPoMDDeUK5w5SFrO60QPgen0DmDN8U/nQ9GTKuBQ==",
+		"Proof": "AAAAAAAAAbAAriB57o7LxjaT5pFd/kGQ1/KidMLlDzi5PZEafLM8eiETACDaajXBxSpW8mq8J4ZWUUOiWLYdyhI07iYwv3Ap+TFZrSA8le7/CuFAbITQ8cMdShdr2+4m5dw1WChb7uBKWIRBDCABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAanqqaSG5x5Sn+XagjPeQ74+MdtDTcBz1fMcZxhkn4DwcRw3k34IAAAAAAAAAAAAA=",
+		"PubKeyLastByteSender": 0,
+		"Metadata": null
 	}`,
 }
 
