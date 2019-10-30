@@ -108,17 +108,7 @@ func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidat
 	if shardBlock.Header.Height != GetBestStateShard(shardID).ShardHeight+1 {
 		return errors.New("Not expected height")
 	}
-	// force non-committee member not to validate blk
-	// if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
-	// 	userRole := blockchain.BestState.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
-	// 	fmt.Println("Shard block received 1", userRole)
 
-	// 	if userRole != common.PROPOSER_ROLE && userRole != common.VALIDATOR_ROLE && userRole != common.PENDING_ROLE {
-	// 		isValidated = true
-	// 	}
-	// } else {
-	// 	isValidated = true
-	// }
 	isExist, _ := blockchain.config.DataBase.HasBlock(blockHash)
 	if isExist {
 		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash))

@@ -3,6 +3,7 @@ package blockchain
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,7 +16,18 @@ import (
 	"github.com/incognitochain/incognito-chain/wallet"
 )
 
+// ValidateBlockWithPrevShardBestState - validate forked block with previous beststate
 func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBlock) error {
+	//verify block version
+	if block.Header.Version != SHARD_BLOCK_VERSION {
+		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect block version to be equal to %+v but get %+v", SHARD_BLOCK_VERSION, block.Header.Version))
+	}
+
+	//verify block producer signature
+	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType); err != nil {
+		return err
+	}
+
 	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(false, block.Header.ShardID)
 	if err != nil {
 		return err
@@ -25,23 +37,14 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 		return err
 	}
 
-	// blkHash := block.Header.Hash()
-	// producerPk := base58.Base58Check{}.Encode(block.Header.ProducerAddress.Pk, common.ZeroByte)
-	// err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
-	// if err != nil {
-	// 	return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
-	// }
 	//verify producer
-	// block.GetValidationField()
 	producerPk := block.Header.Producer
 	producerPosition := (shardBestState.ShardProposerIdx + block.Header.Round) % len(shardBestState.ShardCommittee)
 	tempProducer := shardBestState.ShardCommittee[producerPosition].GetMiningKeyBase58(shardBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
 	}
-	// if block.Header.Version != SHARD_BLOCK_VERSION {
-	// 	return NewBlockChainError(, errors.New("Version should be :"+strconv.Itoa(VERSION)))
-	// }
+
 	// Verify parent hash exist or not
 	prevBlockHash := block.Header.PreviousBlockHash
 	parentBlockData, err := blockchain.config.DataBase.FetchBlock(prevBlockHash)
@@ -59,13 +62,6 @@ func (blockchain *BlockChain) ValidateBlockWithPrevShardBestState(block *ShardBl
 
 //This only happen if user is a shard committee member.
 func (blockchain *BlockChain) RevertShardState(shardID byte) error {
-	//Steps:
-	// 1. Restore current beststate to previous beststate
-	// 2. Set pool shardstate
-	// 3. Delete newly inserted block
-	// 4. Remove incoming crossShardBlks
-	// 5. Delete txs and its related stuff (ex: txview) belong to block
-
 	blockchain.chainLock.Lock()
 	defer blockchain.chainLock.Unlock()
 	return blockchain.revertShardState(shardID)
@@ -658,6 +654,16 @@ func (blockchain *BlockChain) restoreCommitmentsFromTxViewPoint(view TxViewPoint
 }
 
 func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *BeaconBlock) error {
+	//verify version
+	if block.Header.Version != BEACON_BLOCK_VERSION {
+		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
+	}
+
+	//verify block producer signature
+	if err := blockchain.config.ConsensusEngine.ValidateProducerSig(block, block.Header.ConsensusType); err != nil {
+		return err
+	}
+
 	prevBST, err := blockchain.config.DataBase.FetchPrevBestState(true, 0)
 	if err != nil {
 		return err
@@ -666,20 +672,13 @@ func (blockchain *BlockChain) ValidateBlockWithPrevBeaconBestState(block *Beacon
 	if err := json.Unmarshal(prevBST, &beaconBestState); err != nil {
 		return err
 	}
-	producerPk := block.Header.Producer
-	// err = incognitokey.ValidateDataB58(producerPk, block.ProducerSig, blkHash.GetBytes())
-	// if err != nil {
-	// 	return NewBlockChainError(ProducerError, errors.New("Producer's sig not match"))
-	// }
+
 	//verify producer
+	producerPk := block.Header.Producer
 	producerPosition := (beaconBestState.BeaconProposerIndex + block.Header.Round) % len(beaconBestState.BeaconCommittee)
 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
 	if strings.Compare(tempProducer, producerPk) != 0 {
 		return NewBlockChainError(ProducerError, errors.New("Producer should be should be :"+tempProducer))
-	}
-	//verify version
-	if block.Header.Version != BEACON_BLOCK_VERSION {
-		return NewBlockChainError(WrongVersionError, errors.New("Version should be :"+strconv.Itoa(BEACON_BLOCK_VERSION)))
 	}
 	prevBlockHash := block.Header.PreviousBlockHash
 	// Verify parent hash exist or not
