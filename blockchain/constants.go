@@ -28,8 +28,8 @@ const (
 	LowerBoundPercentForIncDAO   = 3
 	UpperBoundPercentForIncDAO   = 10
 	GetValidBlock                = 20
-	TestRandom                   = true
-	NumberOfFixedBlockValidators = 4
+	TestRandom                   = false
+	NumberOfFixedBlockValidators = 22
 	PDEFree                      = 3 // 3/1000
 )
 
@@ -142,7 +142,7 @@ func init() {
 		panic(err)
 	}
 
-	var IsTestNet = true
+	var IsTestNet = false
 	if IsTestNet {
 		for i := 0; i < TestNetMinBeaconCommitteeSize; i++ {
 			PreSelectBeaconNodeTestnetSerializedPubkey = append(PreSelectBeaconNodeTestnetSerializedPubkey, keylist.Beacon[i].CommitteePublicKey)
