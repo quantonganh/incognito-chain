@@ -30,8 +30,8 @@ type Tx struct {
 	Info     []byte // 512 bytes
 
 	// Sign and Privacy proof, required
-	SigPubKey            []byte `json:"SigPubKey, omitempty"` // 33 bytes
-	Sig                  []byte `json:"Sig, omitempty"`       //
+	SigPubKey            []byte `json:"SigPubKey,omitempty"` // 33 bytes
+	Sig                  []byte `json:"Sig,omitempty"`       //
 	Proof                *zkp.PaymentProof
 	PubKeyLastByteSender byte
 
