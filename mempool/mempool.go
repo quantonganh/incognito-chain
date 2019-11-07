@@ -3,6 +3,7 @@ package mempool
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"sync"
@@ -173,11 +174,14 @@ func (tp *TxPool) MonitorPool() {
 		tp.mtx.Lock()
 		ttl := time.Duration(tp.config.TxLifeTime) * time.Second
 		txsToBeRemoved := []*TxDesc{}
+		Logger.log.Info("MonitorPool: Start to collect timeout ttl tx")
 		for _, txDesc := range tp.pool {
 			if time.Since(txDesc.StartTime) > ttl {
+				Logger.log.Infof("MonitorPool: Add to list removed tx with txHash=%+v", txDesc.Desc.Tx.Hash().String())
 				txsToBeRemoved = append(txsToBeRemoved, txDesc)
 			}
 		}
+		Logger.log.Infof("MonitorPool: End to collect timeout ttl tx - Count of txsToBeRemoved=%+v", len(txsToBeRemoved))
 		for _, txDesc := range txsToBeRemoved {
 			txHash := *txDesc.Desc.Tx.Hash()
 			startTime := txDesc.StartTime
@@ -188,6 +192,7 @@ func (tp *TxPool) MonitorPool() {
 			tp.removeTokenIDByTxHash(txHash)
 			err := tp.config.DataBaseMempool.RemoveTransaction(txDesc.Desc.Tx.Hash())
 			if err != nil {
+				Logger.log.Errorf("MonitorPool: RemoveTransaction tx hash=%+v with error %+v", txDesc.Desc.Tx.Hash().String(), err)
 				Logger.log.Error(err)
 			}
 			txSize := txDesc.Desc.Tx.GetTxActualSize()
@@ -413,13 +418,15 @@ func (tp *TxPool) checkFees(
 		feePToken := tx.GetTxFeeToken()
 		//convert fee in Ptoken to fee in native token (if feePToken > 0)
 		if feePToken > 0 {
-			feePTokenToNativeToken, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
+			feePTokenToNativeTokenTmp, err := metadata.ConvertPrivacyTokenToNativeToken(feePToken, tokenID, beaconHeight, tp.config.DataBase)
 			if err != nil {
 				Logger.log.Errorf("ERROR: %+v", NewMempoolTxError(RejectInvalidFee,
 					fmt.Errorf("transaction %+v: %+v %v can not convert to native token",
 						tx.Hash().String(), feePToken, tokenID)))
 				return false
 			}
+
+			feePTokenToNativeToken := uint64(math.Ceil(feePTokenToNativeTokenTmp))
 			feeNativeToken += feePTokenToNativeToken
 		}
 		// get limit fee in native token

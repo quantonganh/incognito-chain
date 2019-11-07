@@ -2,6 +2,7 @@ package blsbft
 
 import (
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	"reflect"
 	"strconv"
 	"strings"
@@ -85,6 +86,7 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 			delete(e.EarlyVotes, roundKey)
 		}
 	}
+	metrics.SetGlobalParam("NVote", len(e.RoundData.Votes))
 	if len(e.RoundData.Votes) > 2*committeeSize/3 {
 		return true
 	}
@@ -149,5 +151,6 @@ func (e *BLSBFT) InitRoundData() {
 	e.RoundData.BlockHash = common.Hash{}
 	e.RoundData.NotYetSendVote = true
 	e.RoundData.LastProposerIndex = e.Chain.GetLastProposerIndex()
+	e.RoundData.TimeStart = time.Now()
 	e.UpdateCommitteeBLSList()
 }

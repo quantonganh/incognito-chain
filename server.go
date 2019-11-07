@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/incognitochain/incognito-chain/metrics"
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
 	//"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
@@ -701,50 +702,53 @@ func (serverObj *Server) GetActiveShardNumber() int {
 // }
 
 func (serverObj *Server) TransactionPoolBroadcastLoop() {
-	<-time.Tick(serverObj.memPool.ScanTime)
-	txDescs := serverObj.memPool.GetPool()
-	for _, txDesc := range txDescs {
-		<-time.Tick(50 * time.Millisecond)
-		if !txDesc.IsFowardMessage {
-			tx := txDesc.Desc.Tx
-			switch tx.GetType() {
-			case common.TxNormalType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
-					if err != nil {
-						continue
+	ticker := time.NewTicker(serverObj.memPool.ScanTime)
+	defer ticker.Stop()
+	for _ = range ticker.C {
+		txDescs := serverObj.memPool.GetPool()
+		for _, txDesc := range txDescs {
+			<-time.Tick(50 * time.Millisecond)
+			if !txDesc.IsFowardMessage {
+				tx := txDesc.Desc.Tx
+				switch tx.GetType() {
+				case common.TxNormalType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdTx)
+						if err != nil {
+							continue
+						}
+						normalTx := tx.(*transaction.Tx)
+						txMsg.(*wire.MessageTx).Transaction = normalTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
-					normalTx := tx.(*transaction.Tx)
-					txMsg.(*wire.MessageTx).Transaction = normalTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+				case common.TxCustomTokenType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
+						if err != nil {
+							continue
+						}
+						customTokenTx := tx.(*transaction.TxNormalToken)
+						txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
-				}
-			case common.TxCustomTokenType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdCustomToken)
-					if err != nil {
-						continue
-					}
-					customTokenTx := tx.(*transaction.TxNormalToken)
-					txMsg.(*wire.MessageTxToken).Transaction = customTokenTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
-					}
-				}
-			case common.TxCustomTokenPrivacyType:
-				{
-					txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
-					if err != nil {
-						continue
-					}
-					customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
-					txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
-					err = serverObj.PushMessageToAll(txMsg)
-					if err == nil {
-						serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+				case common.TxCustomTokenPrivacyType:
+					{
+						txMsg, err := wire.MakeEmptyMessage(wire.CmdPrivacyCustomToken)
+						if err != nil {
+							continue
+						}
+						customPrivacyTokenTx := tx.(*transaction.TxCustomTokenPrivacy)
+						txMsg.(*wire.MessageTxPrivacyToken).Transaction = customPrivacyTokenTx
+						err = serverObj.PushMessageToAll(txMsg)
+						if err == nil {
+							serverObj.memPool.MarkForwardedTransaction(*tx.Hash())
+						}
 					}
 				}
 			}
@@ -1738,6 +1742,7 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	if userKey != "" {
+		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
 			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
