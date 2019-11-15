@@ -58,7 +58,7 @@ const (
 
 	//board and proposal parameters
 	MainnetBasicReward                      = 1386666000                                                                                                //1.386666 PRV
-	MainETHContractAddressStr               = "0xD21155E51b128f4F92708042DD08db1661ECeF9E"                                                              // v1-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
+	MainETHContractAddressStr               = "0x0261DB5AfF8E5eC99fBc8FBBA5D4B9f8EcD44ec7"                                                              // v2-main - mainnet, branch master-temp-B-deploy, support erc20 with decimals > 18
 	MainnetIncognitoDAOAddress              = "12S32fSyF4h8VxFHt4HfHvU1m9KHvBQsab5zp4TpQctmMdWuveXFH9KYWNemo7DRKvaBEvMgqm4XAuq1a1R4cNk2kfUfvXR3DdxCho3" // community fund
 	MainnetCentralizedWebsitePaymentAddress = "12Rvjw6J3FWY3YZ1eDZ5uTy6DTPjFeLhCK7SXgppjivg9ShX2RRq3s8pdoapnH8AMoqvUSqZm1Gqzw7rrKsNzRJwSK2kWbWf1ogy885"
 	// ------------- end Mainnet --------------------------------------
@@ -98,7 +98,7 @@ const (
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetETHContractAddressStr            = "0x717B5F3667A21a0b5e09A8d0E8648C1D525503C4"
+	TestnetETHContractAddressStr            = "0x99A93076Dc2aBE9A34dddC6dAaF6608d35Ecc86c"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )

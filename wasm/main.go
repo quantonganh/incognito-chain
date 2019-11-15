@@ -76,6 +76,15 @@ func initPrivacyTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func stopAutoStaking(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.StopAutoStaking(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func staking(_ js.Value, args []js.Value) interface{} {
 	result, err := gomobile.Staking(args[0].String())
 	if err != nil {
@@ -157,6 +166,24 @@ func withdrawDexTx(_ js.Value, args []js.Value) interface{} {
 	return result
 }
 
+func hybridEncryptionASM(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.HybridEncryptionASM(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
+func hybridDecryptionASM(_ js.Value, args []js.Value) interface{} {
+	result, err := gomobile.HybridDecryptionASM(args[0].String())
+	if err != nil {
+		return nil
+	}
+
+	return result
+}
+
 func main() {
 	c := make(chan struct{}, 0)
 	println("Hello WASM")
@@ -165,6 +192,7 @@ func main() {
 
 	js.Global().Set("initPrivacyTx", js.FuncOf(initPrivacyTx))
 	js.Global().Set("staking", js.FuncOf(staking))
+	js.Global().Set("stopAutoStaking", js.FuncOf(stopAutoStaking))
 	js.Global().Set("initPrivacyTokenTx", js.FuncOf(initPrivacyTokenTx))
 	js.Global().Set("initBurningRequestTx", js.FuncOf(initBurningRequestTx))
 	js.Global().Set("initWithdrawRewardTx", js.FuncOf(initWithdrawRewardTx))
@@ -180,6 +208,9 @@ func main() {
 	js.Global().Set("initPRVTradeTx", js.FuncOf(initPRVTradeTx))
 	js.Global().Set("initPTokenTradeTx", js.FuncOf(initPTokenTradeTx))
 	js.Global().Set("withdrawDexTx", js.FuncOf(withdrawDexTx))
+
+	js.Global().Set("hybridEncryptionASM", js.FuncOf(hybridEncryptionASM))
+	js.Global().Set("hybridDecryptionASM", js.FuncOf(hybridDecryptionASM))
 
 	<-c
 }
