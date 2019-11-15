@@ -17,6 +17,8 @@ type BeaconChain struct {
 	Blockchain *BlockChain
 	ChainName  string
 	lock       sync.RWMutex
+
+	views map[string]ChainView
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
