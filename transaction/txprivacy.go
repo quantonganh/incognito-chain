@@ -54,6 +54,7 @@ func (tx *Tx) UnmarshalJSON(data []byte) error {
 	}
 	err := json.Unmarshal(data, &temp)
 	if err != nil {
+		Logger.log.Error("UnmarshalJSON tx", string(data))
 		return NewTransactionErr(UnexpectedError, err)
 	}
 	meta, parseErr := metadata.ParseMetadata(temp.Metadata)
@@ -73,9 +74,9 @@ type TxPrivacyInitParams struct {
 	fee         uint64
 	hasPrivacy  bool
 	db          database.DatabaseInterface
-	tokenID     *common.Hash // default is nil -> use for prv coin
+	tokenID     *common.Hash 				// default is nil -> use for prv coin
 	metaData    metadata.Metadata
-	info        []byte //512
+	info        []byte 						// 512 bytes
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -147,7 +148,13 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	// init info of tx
 	tx.Info = []byte{}
-	if len(params.info) > 0 {
+	lenTxInfo := len(params.info)
+
+	if lenTxInfo > 0 {
+		if lenTxInfo > MaxSizeInfo {
+			return NewTransactionErr(ExceedSizeInfoTxError, nil)
+		}
+
 		tx.Info = params.info
 	}
 
@@ -206,7 +213,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 	Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := int(sumInputValue - sumOutputValue - params.fee)
+	overBalance := int64(sumInputValue - sumOutputValue - params.fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
@@ -259,6 +266,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
+		if len(pInfo.Message) > 0 {
+			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+				return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+			}
+		}
+		outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
 
 		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
@@ -642,16 +655,16 @@ func (tx Tx) CheckTxVersion(maxTxVersion int8) bool {
 	return !(tx.Version > maxTxVersion)
 }
 
-func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
-	if tx.IsSalaryTx() {
-		return true
-	}
-	if tx.Metadata != nil {
-		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
-	}
-	fullFee := minFeePerKbTx * tx.GetTxActualSize()
-	return tx.Fee >= fullFee
-}
+// func (tx Tx) CheckTransactionFee(minFeePerKbTx uint64) bool {
+// 	if tx.IsSalaryTx() {
+// 		return true
+// 	}
+// 	if tx.Metadata != nil {
+// 		return tx.Metadata.CheckTransactionFee(&tx, minFeePerKbTx)
+// 	}
+// 	fullFee := minFeePerKbTx * tx.GetTxActualSize()
+// 	return tx.Fee >= fullFee
+// }
 
 func (tx Tx) IsSalaryTx() bool {
 	// Check normal tx(not an action tx)
@@ -1435,7 +1448,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	//Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
 
 	// Calculate over balance, it will be returned to sender
-	overBalance := int(sumInputValue - sumOutputValue - params.txParam.fee)
+	overBalance := int64(sumInputValue - sumOutputValue - params.txParam.fee)
 
 	// Check if sum of input coins' value is at least sum of output coins' value and tx fee
 	if overBalance < 0 {
@@ -1464,6 +1477,12 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		outputCoins[i] = new(privacy.OutputCoin)
 		outputCoins[i].CoinDetails = new(privacy.Coin)
 		outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
+		if len(pInfo.Message) > 0 {
+			if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+				return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+			}
+			outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
+		}
 
 		PK, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 		if err != nil {
