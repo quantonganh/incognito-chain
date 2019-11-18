@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 if [ "$1" == "s01" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1oHW8buNXixuCZoNLxkyHfdJP6iJosFDJUgbDiMgVc2amfj6H7" --nodemode "auto" --datadir "data/s01" --listen "0.0.0.0:8334" --externaladdress "0.0.0.0:8334" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --loglevel info
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9331/p2p/QmWoKWHPGjUNbjohYS2MySNDBiCXA2tDs3jT6P3MXDgb9D" --miningkeys "bls:1oHW8buNXixuCZoNLxkyHfdJP6iJosFDJUgbDiMgVc2amfj6H7" --nodemode "auto" --datadir "data/s01" --listen "0.0.0.0:8334" --externaladdress "0.0.0.0:8334" --norpcauth --rpclisten "0.0.0.0:9334" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit --loglevel info
 fi
 if [ "$1" == "s02" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12UXBbiNwmrBPHQZr9oKGCd5ZxTd4dzj6SmKFKw3mcsJ7X1YdK5" --nodemode "auto" --datadir "data/s02" --listen "0.0.0.0:8335" --externaladdress "0.0.0.0:8335" --norpcauth --rpclisten "0.0.0.0:9335" --loglevel info
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9331/p2p/QmWoKWHPGjUNbjohYS2MySNDBiCXA2tDs3jT6P3MXDgb9D" --miningkeys "bls:12UXBbiNwmrBPHQZr9oKGCd5ZxTd4dzj6SmKFKw3mcsJ7X1YdK5" --nodemode "auto" --datadir "data/s02" --listen "0.0.0.0:8335" --externaladdress "0.0.0.0:8335" --norpcauth --rpclisten "0.0.0.0:9335" --loglevel info
 fi
 if [ "$1" == "s03" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12AY9ACUVXNWCUv6KTERsvPigdgXqKyet3HW6dUjmsfyn7CkEhM" --nodemode "auto" --datadir "data/s03" --listen "0.0.0.0:8336" --externaladdress "0.0.0.0:8336" --norpcauth --rpclisten "0.0.0.0:9336" --loglevel info
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9331/p2p/QmWoKWHPGjUNbjohYS2MySNDBiCXA2tDs3jT6P3MXDgb9D" --miningkeys "bls:12AY9ACUVXNWCUv6KTERsvPigdgXqKyet3HW6dUjmsfyn7CkEhM" --nodemode "auto" --datadir "data/s03" --listen "0.0.0.0:8336" --externaladdress "0.0.0.0:8336" --norpcauth --rpclisten "0.0.0.0:9336" --loglevel info
 fi
 if [ "$1" == "s04" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1Xm6FiWKXcaamPgXz5gJGF25c4BtmbrGYmc1iqkDr4FTJ24EdU" --nodemode "auto" --datadir "data/s04" --listen "0.0.0.0:8337" --externaladdress "0.0.0.0:8337" --norpcauth --rpclisten "0.0.0.0:9337" --loglevel info
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9331/p2p/QmWoKWHPGjUNbjohYS2MySNDBiCXA2tDs3jT6P3MXDgb9D" --miningkeys "bls:1Xm6FiWKXcaamPgXz5gJGF25c4BtmbrGYmc1iqkDr4FTJ24EdU" --nodemode "auto" --datadir "data/s04" --listen "0.0.0.0:8337" --externaladdress "0.0.0.0:8337" --norpcauth --rpclisten "0.0.0.0:9337" --loglevel info
 fi
 
 if [ "$1" == "s11" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1TGvoYkXLNCSEgTjQotkzPWN3W6kFwVj2s2aMnfDjU8ei3tCha" --nodemode "auto" --datadir "data/s11" --listen "0.0.0.0:8344" --externaladdress "0.0.0.0:8344" --norpcauth --rpclisten "0.0.0.0:9344" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9332/p2p/QmSZGxdbG1AfuDX1ia6kRyewrVbBNkjd6NU4AbZUCE2ZyG" --miningkeys "bls:1TGvoYkXLNCSEgTjQotkzPWN3W6kFwVj2s2aMnfDjU8ei3tCha" --nodemode "auto" --datadir "data/s11" --listen "0.0.0.0:8344" --externaladdress "0.0.0.0:8344" --norpcauth --rpclisten "0.0.0.0:9344" --enablewallet --wallet "wallet1" --walletpassphrase "12345678" --walletautoinit
 fi
 if [ "$1" == "s12" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12G6S27uaYe1d53awSX5Rkn9p5p3T7sunTL758mPY7CEc9SEPeK" --nodemode "auto" --datadir "data/s12" --listen "0.0.0.0:8345" --externaladdress "0.0.0.0:8345" --norpcauth --rpclisten "0.0.0.0:9345" --norpc
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9332/p2p/QmSZGxdbG1AfuDX1ia6kRyewrVbBNkjd6NU4AbZUCE2ZyG" --miningkeys "bls:12G6S27uaYe1d53awSX5Rkn9p5p3T7sunTL758mPY7CEc9SEPeK" --nodemode "auto" --datadir "data/s12" --listen "0.0.0.0:8345" --externaladdress "0.0.0.0:8345" --norpcauth --rpclisten "0.0.0.0:9345" --norpc
 fi
 if [ "$1" == "s13" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1YVKsf8gdaKSNYbAndFpEyve9EKFkhBpcLpuKvkjZLkGxHjYx3" --nodemode "auto" --datadir "data/s13" --listen "0.0.0.0:8346" --externaladdress "0.0.0.0:8346" --norpcauth --rpclisten "0.0.0.0:9346" --norpc
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9332/p2p/QmSZGxdbG1AfuDX1ia6kRyewrVbBNkjd6NU4AbZUCE2ZyG" --miningkeys "bls:1YVKsf8gdaKSNYbAndFpEyve9EKFkhBpcLpuKvkjZLkGxHjYx3" --nodemode "auto" --datadir "data/s13" --listen "0.0.0.0:8346" --externaladdress "0.0.0.0:8346" --norpcauth --rpclisten "0.0.0.0:9346" --norpc
 fi
 if [ "$1" == "s14" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1R9x3TBwYrKd8PmQjufd5W4Pko1UGsfTqzPUtiCzGazAFSUWMa" --nodemode "auto" --datadir "data/s14" --listen "0.0.0.0:8347" --externaladdress "0.0.0.0:8347" --norpcauth --rpclisten "0.0.0.0:9347" --norpc
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9332/p2p/QmSZGxdbG1AfuDX1ia6kRyewrVbBNkjd6NU4AbZUCE2ZyG" --miningkeys "bls:1R9x3TBwYrKd8PmQjufd5W4Pko1UGsfTqzPUtiCzGazAFSUWMa" --nodemode "auto" --datadir "data/s14" --listen "0.0.0.0:8347" --externaladdress "0.0.0.0:8347" --norpcauth --rpclisten "0.0.0.0:9347" --norpc
 fi
 
 if [ "$1" == "s21" ]; then
