@@ -52,6 +52,8 @@ const (
 	DefaultPersistMempool = false
 	DefaultBtcClient      = 0
 	DefaultBtcClientPort  = "8332"
+
+	DefaultHighway = "/ip4/127.0.0.1/tcp/9330/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
 )
 
 var (
@@ -318,7 +320,7 @@ func loadConfig() (*config, []string, error) {
 		RPCDisableAuth:       false,
 		DiscoverPeers:        true,
 		TestNet:              true,
-		DiscoverPeersAddress: "127.0.0.1:9330", //"35.230.8.182:9339",
+		DiscoverPeersAddress: DefaultHighway, //"35.230.8.182:9339",
 		NodeMode:             DefaultNodeMode,
 		MiningKeys:           common.EmptyString,
 		PrivateKey:           common.EmptyString,

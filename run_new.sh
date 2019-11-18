@@ -44,16 +44,16 @@ if [ "$1" == "st2" ]; then
 go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1UCU4M3U6XXJTgjcpT7e5fY9swXnM74sWSoP6Qyx9CD4GKSKGG" --nodemode "auto" --datadir "data/st2" --listen "0.0.0.0:8365" --externaladdress "0.0.0.0:8365" --norpcauth --rpclisten "0.0.0.0:9365" --norpc
 fi
 if [ "$1" == "b1" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1Gmyq2e1nYqkAjkyFcjwmgPHSPTBBuh7PUEQsgEbwdiD1J2Rwp" --nodemode "auto" --datadir "data/b1" --listen "0.0.0.0:8434" --externaladdress "0.0.0.0:8434" --norpcauth --rpclisten "0.0.0.0:9434"
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9330/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv" --miningkeys "bls:1Gmyq2e1nYqkAjkyFcjwmgPHSPTBBuh7PUEQsgEbwdiD1J2Rwp" --nodemode "auto" --datadir "data/b1" --listen "0.0.0.0:8434" --externaladdress "0.0.0.0:8434" --norpcauth --rpclisten "0.0.0.0:9434"
 fi
 if [ "$1" == "b2" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1g2N8sSA1S4yJRca8nhaqjnxmjziRuF1oXaDPBAqHMQfZLfrNf" --nodemode "auto" --datadir "data/b2" --listen "0.0.0.0:8435" --externaladdress "0.0.0.0:8435" --norpcauth --rpclisten "0.0.0.0:9435" --norpc
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9330/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv" --miningkeys "bls:1g2N8sSA1S4yJRca8nhaqjnxmjziRuF1oXaDPBAqHMQfZLfrNf" --nodemode "auto" --datadir "data/b2" --listen "0.0.0.0:8435" --externaladdress "0.0.0.0:8435" --norpcauth --rpclisten "0.0.0.0:9435" --norpc
 fi
 if [ "$1" == "b3" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:12UR2apXz6bTzaAUiCj83YB5F7c9k9Toe4JQwmtySSWWLU4MWRH" --nodemode "auto" --datadir "data/b3" --listen "0.0.0.0:8436" --externaladdress "0.0.0.0:8436" --norpcauth --rpclisten "0.0.0.0:9436" --norpc
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9330/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv" --miningkeys "bls:12UR2apXz6bTzaAUiCj83YB5F7c9k9Toe4JQwmtySSWWLU4MWRH" --nodemode "auto" --datadir "data/b3" --listen "0.0.0.0:8436" --externaladdress "0.0.0.0:8436" --norpcauth --rpclisten "0.0.0.0:9436" --norpc
 fi
 if [ "$1" == "b4" ]; then
-go run *.go --discoverpeersaddress "0.0.0.0:9330" --miningkeys "bls:1dhmiTWb7M6KPqqPdXJbyJZRwu9pYxT1d1YD7bh1EpuVqHsWi2" --nodemode "auto" --datadir "data/b4" --listen "0.0.0.0:8437" --externaladdress "0.0.0.0:8437" --norpcauth --rpclisten "0.0.0.0:9437" --norpc
+go run *.go --discoverpeersaddress "/ip4/127.0.0.1/tcp/9330/p2p/QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv" --miningkeys "bls:1dhmiTWb7M6KPqqPdXJbyJZRwu9pYxT1d1YD7bh1EpuVqHsWi2" --nodemode "auto" --datadir "data/b4" --listen "0.0.0.0:8437" --externaladdress "0.0.0.0:8437" --norpcauth --rpclisten "0.0.0.0:9437" --norpc
 fi
 if [ "$1" == "3" ]; then
 go run *.go --miningkeys "bls:12v9jokoYDWFQ7731mR6QjjkvUG1Q" --nodemode "auto" --datadir "data/3" --listen "0.0.0.0:9437" --externaladdress "0.0.0.0:9437" --norpcauth --rpclisten "0.0.0.0:9337"

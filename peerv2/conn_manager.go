@@ -18,7 +18,6 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-var HighwayPeerID = "QmSPa4gxx6PRmoNRu6P2iFwEwmayaoLdR5By3i3MgM9gMv"
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 
 func NewConnManager(
@@ -94,7 +93,15 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 
 func (cm *ConnManager) Start(ns NetSync) {
 	// connect to proxy node
-	peerid, err := peer.IDB58Decode(HighwayPeerID)
+	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
+	if err != nil {
+		panic(err)
+	}
+
+	addrInfo, err := peer.AddrInfoFromP2pAddr(addr)
+	if err != nil {
+		panic(err)
+	}
 
 	// Pubsub
 	// TODO(@0xbunyip): handle error
@@ -108,7 +115,7 @@ func (cm *ConnManager) Start(ns NetSync) {
 	go cm.keepHighwayConnection(connected)
 	<-connected
 
-	req, err := NewRequester(cm.LocalHost.GRPC, peerid)
+	req, err := NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
 		panic(err)
 	}
@@ -203,16 +210,16 @@ func (cm *ConnManager) process() {
 // The method push data to the given channel to signal that the first attempt had finished.
 // Constructor can use this info to initialize other objects.
 func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
-	pid, _ := peer.IDB58Decode(HighwayPeerID)
-	ip, port := ParseListenner(cm.DiscoverPeersAddress, "127.0.0.1", 9330)
-	ipfsaddr, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", ip, port))
+	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
 	if err != nil {
-		panic(fmt.Sprintf("invalid highway config:", err, pid, ip, port))
+		panic(err)
 	}
-	peerInfo := peer.AddrInfo{
-		ID:    pid,
-		Addrs: append([]multiaddr.Multiaddr{}, ipfsaddr),
+
+	hwPeerInfo, err := peer.AddrInfoFromP2pAddr(addr)
+	if err != nil {
+		panic(err)
 	}
+	hwPID := hwPeerInfo.ID
 
 	first := true
 	net := cm.LocalHost.Host.Network()
@@ -220,16 +227,16 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 	for ; true; <-time.Tick(10 * time.Second) {
 		// Reconnect if not connected
 		var err error
-		if net.Connectedness(pid) != network.Connected {
+		if net.Connectedness(hwPID) != network.Connected {
 			disconnected = true
 			log.Println("Not connected to highway, connecting")
 			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-			if err = cm.LocalHost.Host.Connect(ctx, peerInfo); err != nil {
-				log.Println("Could not connect to highway:", err, peerInfo)
+			if err = cm.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
+				log.Println("Could not connect to highway:", err, hwPeerInfo)
 			}
 		}
 
-		if disconnected && net.Connectedness(pid) == network.Connected {
+		if disconnected && net.Connectedness(hwPID) == network.Connected {
 			// Register again since this might be a new highway
 			log.Println("Connected to highway, sending register request")
 			cm.registerRequests <- 1
@@ -328,9 +335,8 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	}
 
 	// Registering
-	peerid, _ := peer.IDB58Decode(HighwayPeerID)
 	pubkey, _ := cm.IdentityKey.ToBase58()
-	newTopics, roleOfTopics, err := cm.registerToProxy(peerid, pubkey, newRole.layer, newRole.shardID)
+	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, newRole.shardID)
 	if err != nil {
 		return role, topics
 	}
@@ -445,7 +451,6 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 type m2t map[string][]Topic // Message to topics
 
 func (cm *ConnManager) registerToProxy(
-	peerID peer.ID,
 	pubkey string,
 	layer string,
 	shardID int,

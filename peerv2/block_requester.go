@@ -21,6 +21,7 @@ type BlockRequester struct {
 }
 
 func NewRequester(prtc *p2pgrpc.GRPCProtocol, peerID peer.ID) (*BlockRequester, error) {
+	// TODO(@0xbunyip): dynamic highwayPID here (connect to another highway if one failed)
 	req := &BlockRequester{
 		prtc:       prtc,
 		conn:       nil,
