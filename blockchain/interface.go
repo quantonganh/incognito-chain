@@ -95,28 +95,39 @@ type FeeEstimator interface {
 
 type ChainInterface interface {
 	GetChainName() string
-	GetConsensusType() string
-	GetLastBlockTimeStamp() int64
-	GetMinBlkInterval() time.Duration
-	GetMaxBlkCreateTime() time.Duration
+
 	IsReady() bool
 	GetActiveShardNumber() int
 	GetPubkeyRole(pubkey string, round int) (string, byte)
-	CurrentHeight() uint64
-	GetCommitteeSize() int
-	GetCommittee() []incognitokey.CommitteePublicKey
-	GetPubKeyCommitteeIndex(string) int
-	GetLastProposerIndex() int
+
+	GetConsensusType() string                        //TO_BE_DELETE
+	GetLastBlockTimeStamp() int64                    //TO_BE_DELETE
+	GetMinBlkInterval() time.Duration                //TO_BE_DELETE
+	GetMaxBlkCreateTime() time.Duration              //TO_BE_DELETE
+	CurrentHeight() uint64                           //TO_BE_DELETE
+	GetCommitteeSize() int                           //TO_BE_DELETE
+	GetCommittee() []incognitokey.CommitteePublicKey //TO_BE_DELETE
+	GetPubKeyCommitteeIndex(string) int              //TO_BE_DELETE
+	GetLastProposerIndex() int                       //TO_BE_DELETE
+
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-	CreateNewBlock(round int) (common.BlockInterface, error)
-	InsertBlk(block common.BlockInterface) error
-	InsertAndBroadcastBlock(block common.BlockInterface) error
-	// ValidateAndInsertBlock(block common.BlockInterface) error
+
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+
 	GetShardID() int
+
 	GetBestView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
+
+	// GetBestViewConsensusType() string
+	// GetBestViewLastBlockTimeStamp() int64
+	// GetBestViewMinBlkInterval() time.Duration
+	// GetBestViewMaxBlkCreateTime() time.Duration
+	// CurrentBestViewHeight() uint64
+	// GetBestViewCommitteeSize() int
+	// GetBestViewCommittee() []incognitokey.CommitteePublicKey
+	// GetBestViewPubKeyCommitteeIndex(string) int
+	// GetBestViewLastProposerIndex() int
 }
 
 type ChainViewInterface interface {
@@ -126,4 +137,14 @@ type ChainViewInterface interface {
 	CurrentHeight() uint64
 	GetCommittee() []string
 	GetLastProposerIdx() int
+
+	GetConsensusType() string
+	GetPubKeyCommitteeIndex(string) int
+	GetLastProposerIndex() int
+	CreateNewBlock(round int) (common.BlockInterface, error)
+	InsertBlk(block common.BlockInterface) error
+	InsertAndBroadcastBlock(block common.BlockInterface) error
+	ValidatePreSignBlock(block common.BlockInterface) error
+
+	DeleteView() error
 }

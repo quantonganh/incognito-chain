@@ -941,7 +941,7 @@ func (synker *Synker) InsertBeaconBlockFromPool() {
 	}
 
 	for _, v := range sameCommitteeBlock {
-		err := chain.InsertBlk(v)
+		err := chain.GetBestView().InsertBlk(v)
 		if err != nil {
 			Logger.log.Error(err)
 			break
@@ -1000,7 +1000,7 @@ func (synker *Synker) InsertShardBlockFromPool(shardID byte) {
 	for _, v := range sameCommitteeBlock {
 		//time1 := time.Now()
 		//fmt.Println("DEBUG: shard", v.Header.Height)
-		err := chain.InsertBlk(v)
+		err := chain.GetBestView().InsertBlk(v)
 		//fmt.Println("DEBUG: shard ", time.Since(time1).Seconds())
 		if err != nil {
 			Logger.log.Error(err)

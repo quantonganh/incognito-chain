@@ -257,3 +257,29 @@ func (view *ShardView) GetStakingTx() map[string]string {
 	}
 	return m
 }
+
+func (view *ShardView) GetConsensusType() string {
+	return ""
+}
+func (view *ShardView) GetPubKeyCommitteeIndex(string) int {
+	return 0
+}
+func (view *ShardView) GetLastProposerIndex() int {
+	return 0
+}
+func (view *ShardView) CreateNewBlock(round int) (common.BlockInterface, error) {
+	return nil, nil
+}
+func (view *ShardView) InsertBlk(block common.BlockInterface) error {
+	return nil
+}
+func (view *ShardView) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	return nil
+}
+func (view *ShardView) ValidatePreSignBlock(block common.BlockInterface) error {
+	return nil
+}
+
+func (view *ShardView) DeleteView() error {
+	return nil
+}

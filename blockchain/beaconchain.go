@@ -104,22 +104,6 @@ func (chain *BeaconChain) ValidatePreSignBlock(block common.BlockInterface) erro
 	return chain.Blockchain.VerifyPreSignBeaconBlock(block.(*BeaconBlock), true)
 }
 
-// func (chain *BeaconChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-// 	var beaconBestState BeaconBestState
-// 	beaconBlock := block.(*BeaconBlock)
-// 	beaconBestState.cloneBeaconBestStateFrom(chain.BestState)
-// 	producerPublicKey := beaconBlock.Header.Producer
-// 	producerPosition := (beaconBestState.BeaconProposerIndex + beaconBlock.Header.Round) % len(beaconBestState.BeaconCommittee)
-// 	tempProducer := beaconBestState.BeaconCommittee[producerPosition].GetMiningKeyBase58(beaconBestState.ConsensusAlgorithm)
-// 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-// 	}
-// 	if err := chain.ValidateBlockSignatures(block, beaconBestState.BeaconCommittee); err != nil {
-// 		return err
-// 	}
-// 	return chain.Blockchain.InsertBeaconBlock(beaconBlock, false)
-// }
-
 func (chain *BeaconChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
@@ -191,4 +175,32 @@ func (chain *BeaconChain) UnmarshalBlock(blockString []byte) (common.BlockInterf
 		return nil, err
 	}
 	return &beaconBlk, nil
+}
+
+func (chain *BeaconChain) GetBestViewConsensusType() string {
+	return ""
+}
+func (chain *BeaconChain) GetBestViewLastBlockTimeStamp() int64 {
+	return 0
+}
+func (chain *BeaconChain) GetBestViewMinBlkInterval() time.Duration {
+	return 0
+}
+func (chain *BeaconChain) GetBestViewMaxBlkCreateTime() time.Duration {
+	return 0
+}
+func (chain *BeaconChain) CurrentBestViewHeight() uint64 {
+	return 0
+}
+func (chain *BeaconChain) GetBestViewCommitteeSize() int {
+	return 0
+}
+func (chain *BeaconChain) GetBestViewCommittee() []incognitokey.CommitteePublicKey {
+	return nil
+}
+func (chain *BeaconChain) GetBestViewPubKeyCommitteeIndex(string) int {
+	return 0
+}
+func (chain *BeaconChain) GetBestViewLastProposerIndex() int {
+	return 0
 }

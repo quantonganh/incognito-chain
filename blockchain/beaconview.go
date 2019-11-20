@@ -640,3 +640,29 @@ func (view *BeaconView) getAllCommitteeValidatorCandidateFlattenList() []string 
 	res = append(res, candidateShardWaitingForNextRandomStr...)
 	return res
 }
+
+func (view *BeaconView) GetConsensusType() string {
+	return ""
+}
+func (view *BeaconView) GetPubKeyCommitteeIndex(string) int {
+	return 0
+}
+func (view *BeaconView) GetLastProposerIndex() int {
+	return 0
+}
+func (view *BeaconView) CreateNewBlock(round int) (common.BlockInterface, error) {
+	return nil, nil
+}
+func (view *BeaconView) InsertBlk(block common.BlockInterface) error {
+	return nil
+}
+func (view *BeaconView) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	return nil
+}
+func (view *BeaconView) ValidatePreSignBlock(block common.BlockInterface) error {
+	return nil
+}
+
+func (view *BeaconView) DeleteView() error {
+	return nil
+}

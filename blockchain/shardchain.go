@@ -163,3 +163,31 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
 	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.bestView.ShardID)
 }
+
+func (chain *ShardChain) GetBestViewConsensusType() string {
+	return ""
+}
+func (chain *ShardChain) GetBestViewLastBlockTimeStamp() int64 {
+	return 0
+}
+func (chain *ShardChain) GetBestViewMinBlkInterval() time.Duration {
+	return 0
+}
+func (chain *ShardChain) GetBestViewMaxBlkCreateTime() time.Duration {
+	return 0
+}
+func (chain *ShardChain) CurrentBestViewHeight() uint64 {
+	return 0
+}
+func (chain *ShardChain) GetBestViewCommitteeSize() int {
+	return 0
+}
+func (chain *ShardChain) GetBestViewCommittee() []incognitokey.CommitteePublicKey {
+	return nil
+}
+func (chain *ShardChain) GetBestViewPubKeyCommitteeIndex(string) int {
+	return 0
+}
+func (chain *ShardChain) GetBestViewLastProposerIndex() int {
+	return 0
+}
