@@ -1,12 +1,8 @@
-package blsbftv2
+package main
 
 import "testing"
 
-func init() {
-
-}
-
-func TestBLSBFT_Start(t *testing.T) {
+func Test_Main4Committee(t *testing.T) {
 	committee := []string{
 		"112t8rnXB47RhSdyVRU41TEf78nxbtWGtmjutwSp9YqsNaCpFxQGXcnwcXTtBkCGDk1KLBRBeWMvb2aXG5SeDUJRHtFV8jTB3weHEkbMJ1AL",
 		"112t8rnXVdfBqBMigSs5fm9NSS8rgsVVURUxArpv6DxYmPZujKqomqUa2H9wh1zkkmDGtDn2woK4NuRDYnYRtVkUhK34TMfbUF4MShSkrCw5",
@@ -17,5 +13,9 @@ func TestBLSBFT_Start(t *testing.T) {
 	//n2 := NewNode(committee, 1)
 	//n3 := NewNode(committee, 2)
 	//n4 := NewNode(committee, 3)
+
 	n1.Start()
+	//v := []int{	1, 1, 1, 1,/**/0, 0, 0, 0,/**/1, 1, 1, 1,/**/1, 1, 1, 1}
+	//c := []int{	1, 1, 1, 1,/**/0, 0, 0, 0,/**/1, 1, 1, 1,/**/1, 1, 1, 1}
+
 }
