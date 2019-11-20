@@ -191,3 +191,10 @@ func (chain *ShardChain) GetBestViewPubKeyCommitteeIndex(string) int {
 func (chain *ShardChain) GetBestViewLastProposerIndex() int {
 	return 0
 }
+
+func (chain *ShardChain) GetBestView() ChainViewInterface {
+	return nil
+}
+func (chain *ShardChain) GetAllViews() map[string]ChainViewInterface {
+	return nil
+}

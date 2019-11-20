@@ -54,6 +54,7 @@ type BLSBFT struct {
 	StopCh    chan struct{}
 	logger    common.Logger
 
+	currentTimeslot          uint64
 	blocksToCollectVotes     map[string]common.BlockInterface
 	lockBlocksToCollectVotes sync.RWMutex
 
@@ -280,7 +281,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 
-						if err := e.Chain.InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
+						if err := e.Chain.GetBestView().InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
@@ -356,12 +357,12 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if e.isInTimeFrame() && e.RoundData.State != newphase {
 		return
 	}
 	e.isOngoing = false
-	e.setState(newround)
-	if e.waitForNextRound() {
+	e.setState(newphase)
+	if e.waitForNextTimeslot() {
 		return
 	}
 	e.InitRoundData()
@@ -416,7 +417,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	go func() {
 		time1 := time.Now()
 		var err error
-		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
+		block, err = e.Chain.GetBestView().CreateNewBlock(int(e.RoundData.Round))
 		e.logger.Info("create block", time.Since(time1).Seconds())
 		errCh <- err
 	}()

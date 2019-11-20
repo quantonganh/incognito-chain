@@ -204,3 +204,10 @@ func (chain *BeaconChain) GetBestViewPubKeyCommitteeIndex(string) int {
 func (chain *BeaconChain) GetBestViewLastProposerIndex() int {
 	return 0
 }
+
+func (chain *BeaconChain) GetBestView() ChainViewInterface {
+	return nil
+}
+func (chain *BeaconChain) GetAllViews() map[string]ChainViewInterface {
+	return nil
+}

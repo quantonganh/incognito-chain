@@ -19,7 +19,7 @@ func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
 	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
 }
 
-func (e *BLSBFT) waitForNextRound() bool {
+func (e *BLSBFT) waitForNextTimeslot() bool {
 	timeSinceLastBlk := e.getTimeSinceLastBlock()
 	if timeSinceLastBlk >= e.Chain.GetMinBlkInterval() {
 		return false

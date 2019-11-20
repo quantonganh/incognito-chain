@@ -2,16 +2,18 @@ package blsbftv2
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+
+	// blsbftv2 "github.com/incognitochain/incognito-chain/consensus/blsbft2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
-	"time"
 )
 
 type Node struct {
-	consensusEngine *blsbft.BLSBFT
+	consensusEngine *BLSBFT
 	chain           *Chain
 }
 
@@ -24,7 +26,7 @@ func failOnError(err error) {
 func NewNode(committee []string, index int) *Node {
 	node := Node{}
 	node.chain = NewChain()
-	node.consensusEngine = &blsbft.BLSBFT{
+	node.consensusEngine = &BLSBFT{
 		Chain:    node.chain,
 		Node:     node,
 		ChainKey: "shard",
@@ -162,4 +164,39 @@ func (Chain) ValidatePreSignBlock(block common.BlockInterface) error {
 
 func (Chain) GetShardID() int {
 	return 0
+}
+
+func (Chain) GetBestViewConsensusType() string {
+	return ""
+}
+func (Chain) GetBestViewLastBlockTimeStamp() int64 {
+	return 0
+}
+func (Chain) GetBestViewMinBlkInterval() time.Duration {
+	return 0
+}
+func (Chain) GetBestViewMaxBlkCreateTime() time.Duration {
+	return 0
+}
+func (Chain) CurrentBestViewHeight() uint64 {
+	return 0
+}
+func (Chain) GetBestViewCommitteeSize() int {
+	return 0
+}
+func (Chain) GetBestViewCommittee() []incognitokey.CommitteePublicKey {
+	return nil
+}
+func (Chain) GetBestViewPubKeyCommitteeIndex(string) int {
+	return 0
+}
+func (Chain) GetBestViewLastProposerIndex() int {
+	return 0
+}
+
+func (Chain) GetBestView() blockchain.ChainViewInterface {
+	return nil
+}
+func (Chain) GetAllViews() map[string]blockchain.ChainViewInterface {
+	return nil
 }

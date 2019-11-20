@@ -11,7 +11,7 @@ const (
 	listenPhase   = "LISTEN"
 	votePhase     = "VOTE"
 	commitPhase   = "COMMIT"
-	newround      = "NEWROUND"
+	newphase      = "NEWPHASE"
 	consensusName = common.BlsConsensus
 )
 
