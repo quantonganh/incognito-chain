@@ -90,12 +90,12 @@ func (coin *Coin) SetInfo(v []byte) {
 	copy(coin.info, v)
 }
 
-func (coin Coin) GetShareSecret() *Scalar {
+func (coin Coin) GetPrivRandOTA() *Scalar {
 	return coin.privRandOTA
 }
 
-func (coin *Coin) SetShareSecret(shareSecret *Scalar) {
-	coin.privRandOTA = shareSecret
+func (coin *Coin) SetPrivRandOTA(privRandOTA *Scalar) {
+	coin.privRandOTA = privRandOTA
 }
 
 // Init (Coin) initializes a coin

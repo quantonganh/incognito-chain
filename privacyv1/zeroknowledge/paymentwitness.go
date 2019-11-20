@@ -86,16 +86,21 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 			wit.serialNumberNoPrivacyWitness = make([]*serialnumbernoprivacy.SNNoPrivacyWitness, len(inputCoins))
 			for i := 0; i < len(inputCoins); i++ {
 				/***** Build witness for proving that serial number is derived from the committed derivator *****/
-				// input from tx version 0 or tx version 1 no privacy
+
 				inputSNDTmp := new(privacyv1.Scalar)
 				snd := inputCoins[i].CoinDetails.GetSNDerivator()
-				if  snd != nil && !snd.IsZero() {
+				privRandOTA := inputCoins[i].CoinDetails.GetPrivRandOTA()
+				if snd != nil && !snd.IsZero() {
+					// input from tx version 0 or tx version 1 no privacy
 					inputSNDTmp = snd
+				} else if privRandOTA != nil && !privRandOTA.IsZero() {
+					// input from tx version 1 has privacy
+					inputSNDTmp = privRandOTA
 				}
 				if wit.serialNumberNoPrivacyWitness[i] == nil {
 					wit.serialNumberNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)
 				}
-				wit.serialNumberNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.GetSerialNumber(), publicKey, inputCoins[i].CoinDetails.GetSNDerivator(), wit.privateKey)
+				wit.serialNumberNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.GetSerialNumber(), publicKey, inputSNDTmp, wit.privateKey)
 			}
 		}
 
