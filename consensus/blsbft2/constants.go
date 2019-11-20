@@ -10,6 +10,7 @@ const (
 	proposePhase  = "PROPOSE"
 	listenPhase   = "LISTEN"
 	votePhase     = "VOTE"
+	commitPhase   = "COMMIT"
 	newround      = "NEWROUND"
 	consensusName = common.BlsConsensus
 )

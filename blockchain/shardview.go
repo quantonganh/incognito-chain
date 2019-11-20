@@ -23,7 +23,7 @@ import (
 // However, the returned snapshot must be treated as immutable since it is
 // shared by all callers.
 
-type ShardBestState struct {
+type ShardView struct {
 	BestBlockHash          common.Hash                       `json:"BestBlockHash"` // hash of block.
 	BestBlock              *ShardBlock                       `json:"BestBlock"`     // block data
 	BestBeaconHash         common.Hash                       `json:"BestBeaconHash"`
@@ -54,87 +54,68 @@ type ShardBestState struct {
 	lock              sync.RWMutex
 }
 
-var bestStateShardMap = make(map[byte]*ShardBestState)
-
-func NewShardBestState() *ShardBestState {
-	return &ShardBestState{}
+func NewShardView() *ShardView {
+	var view ShardView
+	return &view
 }
-func NewShardBestStateWithShardID(shardID byte) *ShardBestState {
-	return &ShardBestState{ShardID: shardID}
-}
-func NewBestStateShardWithConfig(shardID byte, netparam *Params) *ShardBestState {
-	bestStateShard := GetBestStateShard(shardID)
-	err := bestStateShard.BestBlockHash.SetBytes(make([]byte, 32))
+func NewShardViewWithConfig(shardID byte, netparam *Params) *ShardView {
+	var view ShardView
+	err := view.BestBlockHash.SetBytes(make([]byte, 32))
 	if err != nil {
 		panic(err)
 	}
-	err = bestStateShard.BestBeaconHash.SetBytes(make([]byte, 32))
+	err = view.BestBeaconHash.SetBytes(make([]byte, 32))
 	if err != nil {
 		panic(err)
 	}
-	bestStateShard.BestBlock = nil
-	bestStateShard.ShardCommittee = []incognitokey.CommitteePublicKey{}
-	bestStateShard.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
-	bestStateShard.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	bestStateShard.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
-	bestStateShard.ActiveShards = netparam.ActiveShards
-	bestStateShard.BestCrossShard = make(map[byte]uint64)
-	bestStateShard.StakingTx = make(map[string]string)
-	bestStateShard.ShardHeight = 1
-	bestStateShard.BeaconHeight = 1
-	bestStateShard.BlockInterval = netparam.MinShardBlockInterval
-	bestStateShard.BlockMaxCreateTime = netparam.MaxShardBlockCreation
-	return bestStateShard
-}
-
-func GetBestStateShard(shardID byte) *ShardBestState {
-	if bestStateShard, ok := bestStateShardMap[shardID]; !ok {
-		bestStateShardMap[shardID] = &ShardBestState{}
-		bestStateShardMap[shardID].ShardID = shardID
-		return bestStateShardMap[shardID]
-	} else {
-		return bestStateShard
-	}
-}
-
-func SetBestStateShard(shardID byte, beststateShard *ShardBestState) {
-	beststateShard.lock = GetBestStateShard(shardID).lock
-	*GetBestStateShard(shardID) = *beststateShard
+	view.BestBlock = nil
+	view.ShardCommittee = []incognitokey.CommitteePublicKey{}
+	view.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
+	view.MinShardCommitteeSize = netparam.MinShardCommitteeSize
+	view.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
+	view.ActiveShards = netparam.ActiveShards
+	view.BestCrossShard = make(map[byte]uint64)
+	view.StakingTx = make(map[string]string)
+	view.ShardHeight = 1
+	view.BeaconHeight = 1
+	view.BlockInterval = netparam.MinShardBlockInterval
+	view.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	return &view
 }
 
 // Get role of a public key base on best state shard
-func (shardBestState *ShardBestState) GetBytes() []byte {
+func (view *ShardView) GetBytes() []byte {
 	res := []byte{}
-	res = append(res, shardBestState.BestBlockHash.GetBytes()...)
-	res = append(res, shardBestState.BestBlock.Hash().GetBytes()...)
-	res = append(res, shardBestState.BestBeaconHash.GetBytes()...)
+	res = append(res, view.BestBlockHash.GetBytes()...)
+	res = append(res, view.BestBlock.Hash().GetBytes()...)
+	res = append(res, view.BestBeaconHash.GetBytes()...)
 	beaconHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(beaconHeightBytes, shardBestState.BeaconHeight)
+	binary.LittleEndian.PutUint64(beaconHeightBytes, view.BeaconHeight)
 	res = append(res, beaconHeightBytes...)
-	res = append(res, shardBestState.ShardID)
+	res = append(res, view.ShardID)
 	epochBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(epochBytes, shardBestState.Epoch)
+	binary.LittleEndian.PutUint64(epochBytes, view.Epoch)
 	res = append(res, epochBytes...)
 	shardHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(shardHeightBytes, shardBestState.ShardHeight)
+	binary.LittleEndian.PutUint64(shardHeightBytes, view.ShardHeight)
 	res = append(res, shardHeightBytes...)
 	shardCommitteeSizeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(shardBestState.MaxShardCommitteeSize))
+	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(view.MaxShardCommitteeSize))
 	res = append(res, shardCommitteeSizeBytes...)
 	minShardCommitteeSizeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(minShardCommitteeSizeBytes, uint32(shardBestState.MinShardCommitteeSize))
+	binary.LittleEndian.PutUint32(minShardCommitteeSizeBytes, uint32(view.MinShardCommitteeSize))
 	res = append(res, minShardCommitteeSizeBytes...)
 	proposerIdxBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(shardBestState.ShardProposerIdx))
+	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(view.ShardProposerIdx))
 	res = append(res, proposerIdxBytes...)
-	for _, value := range shardBestState.ShardCommittee {
+	for _, value := range view.ShardCommittee {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
 		}
 		res = append(res, valueBytes...)
 	}
-	for _, value := range shardBestState.ShardPendingValidator {
+	for _, value := range view.ShardPendingValidator {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
@@ -142,80 +123,80 @@ func (shardBestState *ShardBestState) GetBytes() []byte {
 		res = append(res, valueBytes...)
 	}
 	keys := []int{}
-	for k := range shardBestState.BestCrossShard {
+	for k := range view.BestCrossShard {
 		keys = append(keys, int(k))
 	}
 	sort.Ints(keys)
 	for _, shardID := range keys {
-		value := shardBestState.BestCrossShard[byte(shardID)]
+		value := view.BestCrossShard[byte(shardID)]
 		valueBytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(valueBytes, value)
 		res = append(res, valueBytes...)
 	}
 	keystr := []string{}
-	for _, k := range shardBestState.StakingTx {
+	for _, k := range view.StakingTx {
 		keystr = append(keystr, k)
 	}
 	sort.Strings(keystr)
 	for _, key := range keystr {
-		value := shardBestState.StakingTx[key]
+		value := view.StakingTx[key]
 		res = append(res, []byte(key)...)
 		res = append(res, []byte(value)...)
 	}
 	numTxnsBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(numTxnsBytes, shardBestState.NumTxns)
+	binary.LittleEndian.PutUint64(numTxnsBytes, view.NumTxns)
 	res = append(res, numTxnsBytes...)
 	totalTxnsBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(totalTxnsBytes, shardBestState.TotalTxns)
+	binary.LittleEndian.PutUint64(totalTxnsBytes, view.TotalTxns)
 	res = append(res, totalTxnsBytes...)
 	activeShardsBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(activeShardsBytes, uint32(shardBestState.ActiveShards))
+	binary.LittleEndian.PutUint32(activeShardsBytes, uint32(view.ActiveShards))
 	res = append(res, activeShardsBytes...)
 	return res
 }
 
-func (shardBestState *ShardBestState) Hash() common.Hash {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
-	return common.HashH(shardBestState.GetBytes())
+func (view *ShardView) Hash() common.Hash {
+	view.lock.RLock()
+	defer view.lock.RUnlock()
+	return common.HashH(view.GetBytes())
 }
 
-func (shardBestState *ShardBestState) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
+func (view *ShardView) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
+	view.lock.Lock()
+	defer view.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if maxShardCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// max committee size can't be lower than current min committee size
-	if maxShardCommitteeSize >= shardBestState.MinShardCommitteeSize {
-		shardBestState.MaxShardCommitteeSize = maxShardCommitteeSize
+	if maxShardCommitteeSize >= view.MinShardCommitteeSize {
+		view.MaxShardCommitteeSize = maxShardCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (shardBestState *ShardBestState) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
-	shardBestState.lock.Lock()
-	defer shardBestState.lock.Unlock()
+func (view *ShardView) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
+	view.lock.Lock()
+	defer view.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
 	if minShardCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// min committee size can't be greater than current min committee size
-	if minShardCommitteeSize <= shardBestState.MaxShardCommitteeSize {
-		shardBestState.MinShardCommitteeSize = minShardCommitteeSize
+	if minShardCommitteeSize <= view.MaxShardCommitteeSize {
+		view.MinShardCommitteeSize = minShardCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) string {
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardCommittee, shardBestState.ConsensusAlgorithm)
+func (view *ShardView) GetPubkeyRole(pubkey string, round int) string {
+	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.ShardCommittee, view.ConsensusAlgorithm)
 	// fmt.Printf("pubkey %v key list %v\n\n\n\n", pubkey, keyList)
 	found := common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
-		tmpID := (shardBestState.ShardProposerIdx + round) % len(keyList)
+		tmpID := (view.ShardProposerIdx + round) % len(keyList)
 		if found == tmpID {
 			return common.ProposerRole
 		} else {
@@ -223,7 +204,7 @@ func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) st
 		}
 	}
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(shardBestState.ShardPendingValidator, shardBestState.ConsensusAlgorithm)
+	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(view.ShardPendingValidator, view.ConsensusAlgorithm)
 	found = common.IndexOfStr(pubkey, keyList)
 	if found > -1 {
 		return common.PendingRole
@@ -231,13 +212,13 @@ func (shardBestState *ShardBestState) GetPubkeyRole(pubkey string, round int) st
 	return common.EmptyString
 }
 
-func (shardBestState *ShardBestState) MarshalJSON() ([]byte, error) {
+func (view *ShardView) MarshalJSON() ([]byte, error) {
 	//TODO: Add Mutex Lock Later
-	type Alias ShardBestState
+	type Alias ShardView
 	b, err := json.Marshal(&struct {
 		*Alias
 	}{
-		(*Alias)(shardBestState),
+		(*Alias)(view),
 	})
 	if err != nil {
 		Logger.log.Error(err)
@@ -245,33 +226,33 @@ func (shardBestState *ShardBestState) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
-func (shardBestState ShardBestState) GetShardHeight() uint64 {
-	return shardBestState.ShardHeight
+func (view ShardView) GetShardHeight() uint64 {
+	return view.ShardHeight
 }
 
-func (shardBestState ShardBestState) GetBeaconHeight() uint64 {
-	return shardBestState.BeaconHeight
+func (view ShardView) GetBeaconHeight() uint64 {
+	return view.BeaconHeight
 }
 
-func (shardBestState *ShardBestState) cloneShardBestStateFrom(target *ShardBestState) error {
+func (view *ShardView) cloneShardViewFrom(target *ShardView) error {
 	tempMarshal, err := json.Marshal(target)
 	if err != nil {
 		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.ShardHeight, err))
 	}
-	err = json.Unmarshal(tempMarshal, shardBestState)
+	err = json.Unmarshal(tempMarshal, view)
 	if err != nil {
 		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.ShardHeight, err))
 	}
-	if reflect.DeepEqual(*shardBestState, ShardBestState{}) {
+	if reflect.DeepEqual(*view, ShardView{}) {
 		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
 	}
 	return nil
 }
-func (shardBestState *ShardBestState) GetStakingTx() map[string]string {
-	shardBestState.lock.RLock()
-	defer shardBestState.lock.RUnlock()
+func (view *ShardView) GetStakingTx() map[string]string {
+	view.lock.RLock()
+	defer view.lock.RUnlock()
 	m := make(map[string]string)
-	for k, v := range shardBestState.StakingTx {
+	for k, v := range view.StakingTx {
 		m[k] = v
 	}
 	return m

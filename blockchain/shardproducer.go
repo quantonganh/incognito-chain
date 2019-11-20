@@ -51,8 +51,8 @@ import (
 		c. Process Assign Instructions from Beacon Blocks
 		c. Generate Instructions
 	3. Build Shard Block Essential Data for Header
-	4. Update Cloned ShardBestState with New Shard Block
-	5. Create Root Hash from New Shard Block and updated Clone Shard Beststate Data
+	4. Update Cloned ShardView with New Shard Block
+	5. Create Root Hash from New Shard Block and updated Clone Shard BestView Data
 */
 func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, crossShards map[byte]uint64, beaconHeight uint64, start time.Time) (*ShardBlock, error) {
 	var (
@@ -62,36 +62,36 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		instructions            = [][]string{}
 		//stakingTx               = make(map[string]string)
 		tempPrivateKey = blockGenerator.createTempKeyset()
-		shardBestState = NewShardBestState()
+		shardView      = NewShardView()
 	)
-	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
+	Logger.log.Criticalf("⛏ Creating Shard Block %+v", blockGenerator.chain.BestView.Shard[shardID].ShardHeight+1)
 	// startTime := time.Now()
-	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardPendingValidator)
+	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestView.Shard[shardID].ShardPendingValidator)
 	if err != nil {
 		return nil, err
 	}
-	currentCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee)
+	currentCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(blockGenerator.chain.BestView.Shard[shardID].ShardCommittee)
 	if err != nil {
 		return nil, err
 	}
 	//========Verify newShardBlock with previous best state
-	// Get Beststate of previous newShardBlock == previous best state
+	// Get BestView of previous newShardBlock == previous best state
 	// Clone best state value into new variable
 	// // startStep := time.Now()
-	if err := shardBestState.cloneShardBestStateFrom(blockGenerator.chain.BestState.Shard[shardID]); err != nil {
+	if err := shardView.cloneShardViewFrom(blockGenerator.chain.BestView.Shard[shardID]); err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.CloneShardBestStateStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.CloneShardViewStep),
 	// })
 	//==========Fetch Beacon Blocks============
 	// // startStep = time.Now()
-	BLogger.log.Infof("Producing block: %d", blockGenerator.chain.BestState.Shard[shardID].ShardHeight+1)
-	if beaconHeight-shardBestState.BeaconHeight > MAX_BEACON_BLOCK {
-		beaconHeight = shardBestState.BeaconHeight + MAX_BEACON_BLOCK
+	BLogger.log.Infof("Producing block: %d", blockGenerator.chain.BestView.Shard[shardID].ShardHeight+1)
+	if beaconHeight-shardView.BeaconHeight > MAX_BEACON_BLOCK {
+		beaconHeight = shardView.BeaconHeight + MAX_BEACON_BLOCK
 	}
 	beaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 	if err != nil {
@@ -107,46 +107,46 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 		return nil, err
 	}
 	epoch := beaconBlock.Header.Epoch
-	if epoch-shardBestState.Epoch >= 1 {
-		beaconHeight = shardBestState.Epoch * blockGenerator.chain.config.ChainParams.Epoch
+	if epoch-shardView.Epoch >= 1 {
+		beaconHeight = shardView.Epoch * blockGenerator.chain.config.ChainParams.Epoch
 		newBeaconHash, err := blockGenerator.chain.config.DataBase.GetBeaconBlockHashByIndex(beaconHeight)
 		if err != nil {
 			return nil, err
 		}
 		copy(beaconHash[:], newBeaconHash.GetBytes())
-		epoch = shardBestState.Epoch + 1
+		epoch = shardView.Epoch + 1
 	}
-	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestState %+v", beaconHeight, shardBestState.BeaconHeight)
+	Logger.log.Infof("Get Beacon Block With Height %+v, Shard BestView %+v", beaconHeight, shardView.BeaconHeight)
 	//Fetch beacon block from height
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.config.DataBase, shardBestState.BeaconHeight+1, beaconHeight)
+	beaconBlocks, err := FetchBeaconBlockFromHeight(blockGenerator.chain.config.DataBase, shardView.BeaconHeight+1, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.FetchBeaconBlockStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.FetchBeaconBlockStep),
 	// })
 	//==========Build block body============
 	// Get Transaction For new Block
 	// Get Cross output coin from other shard && produce cross shard transaction
 	// // startStep = time.Now()
-	crossTransactions, crossTxTokenData := blockGenerator.getCrossShardData(shardID, shardBestState.BeaconHeight, beaconHeight, crossShards)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GetCrossShardDataStep),
+	crossTransactions, crossTxTokenData := blockGenerator.getCrossShardData(shardID, shardView.BeaconHeight, beaconHeight, crossShards)
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.GetCrossShardDataStep),
 	// })
 	// Create Cross Token Transaction
 	// // startStep = time.Now()
 	crossTxTokenTransactions, _, err := blockGenerator.chain.createNormalTokenTxForCrossShard(&tempPrivateKey, crossTxTokenData, shardID)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.CreateNormalTokenTxFromCrossShardStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.CreateNormalTokenTxFromCrossShardStep),
 	// })
 	if err != nil {
 		return nil, err
@@ -154,26 +154,26 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	transactionsForNewBlock = append(transactionsForNewBlock, crossTxTokenTransactions...)
 	// Get Transaction for new block
 	// // startStep = time.Now()
-	blockCreationLeftOver := blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
+	blockCreationLeftOver := blockGenerator.chain.BestView.Shard[shardID].BlockMaxCreateTime.Nanoseconds() - time.Since(start).Nanoseconds()
 	txsToAddFromBlock, err := blockGenerator.getTransactionForNewBlock(&tempPrivateKey, shardID, blockGenerator.chain.config.DataBase, beaconBlocks, blockCreationLeftOver, beaconHeight)
 	if err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GetTransactionForNewBlockStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.GetTransactionForNewBlockStep),
 	// })
 	transactionsForNewBlock = append(transactionsForNewBlock, txsToAddFromBlock...)
 	// build txs with metadata
 	// // startStep = time.Now()
 	txsWithMetadata, err := blockGenerator.chain.BuildResponseTransactionFromTxsWithMetadata(transactionsForNewBlock, &tempPrivateKey)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.BuildResponseTransactionFromTxsWithMetadataStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.BuildResponseTransactionFromTxsWithMetadataStep),
 	// })
 	if err != nil {
 		return nil, err
@@ -182,20 +182,20 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	// process instruction from beacon
 	// startStep = time.Now()
 	shardPendingValidator, _ = blockGenerator.chain.processInstructionFromBeacon(beaconBlocks, shardID)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.ProcessInstructionFromBeaconStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.ProcessInstructionFromBeaconStep),
 	// })
 	// Create Instruction
 	// startStep = time.Now()
 	instructions, _, _, err = blockGenerator.chain.generateInstruction(shardID, beaconHeight, beaconBlocks, shardPendingValidator, currentCommitteePubKeys)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.GenerateInstructionStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.GenerateInstructionStep),
 	// })
 	if err != nil {
 		return nil, NewBlockChainError(GenerateInstructionError, err)
@@ -207,16 +207,16 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	//==========Build Essential Header Data=========
 	// startStep = time.Now()
 	// producer key
-	producerPosition := (blockGenerator.chain.BestState.Shard[shardID].ShardProposerIdx + round) % len(currentCommitteePubKeys)
-	// committeeMiningKeys, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(blockGenerator.chain.BestState.Shard[shardID].ShardCommittee, common.BridgeConsensus)
+	producerPosition := (blockGenerator.chain.BestView.Shard[shardID].ShardProposerIdx + round) % len(currentCommitteePubKeys)
+	// committeeMiningKeys, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(blockGenerator.chain.BestView.Shard[shardID].ShardCommittee, common.BridgeConsensus)
 	// if err != nil {
 	// 	return nil, NewBlockChainError(ExtractPublicKeyFromCommitteeKeyListError, fmt.Errorf("Failed to extract key of producer in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
 	// }
-	producerKey, err := blockGenerator.chain.BestState.Shard[shardID].ShardCommittee[producerPosition].ToBase58()
+	producerKey, err := blockGenerator.chain.BestView.Shard[shardID].ShardCommittee[producerPosition].ToBase58()
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
-	producerPubKeyStr, err := blockGenerator.chain.BestState.Shard[shardID].ShardCommittee[producerPosition].ToBase58()
+	producerPubKeyStr, err := blockGenerator.chain.BestView.Shard[shardID].ShardCommittee[producerPosition].ToBase58()
 	if err != nil {
 		return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, fmt.Errorf("Failed to convert pub key of producer to base58 string in shard block %+v of shardID %+v", newShardBlock.Header.Height, newShardBlock.Header.ShardID))
 	}
@@ -234,32 +234,32 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 
 		ShardID:           shardID,
 		Version:           SHARD_BLOCK_VERSION,
-		PreviousBlockHash: shardBestState.BestBlockHash,
-		Height:            shardBestState.ShardHeight + 1,
+		PreviousBlockHash: shardView.BestBlockHash,
+		Height:            shardView.ShardHeight + 1,
 		Round:             round,
 		Epoch:             epoch,
 		CrossShardBitMap:  CreateCrossShardByteArray(newShardBlock.Body.Transactions, shardID),
 		BeaconHeight:      beaconHeight,
 		BeaconHash:        beaconHash,
 		TotalTxsFee:       totalTxsFee,
-		ConsensusType:     blockGenerator.chain.BestState.Shard[shardID].ConsensusAlgorithm,
+		ConsensusType:     blockGenerator.chain.BestView.Shard[shardID].ConsensusAlgorithm,
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.BuildShardBlockHeaderEssentialStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.BuildShardBlockHeaderEssentialStep),
 	// })
-	//============Update Shard BestState=============
+	//============Update Shard BestView=============
 	// startStep = time.Now()
-	if err := shardBestState.updateShardBestState(blockGenerator.chain, newShardBlock, beaconBlocks); err != nil {
+	if err := shardView.updateShardView(blockGenerator.chain, newShardBlock, beaconBlocks); err != nil {
 		return nil, err
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.UpdateShardBestStateStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.UpdateShardViewStep),
 	// })
 	//============Build Header=============
 	// startStep = time.Now()
@@ -288,7 +288,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(InstructionsHashError, err)
 	}
-	tempShardCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardCommittee)
+	tempShardCommitteePubKeys, err := incognitokey.CommitteeKeyListToString(shardView.ShardCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
@@ -296,7 +296,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(CommitteeHashError, err)
 	}
-	tempShardPendintValidator, err := incognitokey.CommitteeKeyListToString(shardBestState.ShardPendingValidator)
+	tempShardPendintValidator, err := incognitokey.CommitteeKeyListToString(shardView.ShardPendingValidator)
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
@@ -304,7 +304,7 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	if err != nil {
 		return nil, NewBlockChainError(PendingValidatorRootError, err)
 	}
-	stakingTxRoot, err := generateHashFromMapStringString(shardBestState.StakingTx)
+	stakingTxRoot, err := generateHashFromMapStringString(shardView.StakingTx)
 	if err != nil {
 		return nil, NewBlockChainError(StakingTxHashError, err)
 	}
@@ -331,17 +331,17 @@ func (blockGenerator *BlockGenerator) NewBlockShard(shardID byte, round int, cro
 	newShardBlock.Header.StakingTxRoot = stakingTxRoot
 	newShardBlock.Header.Timestamp = start.Unix()
 	copy(newShardBlock.Header.InstructionMerkleRoot[:], instMerkleRoot)
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.BuildHeaderRootHashStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(// startStep).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.BuildHeaderRootHashStep),
 	// })
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.CreateNewShardBlock,
-	// 	metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
-	// 	metrics.Tag:              metrics.NewShardBlockProcessingStep,
-	// 	metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, metrics.FullProcessingStep),
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.CreateNewShardBlock,
+	// 	// metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+	// 	// metrics.Tag:              // metrics.NewShardBlockProcessingStep,
+	// 	// metrics.TagValue:         fmt.Sprintf("%d-%+v", shardID, // metrics.FullProcessingStep),
 	// })
 	return newShardBlock, nil
 }
@@ -512,7 +512,7 @@ func (blockGenerator *BlockGenerator) buildResponseTxsFromBeaconInstructions(bea
 	+ ["stake", "pubkey1,pubkey2,..." "beacon" "txStake1,txStake2,..." "rewardReceiver1,rewardReceiver2,..." flag]
 */
 func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*BeaconBlock, shardID byte) ([]string, map[string]string) {
-	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockchain.BestState.Shard[shardID].ShardPendingValidator)
+	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(blockchain.BestView.Shard[shardID].ShardPendingValidator)
 	if err != nil {
 		panic(err)
 	}
@@ -546,7 +546,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if txShardID != shardID {
 							continue
 						}
-						// if transaction belong to this shard then add to shard beststate
+						// if transaction belong to this shard then add to shard bestView
 						stakingTx[newBeaconCandidates[i]] = v
 					}
 				}
@@ -568,7 +568,7 @@ func (blockchain *BlockChain) processInstructionFromBeacon(beaconBlocks []*Beaco
 						if txShardID != shardID {
 							continue
 						}
-						// if transaction belong to this shard then add to shard beststate
+						// if transaction belong to this shard then add to shard bestView
 						stakingTx[newShardCandidates[i]] = v
 					}
 				}
@@ -599,7 +599,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		// if len(shardPendingValidator) > 0 {
 		Logger.log.Info("ShardPendingValidator", shardPendingValidator)
 		Logger.log.Info("ShardCommittee", shardCommittee)
-		Logger.log.Info("MaxShardCommitteeSize", blockchain.BestState.Shard[shardID].MaxShardCommitteeSize)
+		Logger.log.Info("MaxShardCommitteeSize", blockchain.BestView.Shard[shardID].MaxShardCommitteeSize)
 		Logger.log.Info("ShardID", shardID)
 
 		producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, beaconHeight)
@@ -608,8 +608,8 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 			return instructions, shardPendingValidator, shardCommittee, err
 		}
 
-		maxShardCommitteeSize := blockchain.BestState.Shard[shardID].MaxShardCommitteeSize
-		minShardCommitteeSize := blockchain.BestState.Shard[shardID].MinShardCommitteeSize
+		maxShardCommitteeSize := blockchain.BestView.Shard[shardID].MaxShardCommitteeSize
+		minShardCommitteeSize := blockchain.BestView.Shard[shardID].MinShardCommitteeSize
 		badProducersWithPunishment := blockchain.buildBadProducersWithPunishment(false, int(shardID), shardCommittee)
 		swapInstruction, shardPendingValidator, shardCommittee, err = CreateSwapAction(shardPendingValidator, shardCommittee, maxShardCommitteeSize, minShardCommitteeSize, shardID, producersBlackList, badProducersWithPunishment, blockchain.config.ChainParams.Offset, blockchain.config.ChainParams.SwapOffset)
 		if err != nil {
@@ -619,7 +619,7 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 		// Generate instruction storing merkle root of validators pubkey and send to beacon
 		bridgeID := byte(common.BridgeShardID)
 		if shardID == bridgeID {
-			blockHeight := blockchain.BestState.Shard[shardID].ShardHeight + 1
+			blockHeight := blockchain.BestView.Shard[shardID].ShardHeight + 1
 			bridgeSwapConfirmInst, err = buildBridgeSwapConfirmInstruction(shardCommittee, blockHeight)
 			if err != nil {
 				BLogger.log.Error(err)
@@ -639,8 +639,8 @@ func (blockchain *BlockChain) generateInstruction(shardID byte, beaconHeight uin
 	// Pick BurningConfirm inst and save to bridge block
 	bridgeID := byte(common.BridgeShardID)
 	if shardID == bridgeID {
-		prevBlock := blockchain.BestState.Shard[shardID].BestBlock
-		height := blockchain.BestState.Shard[shardID].ShardHeight + 1
+		prevBlock := blockchain.BestView.Shard[shardID].BestBlock
+		height := blockchain.BestView.Shard[shardID].ShardHeight + 1
 		confirmInsts := pickBurningConfirmInstruction(beaconBlocks, height)
 		if len(confirmInsts) > 0 {
 			bid := []uint64{}
@@ -682,7 +682,7 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 			return crossShardBlock[i].Header.Height < crossShardBlock[j].Header.Height
 		})
 		indexs := []int{}
-		startHeight := blockGenerator.chain.BestState.Shard[toShard].BestCrossShard[fromShard]
+		startHeight := blockGenerator.chain.BestView.Shard[toShard].BestCrossShard[fromShard]
 		for index, crossShardBlock := range crossShardBlock {
 			if crossShardBlock.Header.Height <= startHeight {
 				break
@@ -755,7 +755,7 @@ func (blockGenerator *BlockGenerator) getPendingTransaction(
 ) (txsToAdd []metadata.Transaction, txToRemove []metadata.Transaction, totalFee uint64) {
 	startTime := time.Now()
 	sourceTxns := blockGenerator.GetPendingTxsV2()
-	txsProcessTimeInBlockCreation := int64(blockGenerator.chain.BestState.Shard[shardID].BlockMaxCreateTime.Nanoseconds())
+	txsProcessTimeInBlockCreation := int64(blockGenerator.chain.BestView.Shard[shardID].BlockMaxCreateTime.Nanoseconds())
 	var elasped int64
 	Logger.log.Info("Number of transaction get from Block Generator: ", len(sourceTxns))
 	isEmpty := blockGenerator.chain.config.TempTxPool.EmptyPool()

@@ -16,7 +16,8 @@ const (
 )
 
 type BFTPropose struct {
-	Block json.RawMessage
+	ProposerVote vote
+	Block        json.RawMessage
 }
 
 type BFTVote struct {

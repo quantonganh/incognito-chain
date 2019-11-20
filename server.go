@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
+
 	peer2 "github.com/libp2p/go-libp2p-core/peer"
+
 	//"github.com/incognitochain/incognito-chain/metrics"
 	"io/ioutil"
 	"log"
@@ -303,7 +304,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	if cfg.FastStartup {
 		Logger.log.Debug("Load chain dependencies from DB")
 		serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-		for shardID, bestState := range serverObj.blockChain.BestState.Shard {
+		for shardID, bestState := range serverObj.blockChain.BestView.Shard {
 			_ = bestState
 			feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
 			if err == nil && len(feeEstimatorData) > 0 {
@@ -502,8 +503,8 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 
 	//Init Metric Tool
 	//if cfg.MetricUrl != "" {
-	//	grafana := metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
-	//	metrics.InitMetricTool(&grafana)
+	//	grafana := // metrics.NewGrafana(cfg.MetricUrl, cfg.ExternalAddress)
+	//	// metrics.InitMetricTool(&grafana)
 	//}
 	return nil
 }
@@ -686,11 +687,11 @@ func (serverObj Server) Start() {
 		go serverObj.memPool.MonitorPool()
 	}
 	go serverObj.pusubManager.Start()
-	// go metrics.StartSystemMetrics()
+	// go // metrics.StartSystemMetrics()
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {
-	return serverObj.blockChain.BestState.Beacon.ActiveShards
+	return serverObj.blockChain.BestView.Beacon.ActiveShards
 }
 
 // func (serverObj *Server) GetNodePubKey() string {
@@ -1186,7 +1187,8 @@ func (serverObj *Server) OnBFTMsg(p *peer.PeerConn, msg wire.Message) {
 		// fmt.Println("eiiiiiiiiiiiii")
 		// os.Exit(0)
 		//TODO hy check here
-		bestState := blockchain.GetBeaconBestState()
+
+		bestState := serverObj.blockChain.BestView.Beacon
 		beaconCommitteeList, err := incognitokey.CommitteeKeyListToString(bestState.BeaconCommittee)
 		if err != nil {
 			panic(err)
@@ -1717,17 +1719,17 @@ func (serverObj *Server) BoardcastNodeState() error {
 		return err
 	}
 	msg.(*wire.MessagePeerState).Beacon = blockchain.ChainState{
-		serverObj.blockChain.BestState.Beacon.BestBlock.Header.Timestamp,
-		serverObj.blockChain.BestState.Beacon.BeaconHeight,
-		serverObj.blockChain.BestState.Beacon.BestBlockHash,
-		serverObj.blockChain.BestState.Beacon.Hash(),
+		serverObj.blockChain.BestView.Beacon.BestBlock.Header.Timestamp,
+		serverObj.blockChain.BestView.Beacon.BeaconHeight,
+		serverObj.blockChain.BestView.Beacon.BestBlockHash,
+		serverObj.blockChain.BestView.Beacon.Hash(),
 	}
 	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Timestamp,
-			serverObj.blockChain.BestState.Shard[shardID].ShardHeight,
-			serverObj.blockChain.BestState.Shard[shardID].BestBlockHash,
-			serverObj.blockChain.BestState.Shard[shardID].Hash(),
+			serverObj.blockChain.BestView.Shard[shardID].BestBlock.Header.Timestamp,
+			serverObj.blockChain.BestView.Shard[shardID].ShardHeight,
+			serverObj.blockChain.BestView.Shard[shardID].BestBlockHash,
+			serverObj.blockChain.BestView.Shard[shardID].Hash(),
 		}
 	}
 	msg.(*wire.MessagePeerState).ShardToBeaconPool = serverObj.shardToBeaconPool.GetValidBlockHeight()
@@ -1742,10 +1744,10 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	if userKey != "" {
-		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
-		userRole, shardID := serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
+		// metrics.SetGlobalParam("MINING_PUBKEY", userKey)
+		userRole, shardID := serverObj.blockChain.BestView.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestView.Beacon.BestBlock.Header.Round)
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.NodeModeShard {
-			userRole = serverObj.blockChain.BestState.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestState.Shard[shardID].BestBlock.Header.Round)
+			userRole = serverObj.blockChain.BestView.Shard[shardID].GetPubkeyRole(userKey, serverObj.blockChain.BestView.Shard[shardID].BestBlock.Header.Round)
 			if userRole == "shard-proposer" || userRole == "shard-validator" {
 				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
 			}
@@ -1876,7 +1878,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
 		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
 
-		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.BestState.Beacon.ActiveShards)
+		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.BestView.Beacon.ActiveShards)
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {
@@ -1891,8 +1893,8 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 }
 
 func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int, int) {
-	var beaconBestState blockchain.BeaconBestState
-	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	var beaconBestState blockchain.BeaconView
+	err := beaconBestState.CloneBeaconViewFrom(serverObj.blockChain.BestView.Beacon)
 	if err != nil {
 		return -2, -1
 	}
@@ -1951,8 +1953,8 @@ func (serverObj *Server) GetPublicKeyRole(publicKey string, keyType string) (int
 }
 
 func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool, int) {
-	var beaconBestState blockchain.BeaconBestState
-	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	var beaconBestState blockchain.BeaconView
+	err := beaconBestState.CloneBeaconViewFrom(serverObj.blockChain.BestView.Beacon)
 	if err != nil {
 		return -2, false, -1
 	}
@@ -2011,8 +2013,8 @@ func (serverObj *Server) GetIncognitoPublicKeyRole(publicKey string) (int, bool,
 }
 
 func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType string) []byte {
-	var beaconBestState blockchain.BeaconBestState
-	err := beaconBestState.CloneBeaconBestStateFrom(serverObj.blockChain.BestState.Beacon)
+	var beaconBestState blockchain.BeaconView
+	err := beaconBestState.CloneBeaconViewFrom(serverObj.blockChain.BestView.Beacon)
 	if err != nil {
 		return nil
 	}

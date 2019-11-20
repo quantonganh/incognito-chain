@@ -3,7 +3,6 @@ package consensus
 import (
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"strconv"
 	"strings"
 	"sync"
@@ -114,7 +113,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				if common.IndexOfStr(publickey.GetMiningKeyBase58(consensusType), committee) != -1 {
 					engine.CurrentMiningChain = chainName
 					shardID := getShardFromChainName(chainName)
-					if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+					if engine.config.Blockchain.BestView.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestView.Beacon.GetBestHeightOfShard(shardID) {
 						role, shardID := engine.config.Blockchain.Chains[chainName].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
 						if role == common.ProposerRole || role == common.ValidatorRole {
 							engine.updateUserState(&publickey, common.ShardRole, common.CommitteeRole, shardID)
@@ -182,7 +181,7 @@ func (engine *Engine) watchConsensusCommittee() {
 								shardID = getShardFromChainName(chainname)
 								userLayer = common.ShardRole
 								//member still in shard committee on beacon beststate but not on shard beststate
-								if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+								if engine.config.Blockchain.BestView.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestView.Beacon.GetBestHeightOfShard(shardID) {
 									role, _ := engine.config.Blockchain.Chains[chainname].GetPubkeyRole(userCurrentPublicKey, 0)
 									if role == common.EmptyString {
 										isSkip = true
@@ -202,7 +201,7 @@ func (engine *Engine) watchConsensusCommittee() {
 						} else {
 							if chainname == engine.CurrentMiningChain && chainname != common.BeaconChainKey {
 								shardID := getShardFromChainName(chainname)
-								if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+								if engine.config.Blockchain.BestView.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestView.Beacon.GetBestHeightOfShard(shardID) {
 									role, _ := engine.config.Blockchain.Chains[chainname].GetPubkeyRole(userCurrentPublicKey, 0)
 									if role == common.ValidatorRole || role == common.ProposerRole {
 										isSkip = true
@@ -271,7 +270,7 @@ func (engine *Engine) watchConsensusCommittee() {
 				} else {
 					if engine.CurrentMiningChain == chainName {
 						shardID := getShardFromChainName(chainName)
-						if engine.config.Blockchain.BestState.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestState.Beacon.GetBestHeightOfShard(shardID) {
+						if engine.config.Blockchain.BestView.Shard[shardID].GetShardHeight() > engine.config.Blockchain.BestView.Beacon.GetBestHeightOfShard(shardID) {
 							engine.CurrentMiningChain = common.EmptyString
 							engine.updateUserState(&userMiningKey, common.EmptyString, common.EmptyString, 0)
 						}
@@ -455,7 +454,7 @@ func (engine *Engine) updateConsensusState() {
 		go engine.NotifyBeaconRole(false)
 		go engine.NotifyShardRole(int(getShardFromChainName(engine.CurrentMiningChain)))
 	}
-	publicKey, err := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm)
+	publicKey, err := engine.GetMiningPublicKeyByConsensus(engine.config.Blockchain.BestView.Beacon.ConsensusAlgorithm)
 	if err != nil {
 		Logger.log.Error(err)
 		return
@@ -511,14 +510,14 @@ func (engine *Engine) updateUserState(keySet *incognitokey.CommitteePublicKey, l
 	}
 
 	if role == "" {
-		metrics.SetGlobalParam("Layer", "", "Role", "", "ShardID", -2)
+		// metrics.SetGlobalParam("Layer", "", "Role", "", "ShardID", -2)
 		engine.userCurrentState.UserLayer = ""
 		engine.userCurrentState.UserRole = ""
 		engine.userCurrentState.ShardID = 0
 		engine.userCurrentState.Keys = nil
 		engine.userCurrentState.KeysBase58 = make(map[string]string)
 	} else {
-		metrics.SetGlobalParam("Layer", layer, "Role", role, "ShardID", shardID)
+		// metrics.SetGlobalParam("Layer", layer, "Role", role, "ShardID", shardID)
 		engine.userCurrentState.ShardID = shardID
 		engine.userCurrentState.UserLayer = layer
 		engine.userCurrentState.UserRole = role

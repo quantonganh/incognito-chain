@@ -43,10 +43,10 @@ type GetBeaconBestStateDetail struct {
 	ShardHandle         map[byte]bool            `json:"ShardHandle"` // lock sync.RWMutex
 }
 
-func NewGetBeaconBestStateDetail(data *blockchain.BeaconBestState) *GetBeaconBestStateDetail {
+func NewGetBeaconBestStateDetail(data *blockchain.BeaconView) *GetBeaconBestStateDetail {
 	result := &GetBeaconBestStateDetail{
-		BestBlockHash:          data.BestBlockHash,
-		PreviousBestBlockHash:  data.PreviousBestBlockHash,
+		BestBlockHash:         data.BestBlockHash,
+		PreviousBestBlockHash: data.PreviousBestBlockHash,
 		Epoch:                  data.Epoch,
 		BeaconHeight:           data.BeaconHeight,
 		BeaconProposerIndex:    data.BeaconProposerIndex,

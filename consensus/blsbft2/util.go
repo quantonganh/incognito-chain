@@ -2,7 +2,6 @@ package blsbftv2
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"reflect"
 	"strconv"
 	"strings"
@@ -89,7 +88,7 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 			delete(e.EarlyVotes, roundKey)
 		}
 	}
-	metrics.SetGlobalParam("NVote", len(e.RoundData.Votes))
+	// metrics.SetGlobalParam("NVote", len(e.RoundData.Votes))
 	if len(e.RoundData.Votes) > 2*committeeSize/3 {
 		return true
 	}

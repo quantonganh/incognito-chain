@@ -1,13 +1,8 @@
 package jsonresult
 
 import (
-	"fmt"
-
 	"github.com/incognitochain/incognito-chain/addrmanager"
-	"github.com/incognitochain/incognito-chain/blockchain"
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/connmanager"
-	"github.com/incognitochain/incognito-chain/incognitokey"
 )
 
 type GetAllPeersResult struct {
@@ -33,36 +28,36 @@ type GetAllConnectedPeersResult struct {
 
 func NewGetAllConnectedPeersResult(connMgr connmanager.ConnManager) *GetAllConnectedPeersResult {
 	result := &GetAllConnectedPeersResult{}
-	peersMap := []map[string]string{}
-	listeningPeer := connMgr.GetListeningPeer()
-	bestState := blockchain.GetBeaconBestState()
-	beaconCommitteeList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(bestState.BeaconCommittee, bestState.ConsensusAlgorithm)
-	shardCommitteeList := make(map[byte][]string)
-	for shardID, committee := range bestState.GetShardCommittee() {
-		shardCommitteeList[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, bestState.ShardConsensusAlgorithm[shardID])
-	}
-	for _, peerConn := range listeningPeer.GetPeerConns() {
-		pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
-		peerItem := map[string]string{
-			"PeerID":        peerConn.GetRemotePeer().GetPeerID().Pretty(),
-			"RawAddress1":   peerConn.GetRemotePeer().GetRawAddress(),
-			"PublicKey":     pk,
-			"PublicKeyType": pkT,
-			"NodeType":      "",
-		}
-		isInBeaconCommittee := common.IndexOfStr(pk, beaconCommitteeList) != -1
-		if isInBeaconCommittee {
-			peerItem["NodeType"] = "Beacon"
-		}
-		for shardID, committees := range shardCommitteeList {
-			isInShardCommitee := common.IndexOfStr(pk, committees) != -1
-			if isInShardCommitee {
-				peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
-				break
-			}
-		}
-		peersMap = append(peersMap, peerItem)
-	}
-	result.Peers = peersMap
+	// peersMap := []map[string]string{}
+	// listeningPeer := connMgr.GetListeningPeer()
+	// bestState := blockchain.GetBeaconBestState()
+	// beaconCommitteeList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(bestState.BeaconCommittee, bestState.ConsensusAlgorithm)
+	// shardCommitteeList := make(map[byte][]string)
+	// for shardID, committee := range bestState.GetShardCommittee() {
+	// 	shardCommitteeList[shardID], _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(committee, bestState.ShardConsensusAlgorithm[shardID])
+	// }
+	// for _, peerConn := range listeningPeer.GetPeerConns() {
+	// 	pk, pkT := peerConn.GetRemotePeer().GetPublicKey()
+	// 	peerItem := map[string]string{
+	// 		"PeerID":        peerConn.GetRemotePeer().GetPeerID().Pretty(),
+	// 		"RawAddress1":   peerConn.GetRemotePeer().GetRawAddress(),
+	// 		"PublicKey":     pk,
+	// 		"PublicKeyType": pkT,
+	// 		"NodeType":      "",
+	// 	}
+	// 	isInBeaconCommittee := common.IndexOfStr(pk, beaconCommitteeList) != -1
+	// 	if isInBeaconCommittee {
+	// 		peerItem["NodeType"] = "Beacon"
+	// 	}
+	// 	for shardID, committees := range shardCommitteeList {
+	// 		isInShardCommitee := common.IndexOfStr(pk, committees) != -1
+	// 		if isInShardCommitee {
+	// 			peerItem["NodeType"] = fmt.Sprintf("Shard-%d", shardID)
+	// 			break
+	// 		}
+	// 	}
+	// 	peersMap = append(peersMap, peerItem)
+	// }
+	// result.Peers = peersMap
 	return result
 }

@@ -117,7 +117,7 @@ var _ = func() (_ struct{}) {
 	}
 	for i := 0; i < 255; i++ {
 		shardID := byte(i)
-		bc.BestState.Shard[shardID] = &blockchain.ShardBestState{
+		bc.BestView.Shard[shardID] = &blockchain.ShardBestState{
 			BestBlock: &blockchain.ShardBlock{
 				Header: blockchain.ShardHeader{
 					Height: 1,

@@ -27,7 +27,7 @@ type GetShardBestState struct {
 	MetricBlockHeight      uint64            `json:"MetricBlockHeight"`
 }
 
-func NewGetShardBestState(data *blockchain.ShardBestState) *GetShardBestState {
+func NewGetShardBestState(data *blockchain.ShardView) *GetShardBestState {
 	result := &GetShardBestState{
 		Epoch:                  data.Epoch,
 		ShardID:                data.ShardID,

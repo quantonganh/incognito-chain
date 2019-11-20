@@ -16,7 +16,7 @@ type GetBestBlockItem struct {
 	Time           int64  `json:"Time"`
 }
 
-func NewGetBestBlockItemFromShard(bestState *blockchain.ShardBestState) *GetBestBlockItem {
+func NewGetBestBlockItemFromShard(bestState *blockchain.ShardView) *GetBestBlockItem {
 	result := &GetBestBlockItem{
 		Height:         bestState.BestBlock.Header.Height,
 		Hash:           bestState.BestBlockHash.String(),
@@ -28,7 +28,7 @@ func NewGetBestBlockItemFromShard(bestState *blockchain.ShardBestState) *GetBest
 	return result
 }
 
-func NewGetBestBlockItemFromBeacon(bestState *blockchain.BeaconBestState) *GetBestBlockItem {
+func NewGetBestBlockItemFromBeacon(bestState *blockchain.BeaconView) *GetBestBlockItem {
 	result := &GetBestBlockItem{
 		Height:         bestState.BestBlock.Header.Height,
 		Hash:           bestState.BestBlock.Hash().String(),

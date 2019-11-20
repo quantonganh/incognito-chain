@@ -81,7 +81,7 @@ type TotalTransactionInShard struct {
 	SalaryTransaction                 uint64 `json:"SalaryTransaction"`
 }
 
-func NewTotalTransactionInShard(shardBeststate *blockchain.ShardBestState) *TotalTransactionInShard {
+func NewTotalTransactionInShard(shardBeststate *blockchain.ShardView) *TotalTransactionInShard {
 	result := &TotalTransactionInShard{
 		TotalTransactions:                 shardBeststate.TotalTxns,
 		TotalTransactionsExcludeSystemTxs: shardBeststate.TotalTxnsExcludeSalary,

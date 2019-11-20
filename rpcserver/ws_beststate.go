@@ -2,12 +2,13 @@ package rpcserver
 
 import (
 	"errors"
+	"reflect"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
-	"reflect"
 )
 
 func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subcription string, cResult chan RpcSubResult, closeChan <-chan struct{}) {
@@ -34,7 +35,7 @@ func (wsServer *WsServer) handleSubscribeShardBestState(params interface{}, subc
 		select {
 		case msg := <-subChan:
 			{
-				bestStateShard, ok := msg.Value.(*blockchain.ShardBestState)
+				bestStateShard, ok := msg.Value.(*blockchain.ShardView)
 				if !ok {
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.ShardBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue
@@ -76,7 +77,7 @@ func (wsServer *WsServer) handleSubscribeBeaconBestState(params interface{}, sub
 		select {
 		case msg := <-subChan:
 			{
-				bestStateBeacon, ok := msg.Value.(*blockchain.BeaconBestState)
+				bestStateBeacon, ok := msg.Value.(*blockchain.BeaconView)
 				if !ok {
 					Logger.log.Errorf("Wrong Message Type from Pubsub Manager, wanted *blockchain.BeaconBestState, have %+v", reflect.TypeOf(msg.Value))
 					continue

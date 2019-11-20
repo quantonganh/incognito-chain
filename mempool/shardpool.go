@@ -2,15 +2,13 @@ package mempool
 
 import (
 	"errors"
-	"fmt"
+	"sort"
+	"sync"
+
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/pubsub"
-	"sort"
-	"strconv"
-	"sync"
-	"time"
 )
 
 type ShardPoolConfig struct {
@@ -43,32 +41,32 @@ var defaultConfig = ShardPoolConfig{
 
 //@NOTICE: Shard pool will always be empty when node start
 func init() {
-	go func() {
-		mainLoopTime := time.Duration(shardPoolMainLoopTime)
-		ticker := time.NewTicker(mainLoopTime)
-		for _ = range ticker.C {
-			for k, _ := range shardPoolMap {
-				GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
-				GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
-				GetShardPool(k).PromotePendingPool()
-			}
-		}
-	}()
+	// go func() {
+	// 	mainLoopTime := time.Duration(shardPoolMainLoopTime)
+	// 	ticker := time.NewTicker(mainLoopTime)
+	// 	for _ = range ticker.C {
+	// 		for k, _ := range shardPoolMap {
+	// 			GetShardPool(k).RemoveBlock(blockchain.GetBestStateShard(k).ShardHeight)
+	// 			GetShardPool(k).CleanOldBlock(blockchain.GetBestStateShard(k).ShardHeight)
+	// 			GetShardPool(k).PromotePendingPool()
+	// 		}
+	// 	}
+	// }()
 }
 
 func InitShardPool(pool map[byte]blockchain.ShardPool, pubsubManager *pubsub.PubSubManager) {
-	shardPoolMapMu.Lock()
-	defer shardPoolMapMu.Unlock()
-	for i := 0; i < common.MaxShardNumber; i++ {
-		shardPoolMap[byte(i)] = getShardPool(byte(i))
-		shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
-		//update last shard height
-		shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
-		pool[byte(i)] = shardPoolMap[byte(i)]
-		shardPoolMap[byte(i)].PubSubManager = pubsubManager
-		_, subChanRole, _ := shardPoolMap[byte(i)].PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
-		shardPoolMap[byte(i)].RoleInCommitteesEvent = subChanRole
-	}
+	// shardPoolMapMu.Lock()
+	// defer shardPoolMapMu.Unlock()
+	// for i := 0; i < common.MaxShardNumber; i++ {
+	// 	shardPoolMap[byte(i)] = getShardPool(byte(i))
+	// 	shardPoolMap[byte(i)].mtx = new(sync.RWMutex)
+	// 	//update last shard height
+	// 	shardPoolMap[byte(i)].SetShardState(blockchain.GetBestStateShard(byte(i)).ShardHeight)
+	// 	pool[byte(i)] = shardPoolMap[byte(i)]
+	// 	shardPoolMap[byte(i)].PubSubManager = pubsubManager
+	// 	_, subChanRole, _ := shardPoolMap[byte(i)].PubSubManager.RegisterNewSubscriber(pubsub.ShardRoleTopic)
+	// 	shardPoolMap[byte(i)].RoleInCommitteesEvent = subChanRole
+	// }
 }
 func (shardPool *ShardPool) Start(cQuit chan struct{}) {
 	for {
@@ -203,11 +201,11 @@ func (shardPool *ShardPool) validateShardBlock(block *blockchain.ShardBlock, isP
 }
 
 func (shardPool *ShardPool) updateLatestShardState() {
-	if len(shardPool.validPool) > 0 {
-		shardPool.latestValidHeight = shardPool.validPool[len(shardPool.validPool)-1].Header.Height
-	} else {
-		shardPool.latestValidHeight = blockchain.GetBestStateShard(shardPool.shardID).ShardHeight
-	}
+	// if len(shardPool.validPool) > 0 {
+	// 	shardPool.latestValidHeight = shardPool.validPool[len(shardPool.validPool)-1].Header.Height
+	// } else {
+	// 	shardPool.latestValidHeight = blockchain.GetBestStateShard(shardPool.shardID).ShardHeight
+	// }
 }
 
 func (shardPool *ShardPool) promotePendingPool() {
@@ -260,66 +258,66 @@ func (shardPool *ShardPool) PromotePendingPool() {
 func (shardPool *ShardPool) insertNewShardBlockToPool(block *blockchain.ShardBlock) bool {
 	//If unknown to beacon best state store in pending
 	// Condition 1
-	if block.Header.Height > blockchain.GetBeaconBestState().GetBestHeightOfShard(block.Header.ShardID) {
-		shardPool.pendingPool[block.Header.Height] = block
-		return false
-	}
-	// Condition 2
-	if shardPool.latestValidHeight+1 == block.Header.Height {
-		// if pool still has available room
-		// condition 3
-		if len(shardPool.validPool) < shardPool.config.MaxValidBlock {
-			// Condition 4
-			if len(shardPool.validPool) > 0 {
-				latestBlock := shardPool.validPool[len(shardPool.validPool)-1]
-				latestBlockHash := latestBlock.Header.Hash()
-				// condition 5
-				preHash := &block.Header.PreviousBlockHash
-				if preHash.IsEqual(&latestBlockHash) {
-					shardPool.validPool = append(shardPool.validPool, block)
-					shardPool.updateLatestShardState()
-					return true
-				} else {
-					// add new block to pending pool
-					if len(shardPool.pendingPool) < shardPool.config.MaxPendingBlock {
-						shardPool.pendingPool[block.Header.Height] = block
-					}
-					// delete latest block in pool
-					shardPool.validPool = shardPool.validPool[:len(shardPool.validPool)-1]
-					// update latest state
-					shardPool.updateLatestShardState()
-					// add delete block to cache
-					shardPool.cache.Add(latestBlockHash, latestBlock)
-					// find previous block of new block
-					previousBlock, ok := shardPool.conflictedPool[block.Header.PreviousBlockHash]
-					if ok {
-						// try to add previous block of new block
-						err := shardPool.AddShardBlock(previousBlock)
-						if err == nil {
-							delete(shardPool.conflictedPool, previousBlock.Header.Hash())
-							return true
-						}
-					} else {
-						msg := strconv.Itoa(int(block.Header.ShardID))
-						msg += fmt.Sprintf("%+v", block.Header.PreviousBlockHash)
-						shardPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestShardBlockByHashTopic, msg))
-					}
-					return false
-				}
-				// if valid pool is empty then add block to valid pool
-			} else {
-				shardPool.validPool = append(shardPool.validPool, block)
-				shardPool.updateLatestShardState()
-				return true
-			}
-		} else if len(shardPool.pendingPool) < shardPool.config.MaxPendingBlock {
-			shardPool.pendingPool[block.Header.Height] = block
-			return false
-		}
-	} else if len(shardPool.pendingPool) < shardPool.config.MaxPendingBlock {
-		shardPool.pendingPool[block.Header.Height] = block
-		return false
-	}
+	// if block.Header.Height > blockchain.GetBeaconBestState().GetBestHeightOfShard(block.Header.ShardID) {
+	// 	shardPool.pendingPool[block.Header.Height] = block
+	// 	return false
+	// }
+	// // Condition 2
+	// if shardPool.latestValidHeight+1 == block.Header.Height {
+	// 	// if pool still has available room
+	// 	// condition 3
+	// 	if len(shardPool.validPool) < shardPool.config.MaxValidBlock {
+	// 		// Condition 4
+	// 		if len(shardPool.validPool) > 0 {
+	// 			latestBlock := shardPool.validPool[len(shardPool.validPool)-1]
+	// 			latestBlockHash := latestBlock.Header.Hash()
+	// 			// condition 5
+	// 			preHash := &block.Header.PreviousBlockHash
+	// 			if preHash.IsEqual(&latestBlockHash) {
+	// 				shardPool.validPool = append(shardPool.validPool, block)
+	// 				shardPool.updateLatestShardState()
+	// 				return true
+	// 			} else {
+	// 				// add new block to pending pool
+	// 				if len(shardPool.pendingPool) < shardPool.config.MaxPendingBlock {
+	// 					shardPool.pendingPool[block.Header.Height] = block
+	// 				}
+	// 				// delete latest block in pool
+	// 				shardPool.validPool = shardPool.validPool[:len(shardPool.validPool)-1]
+	// 				// update latest state
+	// 				shardPool.updateLatestShardState()
+	// 				// add delete block to cache
+	// 				shardPool.cache.Add(latestBlockHash, latestBlock)
+	// 				// find previous block of new block
+	// 				previousBlock, ok := shardPool.conflictedPool[block.Header.PreviousBlockHash]
+	// 				if ok {
+	// 					// try to add previous block of new block
+	// 					err := shardPool.AddShardBlock(previousBlock)
+	// 					if err == nil {
+	// 						delete(shardPool.conflictedPool, previousBlock.Header.Hash())
+	// 						return true
+	// 					}
+	// 				} else {
+	// 					msg := strconv.Itoa(int(block.Header.ShardID))
+	// 					msg += fmt.Sprintf("%+v", block.Header.PreviousBlockHash)
+	// 					shardPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.RequestShardBlockByHashTopic, msg))
+	// 				}
+	// 				return false
+	// 			}
+	// 			// if valid pool is empty then add block to valid pool
+	// 		} else {
+	// 			shardPool.validPool = append(shardPool.validPool, block)
+	// 			shardPool.updateLatestShardState()
+	// 			return true
+	// 		}
+	// 	} else if len(shardPool.pendingPool) < shardPool.config.MaxPendingBlock {
+	// 		shardPool.pendingPool[block.Header.Height] = block
+	// 		return false
+	// 	}
+	// } else if len(shardPool.pendingPool) < shardPool.config.MaxPendingBlock {
+	// 	shardPool.pendingPool[block.Header.Height] = block
+	// 	return false
+	// }
 	return false
 }
 

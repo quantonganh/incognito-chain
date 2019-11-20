@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-	"time"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -35,24 +34,24 @@ type BeaconPool struct {
 var beaconPool *BeaconPool = nil
 
 func init() {
-	go func() {
-		mainLoopTime := time.Duration(beaconPoolMainLoopTime)
-		ticker := time.Tick(mainLoopTime)
-		for _ = range ticker {
-			GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
-			GetBeaconPool().cleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
-			GetBeaconPool().PromotePendingPool()
-		}
-	}()
+	// go func() {
+	// 	mainLoopTime := time.Duration(beaconPoolMainLoopTime)
+	// 	ticker := time.Tick(mainLoopTime)
+	// 	for _ = range ticker {
+	// 		GetBeaconPool().RemoveBlock(blockchain.GetBeaconBestState().BeaconHeight)
+	// 		GetBeaconPool().cleanOldBlock(blockchain.GetBeaconBestState().BeaconHeight)
+	// 		GetBeaconPool().PromotePendingPool()
+	// 	}
+	// }()
 }
 
 func InitBeaconPool(pubsubManager *pubsub.PubSubManager) {
 	//do nothing
-	beaconPool := GetBeaconPool()
-	beaconPool.SetBeaconState(blockchain.GetBeaconBestState().BeaconHeight)
-	beaconPool.PubSubManager = pubsubManager
-	_, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
-	beaconPool.RoleInCommitteesEvent = subChanRole
+	// beaconPool := GetBeaconPool()
+	// beaconPool.SetBeaconState(blockchain.GetBeaconBestState().BeaconHeight)
+	// beaconPool.PubSubManager = pubsubManager
+	// _, subChanRole, _ := beaconPool.PubSubManager.RegisterNewSubscriber(pubsub.BeaconRoleTopic)
+	// beaconPool.RoleInCommitteesEvent = subChanRole
 }
 
 // get singleton instance of ShardToBeacon pool
@@ -215,11 +214,11 @@ func (beaconPool *BeaconPool) insertNewBeaconBlockToPool(block *blockchain.Beaco
 }
 
 func (beaconPool *BeaconPool) updateLatestBeaconState() {
-	if len(beaconPool.validPool) > 0 {
-		beaconPool.latestValidHeight = beaconPool.validPool[len(beaconPool.validPool)-1].Header.Height
-	} else {
-		beaconPool.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
-	}
+	// if len(beaconPool.validPool) > 0 {
+	// 	beaconPool.latestValidHeight = beaconPool.validPool[len(beaconPool.validPool)-1].Header.Height
+	// } else {
+	// 	beaconPool.latestValidHeight = blockchain.GetBeaconBestState().BeaconHeight
+	// }
 }
 
 // Check block in pending block then add to valid pool if block is valid

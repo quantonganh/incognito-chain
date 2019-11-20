@@ -99,7 +99,7 @@ func (engine *Engine) SignDataWithCurrentMiningKey(
 		_, ok := engine.ChainConsensusList[engine.CurrentMiningChain]
 		// engine.Unlock()
 		if ok {
-			publicKeyType = engine.config.Blockchain.BestState.Beacon.ConsensusAlgorithm
+			publicKeyType = engine.config.Blockchain.BestView.Beacon.ConsensusAlgorithm
 			publicKeyStr, err = engine.GetMiningPublicKeyByConsensus(publicKeyType)
 			if err != nil {
 				return

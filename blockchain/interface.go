@@ -115,9 +115,11 @@ type ChainInterface interface {
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
 	ValidatePreSignBlock(block common.BlockInterface) error
 	GetShardID() int
+	GetBestView() ChainViewInterface
+	GetAllViews() map[string]ChainViewInterface
 }
 
-type BestStateInterface interface {
+type ChainViewInterface interface {
 	GetLastBlockTimeStamp() uint64
 	GetBlkMinInterval() time.Duration
 	GetBlkMaxCreateTime() time.Duration

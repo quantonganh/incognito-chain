@@ -2,7 +2,6 @@ package connmanager
 
 import (
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"math"
 	"net"
 	"net/rpc"
@@ -362,7 +361,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 	// startTime := time.Now()
 	discoverPeerAddress := connManager.discoverPeerAddress
 	fmt.Println("CONN: processDiscoverPeers")
-	metrics.SetGlobalParam("Bootnode", discoverPeerAddress)
+	// metrics.SetGlobalParam("Bootnode", discoverPeerAddress)
 	if discoverPeerAddress == common.EmptyString {
 		// we dont have config to make discover peer
 		// so we dont need to do anything here
@@ -391,7 +390,7 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 
 		externalAddress := connManager.config.ExternalAddress
 		Logger.log.Info("Start Process Discover Peers ExternalAddress", externalAddress)
-		metrics.SetGlobalParam("ExternalAddress", externalAddress)
+		// metrics.SetGlobalParam("ExternalAddress", externalAddress)
 		// remove later
 		rawAddress := listener.GetRawAddress()
 		rawPort := listener.GetPort()
@@ -468,11 +467,11 @@ func (connManager *ConnManager) processDiscoverPeers() error {
 		// connect to no shard peers
 		connManager.handleRandPeersOfNoShard(connManager.config.MaxPeersNoShard, responsePeers)
 	}
-	// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	// 	metrics.Measurement:      metrics.ProcessDiscoverPeersTime,
-	// 	metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
-	// 	metrics.Tag:              metrics.ExternalAddressTag,
-	// 	metrics.TagValue:         connManager.config.ExternalAddress})
+	// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// 	// metrics.Measurement:      // metrics.ProcessDiscoverPeersTime,
+	// 	// metrics.MeasurementValue: float64(time.Since(startTime).Seconds()),
+	// 	// metrics.Tag:              // metrics.ExternalAddressTag,
+	// 	// metrics.TagValue:         connManager.config.ExternalAddress})
 	return nil
 }
 
@@ -500,11 +499,11 @@ func (connManager *ConnManager) countPeerConnOfShard(shard *byte) int {
 	if listener != nil {
 		//fmt.Println("COUNT: count peer")
 		allPeers := listener.GetPeerConnOfAll()
-		// go metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-		// 	metrics.Measurement:      metrics.AllConnectedPeers,
-		// 	metrics.MeasurementValue: float64(len(allPeers)),
-		// 	metrics.Tag:              metrics.ExternalAddressTag,
-		// 	metrics.TagValue:         connManager.config.ExternalAddress})
+		// go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+		// 	// metrics.Measurement:      // metrics.AllConnectedPeers,
+		// 	// metrics.MeasurementValue: float64(len(allPeers)),
+		// 	// metrics.Tag:              // metrics.ExternalAddressTag,
+		// 	// metrics.TagValue:         connManager.config.ExternalAddress})
 		// fmt.Println("COUNT: all peer", len(allPeers))
 		for _, peerConn := range allPeers {
 			//fmt.Println("COUNT: start get")

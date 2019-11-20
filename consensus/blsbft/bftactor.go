@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
 
@@ -182,7 +181,7 @@ func (e *BLSBFT) Start() error {
 
 			case <-ticker:
 
-				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
+				// metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 
 				pubKey := e.UserKeySet.GetPublicKey()
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
@@ -210,7 +209,7 @@ func (e *BLSBFT) Start() error {
 					}
 					roundKey := getRoundKey(e.RoundData.NextHeight, e.RoundData.Round)
 					if e.Blocks[roundKey] != nil {
-						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
+						// metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
@@ -284,7 +283,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 						// e.Node.PushMessageToAll()
-						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
+						// metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						e.logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
 					}
@@ -302,7 +301,7 @@ func (e *BLSBFT) enterProposePhase() {
 	e.setState(proposePhase)
 
 	block, err := e.createNewBlock()
-	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
+	// metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 	if err != nil {
 		e.logger.Error("can't create block", err)
 		return

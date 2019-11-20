@@ -56,11 +56,11 @@ func (blockchain *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64,
 }
 
 func (blockchain *BlockChain) GetChainHeight(shardID byte) uint64 {
-	return blockchain.BestState.Shard[shardID].ShardHeight
+	return blockchain.BestView.Shard[shardID].ShardHeight
 }
 
 func (blockchain *BlockChain) GetBeaconHeight() uint64 {
-	return blockchain.BestState.Beacon.BeaconHeight
+	return blockchain.BestView.Beacon.BeaconHeight
 }
 
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
@@ -77,7 +77,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]in
 	if blockchain.IsTest {
 		return SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
 	}
-	beaconBestState := BeaconBestState{}
+	beaconBestState := BeaconView{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err != nil {
 		return SC, SPV, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, []incognitokey.CommitteePublicKey{}, nil
@@ -103,7 +103,7 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidate() (map[byte][]in
 }
 
 func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDatabase() ([]string, error) {
-	beaconBestState := BeaconBestState{}
+	beaconBestState := BeaconView{}
 	temp, err := blockchain.config.DataBase.FetchBeaconBestState()
 	if err != nil {
 		return nil, err
@@ -167,10 +167,10 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDa
 }
 
 func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
-	return blockchain.BestState.Shard[shardID].GetStakingTx()
+	return blockchain.BestView.Shard[shardID].GetStakingTx()
 }
 func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
-	return blockchain.BestState.Beacon.GetAutoStakingList()
+	return blockchain.BestView.Beacon.GetAutoStakingList()
 }
 
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress() string {
