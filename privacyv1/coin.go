@@ -29,7 +29,7 @@ type Coin struct {
 
 	// it used to be witness for output coins with one-time address
 	// only has in privacy tx
-	shareSecret *Scalar
+	privRandOTA *Scalar
 }
 
 // Start GET/SET
@@ -91,11 +91,11 @@ func (coin *Coin) SetInfo(v []byte) {
 }
 
 func (coin Coin) GetShareSecret() *Scalar {
-	return coin.shareSecret
+	return coin.privRandOTA
 }
 
 func (coin *Coin) SetShareSecret(shareSecret *Scalar) {
-	coin.shareSecret = shareSecret
+	coin.privRandOTA = shareSecret
 }
 
 // Init (Coin) initializes a coin

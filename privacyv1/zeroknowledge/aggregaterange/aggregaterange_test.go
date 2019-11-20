@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacyv1"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,32 +19,32 @@ func TestMain(m *testing.M) {
 
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
-	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	privacyv1.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
 //TestInnerProduct test inner product calculation
 func TestInnerProduct(t *testing.T) {
 	n := 2
-	a := make([]*privacy.Scalar, n)
-	b := make([]*privacy.Scalar, n)
+	a := make([]*privacyv1.Scalar, n)
+	b := make([]*privacyv1.Scalar, n)
 
 	for i := 0; i < n; i++ {
-		a[i] = new(privacy.Scalar).FromUint64(10)
-		b[i] = new(privacy.Scalar).FromUint64(20)
+		a[i] = new(privacyv1.Scalar).FromUint64(10)
+		b[i] = new(privacyv1.Scalar).FromUint64(20)
 	}
 
 	c, _ := innerProduct(a, b)
-	assert.Equal(t, new(privacy.Scalar).FromUint64(400), c)
+	assert.Equal(t, new(privacyv1.Scalar).FromUint64(400), c)
 
-	//bytes := privacy.RandBytes(33)
+	//bytes := privacyv1.RandBytes(33)
 	//
-	//num1 := new(privacy.Scalar).SetBytes(bytes)
-	//num1Inverse := new(privacy.Scalar).ModInverse(num1, privacy.Curve.Params().N)
+	//num1 := new(privacyv1.Scalar).SetBytes(bytes)
+	//num1Inverse := new(privacyv1.Scalar).ModInverse(num1, privacyv1.Curve.Params().N)
 	//
-	//num2 := new(privacy.Scalar).SetBytes(bytes)
-	//num2 = num2.Mod(num2, privacy.Curve.Params().N)
-	//num2Inverse := new(privacy.Scalar).ModInverse(num2, privacy.Curve.Params().N)
+	//num2 := new(privacyv1.Scalar).SetBytes(bytes)
+	//num2 = num2.Mod(num2, privacyv1.Curve.Params().N)
+	//num2Inverse := new(privacyv1.Scalar).ModInverse(num2, privacyv1.Curve.Params().N)
 	//
 	//assert.Equal(t, num1Inverse, num2Inverse)
 }
@@ -53,36 +53,36 @@ func TestEncodeVectors(t *testing.T) {
 	for i:= 0; i<100; i++ {
 		var AggParam= newBulletproofParams(1)
 		n := 64
-		a := make([]*privacy.Scalar, n)
-		b := make([]*privacy.Scalar, n)
-		G := make([]*privacy.Point, n)
-		H := make([]*privacy.Point, n)
+		a := make([]*privacyv1.Scalar, n)
+		b := make([]*privacyv1.Scalar, n)
+		G := make([]*privacyv1.Point, n)
+		H := make([]*privacyv1.Point, n)
 
 		for i := range a {
-			a[i] = privacy.RandomScalar()
-			b[i] = privacy.RandomScalar()
+			a[i] = privacyv1.RandomScalar()
+			b[i] = privacyv1.RandomScalar()
 
-			G[i] = new(privacy.Point).Set(AggParam.g[i])
+			G[i] = new(privacyv1.Point).Set(AggParam.g[i])
 
-			H[i] = new(privacy.Point).Set(AggParam.h[i])
+			H[i] = new(privacyv1.Point).Set(AggParam.h[i])
 		}
 		start := time.Now()
 		actualRes, err := encodeVectors(a, b, G, H)
 		end := time.Since(start)
-		privacy.Logger.Log.Info("Time encode vector: %v\n", end)
+		privacyv1.Logger.Log.Info("Time encode vector: %v\n", end)
 		if err != nil {
-			privacy.Logger.Log.Info("Err: %v\n", err)
+			privacyv1.Logger.Log.Info("Err: %v\n", err)
 		}
 		start = time.Now()
-		//expectedRes := new(privacy.Point).Zero()
-		expectedRes := new(privacy.Point).Identity()
+		//expectedRes := new(privacyv1.Point).Zero()
+		expectedRes := new(privacyv1.Point).Identity()
 		for i := 0; i < n; i++ {
-			expectedRes.Add(expectedRes, new(privacy.Point).ScalarMult(G[i], a[i]))
-			expectedRes.Add(expectedRes, new(privacy.Point).ScalarMult(H[i], b[i]))
+			expectedRes.Add(expectedRes, new(privacyv1.Point).ScalarMult(G[i], a[i]))
+			expectedRes.Add(expectedRes, new(privacyv1.Point).ScalarMult(H[i], b[i]))
 		}
 
 		end = time.Since(start)
-		privacy.Logger.Log.Info("Time normal encode vector: %v\n", end)
+		privacyv1.Logger.Log.Info("Time normal encode vector: %v\n", end)
 
 		assert.Equal(t, expectedRes, actualRes)
 	}
@@ -104,26 +104,26 @@ func BenchmarkInnerProductWitness_Prove(b *testing.B) {
 
 	wit := new(InnerProductWitness)
 	n := maxExp*numValuePad
-	wit.a = make([]*privacy.Scalar, n)
-	wit.b = make([]*privacy.Scalar, n)
+	wit.a = make([]*privacyv1.Scalar, n)
+	wit.b = make([]*privacyv1.Scalar, n)
 	for i := range wit.a {
-		wit.a[i] = privacy.RandomScalar()
-		wit.b[i] = privacy.RandomScalar()
+		wit.a[i] = privacyv1.RandomScalar()
+		wit.b[i] = privacyv1.RandomScalar()
 	}
 
-	//wit.p = new(privacy.Point)
+	//wit.p = new(privacyv1.Point)
 	//wit.p.Zero()
 
 	c, err := innerProduct(wit.a, wit.b)
 
 	if err != nil {
-		privacy.Logger.Log.Info("Err: %v\n", err)
+		privacyv1.Logger.Log.Info("Err: %v\n", err)
 	}
-	wit.p = new(privacy.Point).ScalarMult(AggParam.u, c)
+	wit.p = new(privacyv1.Point).ScalarMult(AggParam.u, c)
 
 	for i := range wit.a {
-		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.g[i], wit.a[i]))
-		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.h[i], wit.b[i]))
+		wit.p.Add(wit.p, new(privacyv1.Point).ScalarMult(AggParam.g[i], wit.a[i]))
+		wit.p.Add(wit.p, new(privacyv1.Point).ScalarMult(AggParam.h[i], wit.b[i]))
 	}
 
 	b.ResetTimer()
@@ -148,27 +148,27 @@ func BenchmarkInnerProductProof_Verify(b *testing.B) {
 
 	wit := new(InnerProductWitness)
 	n := maxExp*numValuePad
-	wit.a = make([]*privacy.Scalar, n)
-	wit.b = make([]*privacy.Scalar, n)
+	wit.a = make([]*privacyv1.Scalar, n)
+	wit.b = make([]*privacyv1.Scalar, n)
 
 	for i := range wit.a {
-		wit.a[i] = privacy.RandomScalar()
-		wit.b[i] = privacy.RandomScalar()
+		wit.a[i] = privacyv1.RandomScalar()
+		wit.b[i] = privacyv1.RandomScalar()
 	}
 
-	//wit.p = new(privacy.Point)
+	//wit.p = new(privacyv1.Point)
 	//wit.p.Zero()
 
 	c, err := innerProduct(wit.a, wit.b)
 
 	if err != nil {
-		privacy.Logger.Log.Info("Err: %v\n", err)
+		privacyv1.Logger.Log.Info("Err: %v\n", err)
 	}
-	wit.p = new(privacy.Point).ScalarMult(AggParam.u, c)
+	wit.p = new(privacyv1.Point).ScalarMult(AggParam.u, c)
 
 	for i := range wit.a {
-		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.g[i], wit.a[i]))
-		wit.p.Add(wit.p, new(privacy.Point).ScalarMult(AggParam.h[i], wit.b[i]))
+		wit.p.Add(wit.p, new(privacyv1.Point).ScalarMult(AggParam.g[i], wit.a[i]))
+		wit.p.Add(wit.p, new(privacyv1.Point).ScalarMult(AggParam.h[i], wit.b[i]))
 	}
 
 	proof, err := wit.Prove(aggParam)
@@ -196,32 +196,32 @@ func TestInnerProductProve(t *testing.T) {
 
 		wit := new(InnerProductWitness)
 		n := maxExp*numValue
-		wit.a = make([]*privacy.Scalar, n)
-		wit.b = make([]*privacy.Scalar, n)
+		wit.a = make([]*privacyv1.Scalar, n)
+		wit.b = make([]*privacyv1.Scalar, n)
 
 		for i := range wit.a {
-			wit.a[i] = privacy.RandomScalar()
-			wit.b[i] = privacy.RandomScalar()
+			wit.a[i] = privacyv1.RandomScalar()
+			wit.b[i] = privacyv1.RandomScalar()
  		}
 
-		//wit.p = new(privacy.Point)
+		//wit.p = new(privacyv1.Point)
 		//wit.p.Zero()
 
 		c, err := innerProduct(wit.a, wit.b)
 
 		if err != nil {
-			privacy.Logger.Log.Info("Err: %v\n", err)
+			privacyv1.Logger.Log.Info("Err: %v\n", err)
 		}
-		wit.p = new(privacy.Point).ScalarMult(aggParam.u, c)
+		wit.p = new(privacyv1.Point).ScalarMult(aggParam.u, c)
 
 		for i := range wit.a {
-			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.g[i], wit.a[i]))
-			wit.p.Add(wit.p, new(privacy.Point).ScalarMult(aggParam.h[i], wit.b[i]))
+			wit.p.Add(wit.p, new(privacyv1.Point).ScalarMult(aggParam.g[i], wit.a[i]))
+			wit.p.Add(wit.p, new(privacyv1.Point).ScalarMult(aggParam.h[i], wit.b[i]))
 		}
 
 		proof, err := wit.Prove(aggParam)
 		if err != nil {
-			privacy.Logger.Log.Info("Err: %v\n", err)
+			privacyv1.Logger.Log.Info("Err: %v\n", err)
 		}
 
 		res2 := proof.Verify(aggParam)
@@ -243,11 +243,11 @@ func BenchmarkAggregatedRangeWitness_Prove(b *testing.B) {
 	wit := new(AggregatedRangeWitness)
 	numValue := NumValue //5. 10
 	values := make([]uint64, numValue)
-	rands := make([]*privacy.Scalar, numValue)
+	rands := make([]*privacyv1.Scalar, numValue)
 
 	for i := range values {
 		values[i] = uint64(common.RandInt64())
-		rands[i] = privacy.RandomScalar()
+		rands[i] = privacyv1.RandomScalar()
 	}
 	wit.Set(values, rands)
 
@@ -262,11 +262,11 @@ func BenchmarkAggregatedRangeProof_Verify(b *testing.B) {
 	wit := new(AggregatedRangeWitness)
 	numValue := NumValue //5. 10
 	values := make([]uint64, numValue)
-	rands := make([]*privacy.Scalar, numValue)
+	rands := make([]*privacyv1.Scalar, numValue)
 
 	for i := range values {
 		values[i] = uint64(common.RandInt64())
-		rands[i] = privacy.RandomScalar()
+		rands[i] = privacyv1.RandomScalar()
 	}
 	wit.Set(values, rands)
 	proof, _ := wit.Prove()
@@ -284,11 +284,11 @@ func TestAggregatedRangeProve(t *testing.T) {
 		wit := new(AggregatedRangeWitness)
 		numValue := 12 //5. 10
 		values := make([]uint64, numValue)
-		rands := make([]*privacy.Scalar, numValue)
+		rands := make([]*privacyv1.Scalar, numValue)
 
 		for i := range values {
 			values[i] = uint64(common.RandInt64())
-			rands[i] = privacy.RandomScalar()
+			rands[i] = privacyv1.RandomScalar()
 		}
 		wit.Set(values, rands)
 
@@ -327,7 +327,7 @@ func TestAggregatedRangeProve(t *testing.T) {
 		start = time.Now()
 		res, err = proof2.Verify()
 		end = time.Since(start)
-		privacy.Logger.Log.Info("Aggregated range verification time: %v\n", end)
+		privacyv1.Logger.Log.Info("Aggregated range verification time: %v\n", end)
 
 		assert.Equal(t, true, res)
 		assert.Equal(t, nil, err)
@@ -352,7 +352,7 @@ func TestPad(t *testing.T) {
 }
 
 func TestPowerVector(t *testing.T) {
-	twoVector := powerVector(new(privacy.Scalar).FromUint64(2), 5)
+	twoVector := powerVector(new(privacyv1.Scalar).FromUint64(2), 5)
 	assert.Equal(t, 5, len(twoVector))
 }
 

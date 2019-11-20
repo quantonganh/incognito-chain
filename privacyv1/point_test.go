@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	//C25519 "github.com/deroproject/derosuite/crypto"
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	C25519 "github.com/incognitochain/incognito-chain/privacyv1/curve25519"
 	"testing"
 )
 

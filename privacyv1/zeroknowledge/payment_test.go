@@ -2,7 +2,7 @@ package zkp
 
 import (
 	"github.com/incognitochain/incognito-chain/common/base58"
-	"github.com/incognitochain/incognito-chain/privacy"
+	"github.com/incognitochain/incognito-chain/privacyv1"
 	"github.com/incognitochain/incognito-chain/wallet"
 	"testing"
 )
@@ -17,31 +17,31 @@ type CoinObject struct {
 	Info string
 }
 
-func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, uint64) {
-	coins := make([]*privacy.InputCoin, len(coinObjects))
+func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacyv1.InputCoin, uint64) {
+	coins := make([]*privacyv1.InputCoin, len(coinObjects))
 	sumValue := uint64(0)
 
 	for i := 0; i<len(coins); i++{
 
 		publicKey, _, _ := base58.Base58Check{}.Decode(coinObjects[i].PublicKey)
-		publicKeyPoint := new(privacy.Point)
+		publicKeyPoint := new(privacyv1.Point)
 		publicKeyPoint.FromBytesS(publicKey)
 
 		coinCommitment, _, _ := base58.Base58Check{}.Decode(coinObjects[i].CoinCommitment)
-		coinCommitmentPoint := new(privacy.Point)
+		coinCommitmentPoint := new(privacyv1.Point)
 		coinCommitmentPoint.FromBytesS(coinCommitment)
 
 		snd, _, _ := base58.Base58Check{}.Decode(coinObjects[i].SNDerivator)
-		sndBN := new(privacy.Scalar).FromBytesS(snd)
+		sndBN := new(privacyv1.Scalar).FromBytesS(snd)
 
 		serialNumber, _, _ := base58.Base58Check{}.Decode(coinObjects[i].CoinCommitment)
-		serialNumberPoint := new(privacy.Point)
+		serialNumberPoint := new(privacyv1.Point)
 		serialNumberPoint.FromBytesS(serialNumber)
 
 		randomness, _, _ := base58.Base58Check{}.Decode(coinObjects[i].Randomness)
-		randomnessBN := new(privacy.Scalar).FromBytesS(randomness)
+		randomnessBN := new(privacyv1.Scalar).FromBytesS(randomness)
 
-		coins[i] = new(privacy.InputCoin).Init()
+		coins[i] = new(privacyv1.InputCoin).Init()
 		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
 		coins[i].CoinDetails.SetCoinCommitment(coinCommitmentPoint)
 		coins[i].CoinDetails.SetSNDerivator(sndBN)
@@ -63,8 +63,8 @@ func TestPaymentProofToBytes(t *testing.T){
 
 	keyWallet, _ := wallet.Base58CheckDeserialize("112t8rnXHD9s2MXSXigMyMtKdGFtSJmhA9cCBN34Fj55ox3cJVL6Fykv8uNWkDagL56RnA4XybQKNRrNXinrDDfKZmq9Y4LR18NscSrc9inc")
 	_ = keyWallet.KeySet.InitFromPrivateKey(&keyWallet.KeySet.PrivateKey)
-	senderKeyBN := new(privacy.Scalar).FromBytesS(keyWallet.KeySet.PrivateKey)
-	senderPKPoint := new(privacy.Point)
+	senderKeyBN := new(privacyv1.Scalar).FromBytesS(keyWallet.KeySet.PrivateKey)
+	senderPKPoint := new(privacyv1.Point)
 	senderPKPoint.FromBytesS(keyWallet.KeySet.PaymentAddress.Pk)
 
 
@@ -131,34 +131,34 @@ func TestPaymentProofToBytes(t *testing.T){
 	_ = keyWalletReceiver.KeySet.InitFromPrivateKey(&keyWalletReceiver.KeySet.PrivateKey)
 	//receiverKeyBN := new(big.Int).SetBytes(keyWalletReceiver.KeySet.PrivateKey)
 	receiverPublicKey := keyWalletReceiver.KeySet.PaymentAddress.Pk
-	receiverPublicKeyPoint := new(privacy.Point)
+	receiverPublicKeyPoint := new(privacyv1.Point)
 	receiverPublicKeyPoint.FromBytesS(receiverPublicKey)
 
 	amountTransfer := uint64(1000000000)
 
-	outputCoins := make([]*privacy.OutputCoin, 2)
-	outputCoins[0] = new(privacy.OutputCoin)
+	outputCoins := make([]*privacyv1.OutputCoin, 2)
+	outputCoins[0] = new(privacyv1.OutputCoin)
 	outputCoins[0].Init()
 	outputCoins[0].CoinDetails.SetValue(uint64(amountTransfer))
 	outputCoins[0].CoinDetails.SetPublicKey(receiverPublicKeyPoint)
-	outputCoins[0].CoinDetails.SetSNDerivator(privacy.RandomScalar())
+	outputCoins[0].CoinDetails.SetSNDerivator(privacyv1.RandomScalar())
 
 	changeAmount :=sumValue - amountTransfer
 
-	outputCoins[1] = new(privacy.OutputCoin)
+	outputCoins[1] = new(privacyv1.OutputCoin)
 	outputCoins[1].Init()
 	outputCoins[1].CoinDetails.SetValue(changeAmount)
 	outputCoins[1].CoinDetails.SetPublicKey(senderPKPoint)
-	outputCoins[1].CoinDetails.SetSNDerivator(privacy.RandomScalar())
+	outputCoins[1].CoinDetails.SetSNDerivator(privacyv1.RandomScalar())
 
 
 
 	//HasPrivacy              bool
 	//PrivateKey              *big.Int
-	//InputCoins              []*privacy.InputCoin
-	//OutputCoins             []*privacy.OutputCoin
+	//InputCoins              []*privacyv1.InputCoin
+	//OutputCoins             []*privacyv1.OutputCoin
 	//PublicKeyLastByteSender byte
-	//Commitments             []*privacy.Point
+	//Commitments             []*privacyv1.Point
 	//CommitmentIndices       []uint64
 	//MyCommitmentIndices     []uint64
 	//Fee                     uint64

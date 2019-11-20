@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
+	C25519 "github.com/incognitochain/incognito-chain/privacyv1/curve25519"
 )
 
 type Point struct {

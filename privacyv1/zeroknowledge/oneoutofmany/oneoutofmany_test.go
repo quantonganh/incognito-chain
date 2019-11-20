@@ -3,8 +3,8 @@ package oneoutofmany
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/utils"
+	"github.com/incognitochain/incognito-chain/privacyv1"
+	"github.com/incognitochain/incognito-chain/privacyv1/zeroknowledge/utils"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"log"
@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 
 var _ = func() (_ struct{}) {
 	fmt.Println("This runs before init()!")
-	privacy.Logger.Init(common.NewBackend(nil).Logger("test", true))
+	privacyv1.Logger.Init(common.NewBackend(nil).Logger("test", true))
 	return
 }()
 
@@ -29,23 +29,23 @@ func TestPKOneOfMany(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		witness := new(OneOutOfManyWitness)
 
-		//indexIsZero := int(common.RandInt() % privacy.CommitmentRingSize)
+		//indexIsZero := int(common.RandInt() % privacyv1.CommitmentRingSize)
 		indexIsZero := 0
 
 		// list of commitments
-		commitments := make([]*privacy.Point, privacy.CommitmentRingSize)
-		values := make([]*privacy.Scalar, privacy.CommitmentRingSize)
-		randoms := make([]*privacy.Scalar, privacy.CommitmentRingSize)
+		commitments := make([]*privacyv1.Point, privacyv1.CommitmentRingSize)
+		values := make([]*privacyv1.Scalar, privacyv1.CommitmentRingSize)
+		randoms := make([]*privacyv1.Scalar, privacyv1.CommitmentRingSize)
 
-		for i := 0; i < privacy.CommitmentRingSize; i++ {
-			values[i] = privacy.RandomScalar()
-			randoms[i] = privacy.RandomScalar()
-			commitments[i] = privacy.PedCom.CommitAtIndex(values[i], randoms[i], privacy.PedersenSndIndex)
+		for i := 0; i < privacyv1.CommitmentRingSize; i++ {
+			values[i] = privacyv1.RandomScalar()
+			randoms[i] = privacyv1.RandomScalar()
+			commitments[i] = privacyv1.PedCom.CommitAtIndex(values[i], randoms[i], privacyv1.PedersenSndIndex)
 		}
 
 		// create Commitment to zero at indexIsZero
-		values[indexIsZero] = new(privacy.Scalar).FromUint64(0)
-		commitments[indexIsZero] = privacy.PedCom.CommitAtIndex(values[indexIsZero], randoms[indexIsZero], privacy.PedersenSndIndex)
+		values[indexIsZero] = new(privacyv1.Scalar).FromUint64(0)
+		commitments[indexIsZero] = privacyv1.PedCom.CommitAtIndex(values[indexIsZero], randoms[indexIsZero], privacyv1.PedersenSndIndex)
 
 		witness.Set(commitments, randoms[indexIsZero], uint64(indexIsZero))
 		start := time.Now()

@@ -3,7 +3,7 @@ package privacyv1
 import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy/curve25519"
+	"github.com/incognitochain/incognito-chain/privacyv1/curve25519"
 	"math/big"
 	"math/rand"
 	"time"

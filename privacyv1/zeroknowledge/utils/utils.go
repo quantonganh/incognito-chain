@@ -2,26 +2,26 @@ package utils
 
 import (
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/privacy"
-	"github.com/incognitochain/incognito-chain/privacy/zeroknowledge/aggregaterange"
+	"github.com/incognitochain/incognito-chain/privacyv1"
+	"github.com/incognitochain/incognito-chain/privacyv1/zeroknowledge/aggregaterange"
 )
 
 // GenerateChallengeFromByte get hash of n points in G append with input values
 // return blake_2b(G[0]||G[1]||...||G[CM_CAPACITY-1]||<values>)
 // G[i] is list of all generator point of Curve
-func GenerateChallenge(values [][]byte) *privacy.Scalar {
+func GenerateChallenge(values [][]byte) *privacyv1.Scalar {
 	bytes := []byte{}
-	for i := 0; i < len(privacy.PedCom.G); i++ {
-		bytes = append(bytes, privacy.PedCom.G[i].ToBytesS()...)
+	for i := 0; i < len(privacyv1.PedCom.G); i++ {
+		bytes = append(bytes, privacyv1.PedCom.G[i].ToBytesS()...)
 	}
 
 	for i := 0; i < len(values); i++ {
 		bytes = append(bytes, values[i]...)
 	}
 
-	hash := privacy.HashToScalar(bytes)
+	hash := privacyv1.HashToScalar(bytes)
 	//res := new(big.Int).SetBytes(hash)
-	//res.Mod(res, privacy.Curve.Params().N)
+	//res.Mod(res, privacyv1.Curve.Params().N)
 	return hash
 }
 
@@ -46,16 +46,16 @@ func EstimateProofSize(nInput int, nOutput int, hasPrivacy bool) uint64 {
 	sizeInputCoins := nInput * inputCoinsPrivacySize
 	sizeOutputCoins := nOutput * outputCoinsPrivacySize
 
-	sizeComOutputValue := nOutput * privacy.Ed25519KeySize
-	sizeComOutputSND := nOutput * privacy.Ed25519KeySize
-	sizeComOutputShardID := nOutput * privacy.Ed25519KeySize
+	sizeComOutputValue := nOutput * privacyv1.Ed25519KeySize
+	sizeComOutputSND := nOutput * privacyv1.Ed25519KeySize
+	sizeComOutputShardID := nOutput * privacyv1.Ed25519KeySize
 
-	sizeComInputSK := privacy.Ed25519KeySize
-	sizeComInputValue := nInput * privacy.Ed25519KeySize
-	sizeComInputSND := nInput * privacy.Ed25519KeySize
-	sizeComInputShardID := privacy.Ed25519KeySize
+	sizeComInputSK := privacyv1.Ed25519KeySize
+	sizeComInputValue := nInput * privacyv1.Ed25519KeySize
+	sizeComInputSND := nInput * privacyv1.Ed25519KeySize
+	sizeComInputShardID := privacyv1.Ed25519KeySize
 
-	sizeCommitmentIndices := nInput * privacy.CommitmentRingSize * common.Uint64Size
+	sizeCommitmentIndices := nInput * privacyv1.CommitmentRingSize * common.Uint64Size
 
 	sizeProof := sizeOneOfManyProof + sizeSNPrivacyProof +
 		sizeComOutputMultiRangeProof + sizeInputCoins + sizeOutputCoins +
