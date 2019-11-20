@@ -1,0 +1,34 @@
+digraph {
+    node [shape=record];
+    rankdir="LR";
+    newrank=true;
+    node1_1a [label = "1:a"]
+    node1_1b [label = "2:b"]
+    node1_1c [label = "3:c"]
+    node1_1d [label = "4:d"]
+    node1_1e [label = "5:e"]
+
+    node2_1a [label = "1:a"]
+    node2_1b [label = "2:b"]
+    node2_1c [label = "3:c"]
+    node2_1d [label = "4:d"]
+    node2_1e [label = "5:e"]
+
+    {rank = same; node1_1a; node2_1a;}
+    {rank = same; node1_1d; node2_1c;}
+
+    subgraph cluster_0 {
+        label="Node 1";
+        node1_1a -> node1_1b [ label="another label"];
+        node1_1b -> node1_1c [ label="another label"];
+        node1_1c -> node1_1d;
+        node1_1b -> node1_1e [ label="another label"];
+    }
+
+    subgraph cluster_2 {
+        label="Node 2";
+        node2_1a -> node2_1b;
+        node2_1b -> node2_1c [ label="another label"];
+    }
+
+}
