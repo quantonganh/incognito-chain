@@ -159,7 +159,19 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randInputSND[i] = privacyv1.RandomScalar()
 
 		wit.comInputValue[i] = privacyv1.PedCom.CommitAtIndex(new(privacyv1.Scalar).FromUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], privacyv1.PedersenValueIndex)
-		wit.comInputSerialNumberDerivator[i] = privacyv1.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], privacyv1.PedersenSndIndex)
+
+		// get input for serial number proof
+		inputSNDTmp := new(privacyv1.Scalar)
+		snd := inputCoin.CoinDetails.GetSNDerivator()
+		privRandOTA := inputCoin.CoinDetails.GetPrivRandOTA()
+		if snd != nil && !snd.IsZero() {
+			// input from tx version 0 or tx version 1 no privacy
+			inputSNDTmp = snd
+		} else if privRandOTA != nil && !privRandOTA.IsZero() {
+			// input from tx version 1 has privacy
+			inputSNDTmp = privRandOTA
+		}
+		wit.comInputSerialNumberDerivator[i] = privacyv1.PedCom.CommitAtIndex(inputSNDTmp, randInputSND[i], privacyv1.PedersenSndIndex)
 
 		cmInputValueAll.Add(cmInputValueAll, wit.comInputValue[i])
 		randInputValueAll.Add(randInputValueAll, randInputValue[i])
