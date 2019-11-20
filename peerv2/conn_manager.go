@@ -19,6 +19,7 @@ import (
 )
 
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
+var HighwayBeaconID = byte(255)
 
 func NewConnManager(
 	host *Host,
@@ -26,6 +27,8 @@ func NewConnManager(
 	ikey *incognitokey.CommitteePublicKey,
 	cd ConsensusData,
 	dispatcher *Dispatcher,
+	nodeMode string,
+	relayShard []byte,
 ) *ConnManager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
 	log.Println("IsMasterNode:", master)
@@ -37,12 +40,14 @@ func NewConnManager(
 		disp:                 dispatcher,
 		IsMasterNode:         master,
 		registerRequests:     make(chan int, 100),
+		relayShard:           relayShard,
+		nodeMode:             nodeMode,
 	}
 }
 
 func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	var topic string
-	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
+	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
 	// msgCrossShard := msg.(wire.MessageCrossShard)
 	msgType := msg.MessageType()
 	for _, p := range publishable {
@@ -181,6 +186,9 @@ type ConnManager struct {
 	messages         chan *pubsub.Message // queue messages from all topics
 	registerRequests chan int
 
+	nodeMode   string
+	relayShard []byte
+
 	cd        ConsensusData
 	disp      *Dispatcher
 	Requester *BlockRequester
@@ -311,7 +319,7 @@ func (cm *ConnManager) manageRoleSubscription() {
 	topics := m2t{}
 	for {
 		select {
-		case <-time.Tick(20 * time.Second):
+		case <-time.Tick(10 * time.Second):
 			forced := false // only subscribe when role changed
 			role, topics = cm.subscribe(role, topics, forced)
 
@@ -336,7 +344,15 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 
 	// Registering
 	pubkey, _ := cm.IdentityKey.ToBase58()
-	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, newRole.shardID)
+	roleSID := newRole.shardID
+	if roleSID == -2 { // normal node
+		roleSID = -1
+	}
+	shardIDs := []byte{byte(roleSID)}
+	if cm.nodeMode == common.NodeModeRelay {
+		shardIDs = append(cm.relayShard, HighwayBeaconID)
+	}
+	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
 	if err != nil {
 		return role, topics
 	}
@@ -345,6 +361,8 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 		log.Printf("Role not matching with highway, local = %+v, highway = %+v", newRole, roleOfTopics)
 		return role, topics
 	}
+
+	log.Printf("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
 	// Subscribing
 	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
@@ -439,9 +457,9 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 	for {
 		// TODO(@0xbunyip): check if topic is unsubbed then return, otherwise just continue
 		msg, err := sub.Next(ctx)
-		if err != nil {
+		if err != nil { // Subscription might have been cancelled
 			log.Println(err)
-			continue
+			return
 		}
 
 		inbox <- msg
@@ -453,13 +471,16 @@ type m2t map[string][]Topic // Message to topics
 func (cm *ConnManager) registerToProxy(
 	pubkey string,
 	layer string,
-	shardID int,
+	shardID []byte,
 ) (m2t, userRole, error) {
-	messagesWanted := getMessagesForLayer(layer, shardID)
+	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
+	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, cm.nodeMode, shardID)
+	// os.Exit(9)
 	pairs, role, err := cm.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
+		shardID,
 		cm.LocalHost.Host.ID(),
 	)
 	if err != nil {
@@ -484,22 +505,42 @@ func (cm *ConnManager) registerToProxy(
 	return topics, r, nil
 }
 
-func getMessagesForLayer(layer string, shardID int) []string {
-	if layer == common.ShardRole {
+func getMessagesForLayer(mode, layer string, shardID []byte) []string {
+	switch mode {
+	case common.NodeModeAuto:
+		if layer == common.ShardRole {
+			return []string{
+				wire.CmdBlockShard,
+				wire.CmdBlockBeacon,
+				wire.CmdBFT,
+				wire.CmdPeerState,
+				wire.CmdCrossShard,
+				wire.CmdBlkShardToBeacon,
+				wire.CmdTx,
+				wire.CmdPrivacyCustomToken,
+				wire.CmdCustomToken,
+			}
+		} else if layer == common.BeaconRole {
+			return []string{
+				wire.CmdBlockBeacon,
+				wire.CmdBFT,
+				wire.CmdPeerState,
+				wire.CmdBlkShardToBeacon,
+			}
+		} else {
+			return []string{
+				wire.CmdBlockBeacon,
+				wire.CmdPeerState,
+			}
+		}
+	case common.NodeModeRelay:
 		return []string{
+			wire.CmdTx,
 			wire.CmdBlockShard,
 			wire.CmdBlockBeacon,
-			wire.CmdBFT,
 			wire.CmdPeerState,
-			wire.CmdCrossShard,
-			wire.CmdBlkShardToBeacon,
-		}
-	} else if layer == common.BeaconRole {
-		return []string{
-			wire.CmdBlockBeacon,
-			wire.CmdBFT,
-			wire.CmdPeerState,
-			wire.CmdBlkShardToBeacon,
+			wire.CmdPrivacyCustomToken,
+			wire.CmdCustomToken,
 		}
 	}
 	return []string{}
