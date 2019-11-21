@@ -85,10 +85,21 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 			wit.serialNumberNoPrivacyWitness = make([]*serialnumbernoprivacy.SNNoPrivacyWitness, len(inputCoins))
 			for i := 0; i < len(inputCoins); i++ {
 				/***** Build witness for proving that serial number is derived from the committed derivator *****/
+
+				inputSNDTmp := new(privacy.Scalar)
+				snd := inputCoins[i].CoinDetails.GetSNDerivator()
+				privRandOTA := inputCoins[i].CoinDetails.GetPrivRandOTA()
+				if snd != nil && !snd.IsZero() {
+					// input from tx version 0 or tx version 1 no privacy
+					inputSNDTmp = snd
+				} else if privRandOTA != nil && !privRandOTA.IsZero() {
+					// input from tx version 1 has privacy
+					inputSNDTmp = privRandOTA
+				}
 				if wit.serialNumberNoPrivacyWitness[i] == nil {
 					wit.serialNumberNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)
 				}
-				wit.serialNumberNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.GetSerialNumber(), publicKey, inputCoins[i].CoinDetails.GetSNDerivator(), wit.privateKey)
+				wit.serialNumberNoPrivacyWitness[i].Set(inputCoins[i].CoinDetails.GetSerialNumber(), publicKey, inputSNDTmp, wit.privateKey)
 			}
 		}
 
@@ -147,7 +158,19 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		randInputSND[i] = privacy.RandomScalar()
 
 		wit.comInputValue[i] = privacy.PedCom.CommitAtIndex(new(privacy.Scalar).FromUint64(inputCoin.CoinDetails.GetValue()), randInputValue[i], privacy.PedersenValueIndex)
-		wit.comInputSerialNumberDerivator[i] = privacy.PedCom.CommitAtIndex(inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i], privacy.PedersenSndIndex)
+
+		// get input for serial number proof
+		inputSNDTmp := new(privacy.Scalar)
+		snd := inputCoin.CoinDetails.GetSNDerivator()
+		privRandOTA := inputCoin.CoinDetails.GetPrivRandOTA()
+		if snd != nil && !snd.IsZero() {
+			// input from tx version 0 or tx version 1 no privacy
+			inputSNDTmp = snd
+		} else if privRandOTA != nil && !privRandOTA.IsZero() {
+			// input from tx version 1 has privacy
+			inputSNDTmp = privRandOTA
+		}
+		wit.comInputSerialNumberDerivator[i] = privacy.PedCom.CommitAtIndex(inputSNDTmp, randInputSND[i], privacy.PedersenSndIndex)
 
 		cmInputValueAll.Add(cmInputValueAll, wit.comInputValue[i])
 		randInputValueAll.Add(randInputValueAll, randInputValue[i])

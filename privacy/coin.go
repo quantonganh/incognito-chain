@@ -14,11 +14,22 @@ import (
 type Coin struct {
 	publicKey      *Point
 	coinCommitment *Point
+	// snDerivator only has in no privacy tx version
 	snDerivator    *Scalar
 	serialNumber   *Point
 	randomness     *Scalar
 	value          uint64
-	info           []byte //256 bytes
+	info        []byte //256 bytes
+
+	// shardIDLastByte shardId of receiver
+	// only has in privacy tx
+	// if shardIDLastByte == -1: get shardID from public key
+	// if shardIDLastByte != -1: get shardID from shardIDLastByte (because public key is one-time public key)
+	shardIDLastByte int
+
+	// it used to be witness for output coins with one-time address
+	// only has in privacy tx
+	privRandOTA *Scalar
 }
 
 // Start GET/SET
@@ -77,6 +88,14 @@ func (coin Coin) GetInfo() []byte {
 func (coin *Coin) SetInfo(v []byte) {
 	coin.info = make([]byte, len(v))
 	copy(coin.info, v)
+}
+
+func (coin Coin) GetPrivRandOTA() *Scalar {
+	return coin.privRandOTA
+}
+
+func (coin *Coin) SetPrivRandOTA(privRandOTA *Scalar) {
+	coin.privRandOTA = privRandOTA
 }
 
 // Init (Coin) initializes a coin
@@ -154,7 +173,10 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.publicKey != nil {
 		publicKey := coin.publicKey.ToBytesS()
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		if coin.shardIDLastByte != -1 {
+			publicKey = append(publicKey, byte(coin.shardIDLastByte))
+		}
+		coinBytes = append(coinBytes, byte(len(publicKey)))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -231,15 +253,22 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		if offset+int(lenField) > len(coinBytes) {
+		if offset+int(lenField) > len(coinBytes) || lenField < Ed25519KeySize {
 			// out of range
 			return errors.New("out of range Parse PublicKey")
 		}
-		data := coinBytes[offset : offset+int(lenField)]
-		coin.publicKey, err = new(Point).FromBytesS(data)
+		dataPublicKey := coinBytes[offset : offset+Ed25519KeySize]
+		coin.publicKey, err = new(Point).FromBytesS(dataPublicKey)
 		if err != nil {
 			return err
 		}
+
+		if lenField == Ed25519KeySize + 1 {
+			coin.shardIDLastByte = int(coinBytes[offset + Ed25519KeySize])
+		} else{
+			coin.shardIDLastByte = int(-1)
+		}
+
 		offset += int(lenField)
 	}
 
