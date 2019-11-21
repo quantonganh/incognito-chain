@@ -541,7 +541,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 		// only random ephemeral key
 		ephemeralPrivKey := new(privacy.Scalar)
-		ephemeralPubKey := new(privacy.Point)
+		ephemeralPubKey := new(privacy.Point).Identity()
 		if len(params.paymentInfo) > 0 && params.hasPrivacy {
 				ephemeralPrivKey = privacy.RandomScalar()
 				ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
@@ -624,7 +624,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
 			return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 		}
-		//tx.Proof.
+		// set ephemeral pubkey into tx, it used to revert public key from one-time address
+		tx.Proof.SetEphemeralPubKey(ephemeralPubKey)
 
 		Logger.log.Debugf("DONE PROVING........\n")
 
@@ -675,9 +676,9 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
 		Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 		return nil
+	} else{
+		return NewTransactionErr(InvalidVersionTxError, nil)
 	}
-
-
 }
 
 // signTx - signs tx
