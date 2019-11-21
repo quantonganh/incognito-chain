@@ -42,6 +42,8 @@ type PaymentProof struct {
 	commitmentInputShardID   *privacy.Point
 
 	commitmentIndices []uint64
+
+	ephemeralPubKey  *privacy.Point
 }
 
 // GET/SET function
@@ -107,6 +109,14 @@ func (paymentProof PaymentProof) GetOutputCoins() []*privacy.OutputCoin {
 
 func (paymentProof *PaymentProof) SetOutputCoins(v []*privacy.OutputCoin) {
 	paymentProof.outputCoins = v
+}
+
+func (paymentProof PaymentProof) GetEphemeralPubKey() *privacy.Point {
+	return paymentProof.ephemeralPubKey
+}
+
+func (paymentProof PaymentProof) SetEphemeralPubKey(ephemeralPubKey * privacy.Point){
+	paymentProof.ephemeralPubKey = ephemeralPubKey
 }
 
 // End GET/SET function
@@ -282,6 +292,15 @@ func (proof *PaymentProof) Bytes() []byte {
 	// convert commitment index to bytes array
 	for i := 0; i < len(proof.commitmentIndices); i++ {
 		bytes = append(bytes, common.AddPaddingBigInt(big.NewInt(int64(proof.commitmentIndices[i])), common.Uint64Size)...)
+	}
+
+	//ComInputShardID 	*privacy.Point
+	if proof.ephemeralPubKey != nil && !proof.ephemeralPubKey.IsIdentity() {
+		ephemeralPubKeyBytes := proof.ephemeralPubKey.ToBytesS()
+		bytes = append(bytes, byte(privacy.Ed25519KeySize))
+		bytes = append(bytes, ephemeralPubKeyBytes...)
+	} else {
+		bytes = append(bytes, byte(0))
 	}
 	//fmt.Printf("BYTES ------------------ %v\n", bytes)
 	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))
@@ -621,6 +640,32 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		proof.commitmentIndices[i] = new(big.Int).SetBytes(proofbytes[offset : offset+common.Uint64Size]).Uint64()
 		offset = offset + common.Uint64Size
 	}
+
+	//EphemeralPubKey 	*privacy.Point
+	if offset >= len(proofbytes) {
+		// version 0
+		proof.ephemeralPubKey = nil
+	} else {
+		// version 1
+		lenEphemeralPubKey := int(proofbytes[offset])
+		offset += 1
+		if lenEphemeralPubKey > 0 {
+			// mode privacy
+			if offset+lenEphemeralPubKey > len(proofbytes) {
+				return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range ephemeral pub key"))
+			}
+
+			proof.ephemeralPubKey, err = new(privacy.Point).FromBytesS(proofbytes[offset : offset+lenEphemeralPubKey])
+			if err != nil {
+				return privacy.NewPrivacyErr(privacy.SetBytesProofErr, err)
+			}
+			offset += lenEphemeralPubKey
+		} else{
+			// mode no privacy
+			proof.ephemeralPubKey = nil
+		}
+	}
+
 
 	//fmt.Printf("SETBYTES ------------------ %v\n", proof.Bytes())
 
