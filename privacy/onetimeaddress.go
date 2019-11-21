@@ -1,14 +1,14 @@
 package privacy
 
 // OTA = PubSpendKey * G^(Hash(Hash(PubViewKey^r) || index))
-func GenerateOneTimeAddrFromPaymentAddr(paymentAddress PaymentAddress, rand *Scalar, index int) (*Point, error) {
+func GenerateOneTimeAddrFromPaymentAddr(paymentAddress PaymentAddress, rand *Scalar, index int) (*Point, *Scalar, error) {
 	pubSpendKey, err := new(Point).FromBytesS(paymentAddress.Pk)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	pubViewKey, err := new(Point).FromBytesS(paymentAddress.Tk)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	shareSecretPoint := new(Point).ScalarMult(pubViewKey, rand)
@@ -19,7 +19,7 @@ func GenerateOneTimeAddrFromPaymentAddr(paymentAddress PaymentAddress, rand *Sca
 
 	pubOTA := new(Point).Add(pubSpendKey, new(Point).ScalarMult(PedCom.G[PedersenPrivateKeyIndex], randOTA))
 
-	return pubOTA, nil
+	return pubOTA, randOTA, nil
 }
 
 func GetPublicKeyFromOneTimeAddress(oneTimeAddr *Point, cmRand *Point, privViewKey []byte, index int) (*Point, *Scalar, error) {

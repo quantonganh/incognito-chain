@@ -561,11 +561,12 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 			if params.hasPrivacy{
 				// generate one time address
-				pubOTA, err := privacy.GenerateOneTimeAddrFromPaymentAddr(pInfo.PaymentAddress, ephemeralPrivKey, i)
+				pubOTA, privRandOTA, err := privacy.GenerateOneTimeAddrFromPaymentAddr(pInfo.PaymentAddress, ephemeralPrivKey, i)
 				if err != nil{
 					return NewTransactionErr(GenOneTimeAddrError, err)
 				}
 				outputCoins[i].CoinDetails.SetPublicKey(pubOTA)
+				outputCoins[i].CoinDetails.SetPrivRandOTA(privRandOTA)
 			} else{
 				pubKey, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 				if err != nil{
@@ -645,6 +646,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
 				tx.Proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
 				tx.Proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
+				tx.Proof.GetOutputCoins()[i].CoinDetails.SetPrivRandOTA(nil)
 			}
 
 			// hide information of input coins except serial number of input coins
@@ -791,27 +793,6 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 			}
 		}
 
-		sndOutputs := make([]*privacy.Scalar, len(tx.Proof.GetOutputCoins()))
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
-		}
-
-		if privacy.CheckDuplicateScalarArray(sndOutputs) {
-			Logger.log.Errorf("Duplicate output coins' snd\n")
-			return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
-		}
-
-		for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-			// Check output coins' SND is not exists in SND list (Database)
-			if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
-				if err != nil {
-					Logger.log.Error(err)
-				}
-				Logger.log.Errorf("snd existed: %d\n", i)
-				return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
-			}
-		}
-
 		if !hasPrivacy {
 			// Check input coins' commitment is exists in cm list (Database)
 			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
@@ -821,6 +802,27 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 						Logger.log.Error(err)
 					}
 					return false, NewTransactionErr(InputCommitmentIsNotExistedError, err)
+				}
+			}
+
+			sndOutputs := make([]*privacy.Scalar, len(tx.Proof.GetOutputCoins()))
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
+			}
+
+			if privacy.CheckDuplicateScalarArray(sndOutputs) {
+				Logger.log.Errorf("Duplicate output coins' snd\n")
+				return false, NewTransactionErr(DuplicatedOutputSndError, errors.New("Duplicate output coins' snd\n"))
+			}
+
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				// Check output coins' SND is not exists in SND list (Database)
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
+					if err != nil {
+						Logger.log.Error(err)
+					}
+					Logger.log.Errorf("snd existed: %d\n", i)
+					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
 			}
 		}
@@ -1123,8 +1125,8 @@ func (tx Tx) ValidateTxWithBlockChain(
 
 func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	//check version
-	if tx.Version > TxVersion1 {
-		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, TxVersion1))
+	if tx.Version > TxVersion2 {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, TxVersion2))
 	}
 	// check LockTime before now
 	if int64(tx.LockTime) > time.Now().Unix() {
@@ -1213,9 +1215,9 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
 					return false, errors.New("validate sanity Coin commitment of output coin failed")
 				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
-					return false, errors.New("validate sanity SNDerivator of output coin failed")
-				}
+				//if txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				//	return false, errors.New("validate sanity SNDerivator of output coin failed")
+				//}
 			}
 			// check ComInputSK
 			if !txN.Proof.GetCommitmentInputSecretKey().PointValid() {
@@ -1245,8 +1247,8 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				}
 			}
 			//check ComOutputSND
-			for i := 0; i < len(txN.Proof.GetCommitmentOutputShardID()); i++ {
-				if !txN.Proof.GetCommitmentOutputShardID()[i].PointValid() {
+			for i := 0; i < len(txN.Proof.GetCommitmentOutputSND()); i++ {
+				if !txN.Proof.GetCommitmentOutputSND()[i].PointValid() {
 					return false, errors.New("validate sanity ComOutputSND of proof failed")
 				}
 			}

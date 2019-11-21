@@ -442,3 +442,204 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 
 	return coins, sumValue
 }
+
+
+func TestInitTxV1(t *testing.T) {
+	for i:=0; i<1; i++ {
+
+		/****** Generate sender private key & receiver payment address ********/
+		seed := privacy.RandomScalar().ToBytesS()
+		masterKey, _ := wallet.NewMasterKey(seed)
+		childSender, _ := masterKey.NewChildKey(uint32(1))
+		childReceiver, _ := masterKey.NewChildKey(uint32(2))
+
+		senderPrivKeyB58 := childSender.Base58CheckSerialize(wallet.PriKeyType)
+		receiverPaymentAddrB58 := childReceiver.Base58CheckSerialize(wallet.PaymentAddressType)
+		receiverKeyWallet, _ := wallet.Base58CheckDeserialize(receiverPaymentAddrB58)
+		receiverPubKey := receiverKeyWallet.KeySet.PaymentAddress.Pk
+
+		senderKey, err := wallet.Base58CheckDeserialize(senderPrivKeyB58)
+		assert.Equal(t, nil, err)
+		err = senderKey.KeySet.InitFromPrivateKey(&senderKey.KeySet.PrivateKey)
+		assert.Equal(t, nil, err)
+
+		senderPaymentAddress := senderKey.KeySet.PaymentAddress
+		//senderPublicKey := senderPaymentAddress.Pk
+
+
+		senderShardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
+
+		/******** coin base tx to mint PRV ********/
+		mintedAmount := 1000
+		coinBaseTx, err := BuildCoinBaseTxByCoinID(NewBuildCoinBaseTxByCoinIDParams(&senderPaymentAddress, uint64(mintedAmount), &senderKey.KeySet.PrivateKey, db, nil, common.Hash{}, NormalCoinType, "PRV", 0))
+
+		isValidSanity, err := coinBaseTx.ValidateSanityData(nil)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, true, isValidSanity)
+
+		// store output coin's coin commitments in coin base tx
+		db.StoreCommitments(
+			common.PRVCoinID,
+			senderPaymentAddress.Pk,
+			[][]byte{coinBaseTx.(*Tx).Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+			senderShardID)
+
+		/******** get output coins from coin base tx to create new tx ********/
+		coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
+
+		fmt.Printf("coinBaseOutput[0]GetValue: %v\n", coinBaseOutput[0].CoinDetails.GetValue())
+		fmt.Printf("coinBaseOutput[0]GetSNDerivator: %v\n", coinBaseOutput[0].CoinDetails.GetSNDerivator())
+		fmt.Printf("coinBaseOutput[0]GetCoinCommitment: %v\n", coinBaseOutput[0].CoinDetails.GetCoinCommitment())
+		fmt.Printf("coinBaseOutput[0]GetPrivRandOTA: %v\n", coinBaseOutput[0].CoinDetails.GetPrivRandOTA())
+		fmt.Printf("coinBaseOutput[0]GetRandomness: %v\n", coinBaseOutput[0].CoinDetails.GetRandomness())
+		fmt.Printf("coinBaseOutput[0]GetInfo: %v\n", coinBaseOutput[0].CoinDetails.GetInfo())
+		fmt.Printf("coinBaseOutput[0]GetPublicKey: %v\n", coinBaseOutput[0].CoinDetails.GetPublicKey())
+		fmt.Printf("coinBaseOutput[0]GetSerialNumber: %v\n", coinBaseOutput[0].CoinDetails.GetSerialNumber())
+
+		/******** init tx with mode no privacy ********/
+		tx1 := Tx{}
+		// calculate serial number for input coins from coin base tx
+		serialNumber := new(privacy.Point).Derive(
+			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+			coinBaseOutput[0].CoinDetails.GetSNDerivator(),
+		)
+		coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
+
+		// transfer amount
+		transferAmount := 5
+		hasPrivacy := true
+		fee := 1
+
+		// message to receiver
+		msg := "Incognito-chain"
+		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+
+		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
+		err = tx1.Init(
+			NewTxPrivacyInitParams(
+				&senderKey.KeySet.PrivateKey,
+				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount), Message: msgCipherText.Bytes()}},
+				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, TxVersion2,
+			),
+		)
+		if err != nil {
+			t.Error(err)
+		}
+
+		outputs := tx1.GetProof().GetOutputCoins()
+		fmt.Printf("%v\n", len(outputs))
+		for i:=0; i<len(outputs); i++{
+			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs[i].CoinDetails.GetValue())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs[i].CoinDetails.GetPublicKey())
+			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs[i].CoinDetails.GetPrivRandOTA())
+		}
+
+		assert.Equal(t, len(msgCipherText.Bytes()), len(tx1.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+
+		if hasPrivacy{
+			assert.NotEqual(t, receiverPubKey, outputs[0].CoinDetails.GetPublicKey())
+		} else{
+			assert.Equal(t, receiverPubKey, outputs[0].CoinDetails.GetPublicKey())
+		}
+
+
+		isValidSanity, err = tx1.ValidateSanityData(nil)
+		assert.Equal(t, true, isValidSanity)
+		assert.Equal(t, nil, err)
+
+		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, senderShardID, nil)
+
+		fmt.Printf("Error: %v\n", err)
+		assert.Equal(t, true, isValid)
+		assert.Equal(t, nil, err)
+
+
+
+		//isValidTxVersion := tx1.CheckTxVersion(1)
+		//assert.Equal(t, true, isValidTxVersion)
+		//
+		////isValidTxFee := tx1.CheckTransactionFee(0)
+		////assert.Equal(t, true, isValidTxFee)
+		//
+		//isSalaryTx := tx1.IsSalaryTx()
+		//assert.Equal(t, false, isSalaryTx)
+		//
+		//actualSenderPublicKey := tx1.GetSender()
+		//expectedSenderPublicKey := make([]byte, common.PublicKeySize)
+		//copy(expectedSenderPublicKey, senderPublicKey[:])
+		//assert.Equal(t, expectedSenderPublicKey, actualSenderPublicKey[:])
+		//
+		////err = tx1.ValidateTxWithCurrentMempool(nil)
+		////	assert.Equal(t, nil, err)
+		//
+		//err = tx1.ValidateDoubleSpendWithBlockchain(nil, senderShardID, db, nil)
+		//assert.Equal(t, nil, err)
+		//
+		//err = tx1.ValidateTxWithBlockChain(nil, senderShardID, db)
+		//assert.Equal(t, nil, err)
+		//
+		//isValid, err = tx1.ValidateTxByItself(hasPrivacy, db, nil, senderShardID)
+		//assert.Equal(t, nil, err)
+		//assert.Equal(t, true, isValid)
+		//
+		//metaDataType := tx1.GetMetadataType()
+		//assert.Equal(t, metadata.InvalidMeta, metaDataType)
+		//
+		//metaData := tx1.GetMetadata()
+		//assert.Equal(t, nil, metaData)
+		//
+		//info := tx1.GetInfo()
+		//assert.Equal(t, 0, len(info))
+		//
+		//lockTime := tx1.GetLockTime()
+		//now := time.Now().Unix()
+		//assert.LessOrEqual(t, lockTime, now)
+		//
+		//actualSigPubKey := tx1.GetSigPubKey()
+		//assert.Equal(t, expectedSenderPublicKey, actualSigPubKey)
+		//
+		//proof := tx1.GetProof()
+		//assert.NotEqual(t, nil, proof)
+		//
+		//isValidTxType := tx1.ValidateType()
+		//assert.Equal(t, true, isValidTxType)
+		//
+		//isCoinsBurningTx := tx1.IsCoinsBurning()
+		//assert.Equal(t, false, isCoinsBurningTx)
+		//
+		//actualTxValue := tx1.CalculateTxValue()
+		//assert.Equal(t, uint64(transferAmount), actualTxValue)
+
+		// store output coin's coin commitments in tx1
+		//for i:=0; i < len(tx1.Proof.GetOutputCoins()); i++ {
+		//	db.StoreCommitments(
+		//		common.PRVCoinID,
+		//		tx1.Proof.GetOutputCoins()[i].CoinDetails.GetPublicKey().Compress(),
+		//		[][]byte{tx1.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().Compress()},
+		//		senderShardID)
+		//}
+
+		// init tx with privacy
+		//tx2 := Tx{}
+		//
+		//err = tx2.Init(
+		//	NewTxPrivacyInitParams(
+		//		&senderKey.KeySet.PrivateKey,
+		//		[]*privacy.PaymentInfo{{PaymentAddress: senderPaymentAddress, Amount: uint64(transferAmount)}},
+		//		coinBaseOutput, 1, true, db, nil, nil, []byte{}))
+		//if err != nil {
+		//	t.Error(err)
+		//}
+		//
+		//isValidSanity, err = tx2.ValidateSanityData(nil)
+		//assert.Equal(t, nil, err)
+		//assert.Equal(t, true, isValidSanity)
+		//
+		//isValidTx, err := tx2.ValidateTransaction(true, db, senderShardID, &common.PRVCoinID)
+		//assert.Equal(t, true, isValidTx)
+
+	}
+}
