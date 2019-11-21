@@ -9,6 +9,7 @@ import (
 type Block struct {
 	Height      uint64
 	Timestamp   int64
+	TimeSlot    int
 	ProposerIdx int
 	PrevBlock   common.Hash
 }
@@ -26,10 +27,11 @@ type GraphNode struct {
 }
 
 type BlockGraph struct {
-	name string
-	root *GraphNode
-	node map[common.Hash]*GraphNode
-	leaf map[common.Hash]*GraphNode
+	name    string
+	root    *GraphNode
+	node    map[common.Hash]*GraphNode
+	leaf    map[common.Hash]*GraphNode
+	edgeStr string
 }
 
 func NewBlockGraph(name string, rootBlock *Block) *BlockGraph {
@@ -65,19 +67,40 @@ func (s *BlockGraph) AddBlock(b *Block) {
 }
 
 func (s *BlockGraph) Print() {
-	traverse(s.root)
+	s.edgeStr = ""
+	s.traverse(s.root)
+
+	dotContent := `digraph {
+node [shape=record];
+//    rankdir="LR";
+newrank=true;
+`
+	maxTimeSlot := 0
+	for k, v := range s.node {
+		shortK := k.String()[0:5]
+		dotContent += fmt.Sprintf(`%s_%d_%s [label = "%d:%s"]`, s.name, v.block.Height, string(shortK), v.block.Height, string(shortK)) + "\n"
+		dotContent += fmt.Sprintf(`{rank=same; %s_%d_%s; slot_%d;}`, s.name, v.block.Height, string(shortK), v.block.TimeSlot) + "\n"
+		if v.block.TimeSlot > maxTimeSlot {
+			maxTimeSlot = v.block.TimeSlot
+		}
+	}
+
+	for i := 1; i < maxTimeSlot; i++ {
+		dotContent += fmt.Sprintf("slot_%d -> slot_%d;", i, i+1) + "\n"
+	}
+
+	dotContent += s.edgeStr
+	dotContent += `}`
+	fmt.Println(dotContent)
+
 }
 
-func traverse(n *GraphNode) {
-	fmt.Println("traverse", n.block.Height)
+func (s *BlockGraph) traverse(n *GraphNode) {
 	if n.next != nil && len(n.next) != 0 {
-		//b, _ := json.MarshalIndent(n.block, "", "\t")
-		//fmt.Println("branch", string(b))
-		for _, v := range n.next {
-			traverse(v)
+		for h, v := range n.next {
+			s.edgeStr += fmt.Sprintf("%s_%d_%s -> %s_%d_%s;\n", s.name, n.block.Height, string(n.block.Hash().String()[0:5]), s.name, v.block.Height, string(h.String()[0:5]))
+			s.traverse(v)
 		}
 	} else {
-		//b, _ := json.MarshalIndent(n.block, "", "\t")
-		//fmt.Println("leaf", string(b))
 	}
 }

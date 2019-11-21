@@ -3,39 +3,70 @@ package main
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"testing"
-	"time"
 )
 
 func TestBlockGraph_AddBlock(t *testing.T) {
 	root := Block{
 		1,
-		time.Now().Unix(),
+		1,
+		1,
 		0,
 		common.Hash{},
 	}
 	bg := NewBlockGraph("n1", &root)
-	b2 := &Block{
+
+	b2a := &Block{
 		2,
-		time.Now().Unix(),
-		0,
+		2,
+		2,
+		1,
 		root.Hash(),
 	}
-	b3 := &Block{
+	b2b := &Block{
+		2,
 		3,
-		time.Now().Unix(),
-		1,
+		3,
+		2,
 		root.Hash(),
-	}
-	b4 := &Block{
-		4,
-		time.Now().Unix(),
-		1,
-		b2.Hash(),
 	}
 
-	bg.AddBlock(b2)
-	bg.AddBlock(b3)
+	b3a := &Block{
+		3,
+		4,
+		4,
+		3,
+		b2a.Hash(),
+	}
+
+	b3b := &Block{
+		3,
+		5,
+		5,
+		0,
+		b2b.Hash(),
+	}
+
+	b4 := &Block{
+		4,
+		6,
+		6,
+		1,
+		b3a.Hash(),
+	}
+	b5 := &Block{
+		5,
+		7,
+		7,
+		2,
+		b4.Hash(),
+	}
+
+	bg.AddBlock(b2a)
+	bg.AddBlock(b2b)
+	bg.AddBlock(b3a)
+	bg.AddBlock(b3b)
 	bg.AddBlock(b4)
+	bg.AddBlock(b5)
 
 	bg.Print()
 }
