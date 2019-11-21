@@ -13,19 +13,29 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		0,
 		common.Hash{},
 	}
-	bg := NewBlockGraph(&root)
-	bg.AddBlock(&Block{
+	bg := NewBlockGraph("n1", &root)
+	b2 := &Block{
 		2,
 		time.Now().Unix(),
 		0,
 		root.Hash(),
-	})
-
-	bg.AddBlock(&Block{
+	}
+	b3 := &Block{
 		3,
 		time.Now().Unix(),
-		0,
+		1,
 		root.Hash(),
-	})
+	}
+	b4 := &Block{
+		4,
+		time.Now().Unix(),
+		1,
+		b2.Hash(),
+	}
 
+	bg.AddBlock(b2)
+	bg.AddBlock(b3)
+	bg.AddBlock(b4)
+
+	bg.Print()
 }

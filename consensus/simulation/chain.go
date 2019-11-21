@@ -14,9 +14,9 @@ type Chain struct {
 func NewChain() *Chain {
 	return &Chain{
 		Blocks: []Block{Block{
-			height:      1,
-			timestamp:   time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix(),
-			proposerIdx: 3,
+			Height:      1,
+			Timestamp:   time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix(),
+			ProposerIdx: 3,
 		}},
 	}
 }
@@ -30,7 +30,7 @@ func (Chain) GetConsensusType() string {
 }
 
 func (s *Chain) GetLastBlockTimeStamp() int64 {
-	return s.Blocks[len(s.Blocks)-1].timestamp
+	return s.Blocks[len(s.Blocks)-1].Timestamp
 }
 
 func (Chain) GetMinBlkInterval() time.Duration {
@@ -54,7 +54,7 @@ func (Chain) GetPubkeyRole(pubkey string, round int) (string, byte) {
 }
 
 func (s *Chain) CurrentHeight() uint64 {
-	return s.Blocks[len(s.Blocks)-1].height
+	return s.Blocks[len(s.Blocks)-1].Height
 }
 
 func (s *Chain) GetCommitteeSize() int {
@@ -70,7 +70,7 @@ func (s *Chain) GetPubKeyCommitteeIndex(string) int {
 }
 
 func (s *Chain) GetLastProposerIndex() int {
-	return s.Blocks[len(s.Blocks)-1].proposerIdx
+	return s.Blocks[len(s.Blocks)-1].ProposerIdx
 }
 
 func (Chain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
