@@ -212,7 +212,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		}
 		stmt := new(serialnumberprivacy.SerialNumberPrivacyStatement)
 		stmt.Set(inputCoin.CoinDetails.GetSerialNumber(), cmInputSK, wit.comInputSerialNumberDerivator[i])
-		wit.serialNumberWitness[i].Set(stmt, privateKey, randInputSK, inputCoin.CoinDetails.GetSNDerivator(), randInputSND[i])
+		wit.serialNumberWitness[i].Set(stmt, privateKey, randInputSK, inputSNDTmp, randInputSND[i])
 		// ---------------------------------------------------
 	}
 

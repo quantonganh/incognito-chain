@@ -40,12 +40,12 @@ func GetPublicKeyFromOneTimeAddress(oneTimeAddr *Point, cmRand *Point, privViewK
 func IsPairOneTimeAddr(oneTimeAddr *Point, cmRand *Point, viewKey ViewingKey, index int) (bool, *Scalar, error) {
 	pubSpendKeyFromOneTimeAddr, randOTA, err := GetPublicKeyFromOneTimeAddress(oneTimeAddr, cmRand, viewKey.Rk, index)
 	if err != nil {
-		return false, nil, err
+		return false, randOTA, err
 	}
 
 	pubSpendKey, err := new(Point).FromBytesS(viewKey.Pk)
 	if err != nil {
-		return false, nil, err
+		return false, randOTA, err
 	}
 
 	isPair := IsPointEqual(pubSpendKeyFromOneTimeAddr, pubSpendKey)
@@ -53,5 +53,5 @@ func IsPairOneTimeAddr(oneTimeAddr *Point, cmRand *Point, viewKey ViewingKey, in
 		return true, randOTA, nil
 	}
 
-	return false, nil, err
+	return false, randOTA, err
 }

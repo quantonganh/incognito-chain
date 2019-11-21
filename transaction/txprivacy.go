@@ -545,6 +545,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		if len(params.paymentInfo) > 0 && params.hasPrivacy {
 				ephemeralPrivKey = privacy.RandomScalar()
 				ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
+				fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
 		}
 
 		// create new output coins with info: Pk, value, last byte of pk, snd
@@ -565,6 +566,8 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				if err != nil{
 					return NewTransactionErr(GenOneTimeAddrError, err)
 				}
+				fmt.Printf("privRandOTA %v: %v\n", i, privRandOTA)
+				fmt.Printf("pubOTA %v: %v\n", i, pubOTA)
 				outputCoins[i].CoinDetails.SetPublicKey(pubOTA)
 				outputCoins[i].CoinDetails.SetPrivRandOTA(privRandOTA)
 			} else{
@@ -626,7 +629,10 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			return NewTransactionErr(WithnessProveError, err, params.hasPrivacy, string(jsonParam))
 		}
 		// set ephemeral pubkey into tx, it used to revert public key from one-time address
+
 		tx.Proof.SetEphemeralPubKey(ephemeralPubKey)
+		fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
+		fmt.Printf("ephemeralPubKey when initing tx: %v\n", tx.Proof.GetEphemeralPubKey())
 
 		Logger.log.Debugf("DONE PROVING........\n")
 

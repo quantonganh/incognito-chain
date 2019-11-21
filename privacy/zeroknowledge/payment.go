@@ -115,7 +115,7 @@ func (paymentProof PaymentProof) GetEphemeralPubKey() *privacy.Point {
 	return paymentProof.ephemeralPubKey
 }
 
-func (paymentProof PaymentProof) SetEphemeralPubKey(ephemeralPubKey * privacy.Point){
+func (paymentProof* PaymentProof) SetEphemeralPubKey(ephemeralPubKey * privacy.Point){
 	paymentProof.ephemeralPubKey = ephemeralPubKey
 }
 

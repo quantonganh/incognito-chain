@@ -454,8 +454,9 @@ func TestInitTxV1(t *testing.T) {
 		childReceiver, _ := masterKey.NewChildKey(uint32(2))
 
 		senderPrivKeyB58 := childSender.Base58CheckSerialize(wallet.PriKeyType)
-		receiverPaymentAddrB58 := childReceiver.Base58CheckSerialize(wallet.PaymentAddressType)
-		receiverKeyWallet, _ := wallet.Base58CheckDeserialize(receiverPaymentAddrB58)
+		receiverPrivKeyB58 := childReceiver.Base58CheckSerialize(wallet.PriKeyType)
+		receiverKeyWallet, _ := wallet.Base58CheckDeserialize(receiverPrivKeyB58)
+		receiverKeyWallet.KeySet.InitFromPrivateKeyByte(receiverKeyWallet.KeySet.PrivateKey)
 		receiverPubKey := receiverKeyWallet.KeySet.PaymentAddress.Pk
 
 		senderKey, err := wallet.Base58CheckDeserialize(senderPrivKeyB58)
@@ -554,6 +555,91 @@ func TestInitTxV1(t *testing.T) {
 
 		fmt.Printf("Error: %v\n", err)
 		assert.Equal(t, true, isValid)
+		assert.Equal(t, nil, err)
+
+		outputs[1].Decrypt(senderKey.KeySet.ReadonlyKey)
+
+		newOutput := ConvertOutputCoinToInputCoin([]*privacy.OutputCoin{outputs[1]})
+
+		// store output coin's coin commitments from tx1
+		db.StoreCommitments(
+			common.PRVCoinID,
+			senderPaymentAddress.Pk,
+			[][]byte{newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+			senderShardID)
+
+		/******** init tx with mode no privacy ********/
+		tx2 := Tx{}
+		// prepare input: calculate SN, PrivRandOTA, Value, Randomness
+		// calculate privRandOTA
+		fmt.Printf("AA tx1.Proof.GetEphemeralPubKey(): %v\n", tx1.Proof.GetEphemeralPubKey())
+		fmt.Printf("AAA newOutput[0].CoinDetails.GetPublicKey(): %v\n", newOutput[0].CoinDetails.GetPublicKey())
+		isPair, privRandOTA, err := privacy.IsPairOneTimeAddr(newOutput[0].CoinDetails.GetPublicKey(), tx1.Proof.GetEphemeralPubKey(), senderKey.KeySet.ReadonlyKey, 1)
+		fmt.Printf("err check one time address: %v\n", err)
+		assert.Equal(t, true, isPair)
+		newOutput[0].CoinDetails.SetPrivRandOTA(privRandOTA)
+		fmt.Printf("privRandOTA : %v\n", privRandOTA)
+		fmt.Printf("newOutput[0].CoinDetails.GetPrivRandOTA() : %v\n", newOutput[0].CoinDetails.GetPrivRandOTA())
+
+		// calculate serial number for input coins from coin base tx
+		serialNumber2 := new(privacy.Point).Derive(
+			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+			newOutput[0].CoinDetails.GetPrivRandOTA(),
+		)
+		newOutput[0].CoinDetails.SetSerialNumber(serialNumber2)
+
+		// decrypt Value, Randomness
+
+
+		// transfer amount
+		transferAmount2 := 5
+		hasPrivacy2 := true
+		fee2 := 1
+
+		// message to receiver
+		msg2 := "Incognito-chain"
+		receiverTK2 , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText2, _ := privacy.HybridEncrypt([]byte(msg2), receiverTK2)
+
+		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
+		err = tx2.Init(
+			NewTxPrivacyInitParams(
+				&senderKey.KeySet.PrivateKey,
+				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount2), Message: msgCipherText2.Bytes()}},
+				newOutput, uint64(fee2), hasPrivacy2, db, nil, nil, []byte{}, TxVersion2,
+			),
+		)
+		if err != nil {
+			t.Error(err)
+		}
+
+		outputs2 := tx2.GetProof().GetOutputCoins()
+		fmt.Printf("%v\n", len(outputs2))
+		for i:=0; i<len(outputs2); i++{
+			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs2[i].CoinDetails.GetValue())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs2[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs2[i].CoinDetails.GetPublicKey())
+			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs2[i].CoinDetails.GetPrivRandOTA())
+		}
+
+		assert.Equal(t, len(msgCipherText2.Bytes()), len(tx2.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+
+		if hasPrivacy2 {
+			assert.NotEqual(t, receiverPubKey, outputs2[0].CoinDetails.GetPublicKey())
+		} else{
+			assert.Equal(t, receiverPubKey, outputs2[0].CoinDetails.GetPublicKey())
+		}
+
+
+		isValidSanity2, err := tx2.ValidateSanityData(nil)
+		assert.Equal(t, true, isValidSanity2)
+		assert.Equal(t, nil, err)
+
+		isValid2, err := tx2.ValidateTransaction(hasPrivacy2, db, senderShardID, nil)
+
+		fmt.Printf("Error: %v\n", err)
+		assert.Equal(t, true, isValid2)
 		assert.Equal(t, nil, err)
 
 
