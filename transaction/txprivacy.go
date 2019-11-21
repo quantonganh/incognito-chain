@@ -77,6 +77,7 @@ type TxPrivacyInitParams struct {
 	tokenID     *common.Hash 				// default is nil -> use for prv coin
 	metaData    metadata.Metadata
 	info        []byte 						// 512 bytes
+	version int8
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -87,7 +88,8 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 	db database.DatabaseInterface,
 	tokenID *common.Hash, // default is nil -> use for prv coin
 	metaData metadata.Metadata,
-	info []byte) *TxPrivacyInitParams {
+	info []byte,
+	version int8) *TxPrivacyInitParams {
 	params := &TxPrivacyInitParams{
 		db:          db,
 		tokenID:     tokenID,
@@ -98,6 +100,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 		paymentInfo: paymentInfo,
 		senderSK:    senderSK,
 		info:        info,
+		version: version,
 	}
 	return params
 }
@@ -109,7 +112,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 
 	Logger.log.Debugf("CREATING TX........\n")
-	tx.Version = txVersion
+	tx.Version = TxVersion1
 	var err error
 
 	if len(params.inputCoins) > 255 {
@@ -823,8 +826,8 @@ func (tx Tx) ValidateTxWithBlockChain(
 
 func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	//check version
-	if tx.Version > txVersion {
-		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, txVersion))
+	if tx.Version > TxVersion1 {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version >= %d", tx.Version, TxVersion1))
 	}
 	// check LockTime before now
 	if int64(tx.LockTime) > time.Now().Unix() {
@@ -1160,7 +1163,7 @@ func (tx *Tx) InitTxSalary(
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 ) error {
-	tx.Version = txVersion
+	tx.Version = TxVersion1
 	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
@@ -1355,7 +1358,7 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 
 	//Logger.log.Debugf("CREATING TX........\n")
-	tx.Version = txVersion
+	tx.Version = TxVersion1
 	var err error
 
 	if len(params.txParam.inputCoins) > 255 {

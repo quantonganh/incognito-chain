@@ -212,7 +212,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		params.db,
 		nil,
 		params.metaData,
-		params.info))
+		params.info,
+		TxVersion2))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -339,7 +340,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				params.db,
 				propertyID,
 				nil,
-				nil))
+				nil,
+				TxVersion2))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}

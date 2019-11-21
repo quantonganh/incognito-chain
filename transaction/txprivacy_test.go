@@ -103,7 +103,7 @@ func TestInitTx(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount), Message: msgCipherText.Bytes()}},
-				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{},
+				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, TxVersion2,
 			),
 		)
 		if err != nil {
@@ -304,7 +304,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: uint64(transferAmount)}},
-				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{},
+				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, TxVersion2,
 			),
 		)
 		assert.Equal(t, nil, err)

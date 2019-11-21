@@ -1,8 +1,9 @@
 package transaction
 
 const (
-	// txVersion is the current latest supported transaction version.
-	txVersion = 1
+	// TxVersion1 is the current latest supported transaction version.
+	TxVersion1 = 1
+	TxVersion2 = 2
 )
 
 const (
