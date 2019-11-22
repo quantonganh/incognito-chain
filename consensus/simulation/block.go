@@ -27,11 +27,13 @@ type GraphNode struct {
 }
 
 type BlockGraph struct {
-	name    string
-	root    *GraphNode
-	node    map[common.Hash]*GraphNode
-	leaf    map[common.Hash]*GraphNode
-	edgeStr string
+	name         string
+	root         *GraphNode
+	node         map[common.Hash]*GraphNode
+	leaf         map[common.Hash]*GraphNode
+	edgeStr      string
+	bestView     *GraphNode
+	confirmBlock *GraphNode
 }
 
 func NewBlockGraph(name string, rootBlock *Block) *BlockGraph {
@@ -46,6 +48,7 @@ func NewBlockGraph(name string, rootBlock *Block) *BlockGraph {
 	}
 	s.leaf[rootBlock.Hash()] = s.root
 	s.node[rootBlock.Hash()] = s.root
+	s.confirmBlock = s.root
 	return s
 }
 
@@ -64,6 +67,12 @@ func (s *BlockGraph) AddBlock(b *Block) {
 			s.node[newBlockHash] = s.leaf[newBlockHash]
 		}
 	}
+}
+
+func (s *BlockGraph) GetBestViewBlock() *Block {
+	s.traverse(s.root)
+	fmt.Println(s.bestView.block.Height, s.bestView.block.TimeSlot)
+	return s.bestView.block
 }
 
 func (s *BlockGraph) Print() {
@@ -92,6 +101,12 @@ newrank=true;
 	dotContent += s.edgeStr
 	dotContent += `}`
 	fmt.Println(dotContent)
+	s.updateConfirmBlock(s.bestView)
+
+	b, _ := json.MarshalIndent(s.bestView.block, "", "\t")
+	fmt.Println(string(b))
+	c, _ := json.MarshalIndent(s.confirmBlock.block, "", "\t")
+	fmt.Println(string(c))
 
 }
 
@@ -102,5 +117,33 @@ func (s *BlockGraph) traverse(n *GraphNode) {
 			s.traverse(v)
 		}
 	} else {
+		if s.bestView == nil {
+			s.bestView = n
+		} else {
+			if n.block.Height > s.bestView.block.Height {
+				s.bestView = n
+			}
+			if n.block.Height == s.bestView.block.Height && n.block.TimeSlot < s.bestView.block.TimeSlot {
+				s.bestView = n
+			}
+		}
 	}
+}
+
+func (s *BlockGraph) updateConfirmBlock(node *GraphNode) {
+	_1block := node.prev
+	_2block := _1block.prev
+	if _1block == nil {
+		s.confirmBlock = node
+		return
+	}
+	if _2block == nil {
+		s.confirmBlock = _1block
+		return
+	}
+	if _2block.block.TimeSlot == _1block.block.TimeSlot-1 && _2block.block.TimeSlot == node.block.TimeSlot-2 {
+		s.confirmBlock = _2block
+		return
+	}
+	s.updateConfirmBlock(_1block)
 }

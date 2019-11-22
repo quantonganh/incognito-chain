@@ -49,20 +49,12 @@ func (Chain) GetActiveShardNumber() int {
 	return 8
 }
 
-func (Chain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return "committee", 0
-}
-
 func (s *Chain) CurrentHeight() uint64 {
 	return s.Blocks[len(s.Blocks)-1].Height
 }
 
 func (s *Chain) GetCommitteeSize() int {
 	return len(s.Committee)
-}
-
-func (s *Chain) GetCommittee() []incognitokey.CommitteePublicKey {
-	panic("implement me")
 }
 
 func (s *Chain) GetPubKeyCommitteeIndex(string) int {
@@ -81,15 +73,7 @@ func (Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	panic("implement me")
 }
 
-func (Chain) InsertBlk(block common.BlockInterface) error {
-	return nil
-}
-
 func (Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	return nil
-}
-
-func (Chain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	return nil
 }
 
@@ -99,4 +83,23 @@ func (Chain) ValidatePreSignBlock(block common.BlockInterface) error {
 
 func (Chain) GetShardID() int {
 	return 0
+}
+
+func (s *Chain) GetCommittee() []incognitokey.CommitteePublicKey {
+	return nil
+}
+
+func (Chain) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	//not use in bft
+	panic("implement me")
+}
+
+func (Chain) InsertBlk(block common.BlockInterface) error {
+	//not use in bft
+	panic("implement me")
+}
+
+func (Chain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	//not use in bft
+	panic("implement me")
 }

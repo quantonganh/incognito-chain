@@ -1,30 +1,35 @@
 digraph {
     node [shape=record];
-    newrank=true;
-    n1_5_dfe40 [label = "5:dfe40"]
-    {rank=same; n1_5_dfe40; slot_7;}
-    n1_1_87f85 [label = "1:87f85"]
-    {rank=same; n1_1_87f85; slot_1;}
-    n1_2_cbaa7 [label = "2:cbaa7"]
-    {rank=same; n1_2_cbaa7; slot_2;}
-    n1_2_1bef1 [label = "2:1bef1"]
-    {rank=same; n1_2_1bef1; slot_3;}
+    //    rankdir="LR";
+newrank=true;
     n1_3_f0cf7 [label = "3:f0cf7"]
     {rank=same; n1_3_f0cf7; slot_4;}
     n1_3_617f9 [label = "3:617f9"]
     {rank=same; n1_3_617f9; slot_5;}
     n1_4_acb24 [label = "4:acb24"]
     {rank=same; n1_4_acb24; slot_6;}
+    n1_5_dfe40 [label = "5:dfe40"]
+    {rank=same; n1_5_dfe40; slot_7;}
+    n1_6_4aa1a [label = "6:4aa1a"]
+    {rank=same; n1_6_4aa1a; slot_8;}
+    n1_1_87f85 [label = "1:87f85"]
+    {rank=same; n1_1_87f85; slot_1;}
+    n1_2_cbaa7 [label = "2:cbaa7"]
+    {rank=same; n1_2_cbaa7; slot_2;}
+    n1_2_1bef1 [label = "2:1bef1"]
+    {rank=same; n1_2_1bef1; slot_3;}
     slot_1 -> slot_2;
     slot_2 -> slot_3;
     slot_3 -> slot_4;
     slot_4 -> slot_5;
     slot_5 -> slot_6;
     slot_6 -> slot_7;
+    slot_7 -> slot_8;
     n1_1_87f85 -> n1_2_cbaa7;
     n1_2_cbaa7 -> n1_3_f0cf7;
     n1_3_f0cf7 -> n1_4_acb24;
     n1_4_acb24 -> n1_5_dfe40;
+    n1_5_dfe40 -> n1_6_4aa1a;
     n1_1_87f85 -> n1_2_1bef1;
     n1_2_1bef1 -> n1_3_617f9;
 }

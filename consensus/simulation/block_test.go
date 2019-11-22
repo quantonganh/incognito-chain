@@ -61,12 +61,21 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		b4.Hash(),
 	}
 
+	b6 := &Block{
+		6,
+		8,
+		8,
+		3,
+		b5.Hash(),
+	}
+
 	bg.AddBlock(b2a)
 	bg.AddBlock(b2b)
 	bg.AddBlock(b3a)
 	bg.AddBlock(b3b)
 	bg.AddBlock(b4)
 	bg.AddBlock(b5)
+	bg.AddBlock(b6)
 
 	bg.Print()
 }
