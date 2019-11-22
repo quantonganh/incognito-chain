@@ -39,7 +39,7 @@ func TestUnmarshalJSON(t *testing.T) {
 }
 
 func TestInitTx(t *testing.T) {
-	for i:=0; i<1; i++ {
+	for i := 0; i < 1; i++ {
 		//Generate sender private key & receiver payment address
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := wallet.NewMasterKey(seed)
@@ -95,7 +95,7 @@ func TestInitTx(t *testing.T) {
 
 		// message to receiver
 		msg := "Incognito-chain"
-		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
 		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
 
 		fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
@@ -244,7 +244,7 @@ func TestInitTx(t *testing.T) {
 }
 
 func TestInitTxWithMultiScenario(t *testing.T) {
-	for i :=0; i < 50; i++ {
+	for i := 0; i < 50; i++ {
 		//Generate sender private key & receiver payment address
 		seed := privacy.RandomScalar().ToBytesS()
 		masterKey, _ := wallet.NewMasterKey(seed)
@@ -328,24 +328,24 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		assert.Equal(t, true, isValid)
 
 		// modify Sig
-		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1]^tx1.Sig[0]
-		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2]^tx1.Sig[1]
+		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1] ^ tx1.Sig[0]
+		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2] ^ tx1.Sig[1]
 		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
-		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1]^tx1.Sig[0]
-		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2]^tx1.Sig[1]
+		tx1.Sig[len(tx1.Sig)-1] = tx1.Sig[len(tx1.Sig)-1] ^ tx1.Sig[0]
+		tx1.Sig[len(tx1.Sig)-2] = tx1.Sig[len(tx1.Sig)-2] ^ tx1.Sig[1]
 
 		// modify verification key
-		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1]^tx1.SigPubKey[0]
-		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2]^tx1.SigPubKey[1]
+		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1] ^ tx1.SigPubKey[0]
+		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2] ^ tx1.SigPubKey[1]
 
 		isValid, err = tx1.ValidateTransaction(hasPrivacy, db, shardID, nil)
 		assert.Equal(t, false, isValid)
 		assert.NotEqual(t, nil, err)
 
-		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1]^tx1.SigPubKey[0]
-		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2]^tx1.SigPubKey[1]
+		tx1.SigPubKey[len(tx1.SigPubKey)-1] = tx1.SigPubKey[len(tx1.SigPubKey)-1] ^ tx1.SigPubKey[0]
+		tx1.SigPubKey[len(tx1.SigPubKey)-2] = tx1.SigPubKey[len(tx1.SigPubKey)-2] ^ tx1.SigPubKey[1]
 
 		// modify proof
 		originProof := tx1.Proof.Bytes()
@@ -395,20 +395,20 @@ func TestInitSalaryTx(t *testing.T) {
 }
 
 type CoinObject struct {
-	PublicKey string
+	PublicKey      string
 	CoinCommitment string
-	SNDerivator string
-	SerialNumber string
-	Randomness string
-	Value uint64
-	Info string
+	SNDerivator    string
+	SerialNumber   string
+	Randomness     string
+	Value          uint64
+	Info           string
 }
 
 func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, uint64) {
 	coins := make([]*privacy.InputCoin, len(coinObjects))
 	sumValue := uint64(0)
 
-	for i := 0; i<len(coins); i++{
+	for i := 0; i < len(coins); i++ {
 
 		publicKey, _, _ := base58.Base58Check{}.Decode(coinObjects[i].PublicKey)
 		publicKeyPoint := new(privacy.Point)
@@ -443,9 +443,10 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 	return coins, sumValue
 }
 
-
 func TestInitTxV1(t *testing.T) {
-	for i:=0; i<1; i++ {
+	for i := 0; i < 1; i++ {
+
+		fmt.Println("********************* Coin base tx ********************* ")
 
 		/****** Generate sender private key & receiver payment address ********/
 		seed := privacy.RandomScalar().ToBytesS()
@@ -466,7 +467,6 @@ func TestInitTxV1(t *testing.T) {
 
 		senderPaymentAddress := senderKey.KeySet.PaymentAddress
 		//senderPublicKey := senderPaymentAddress.Pk
-
 
 		senderShardID := common.GetShardIDFromLastByte(senderKey.KeySet.PaymentAddress.Pk[len(senderKey.KeySet.PaymentAddress.Pk)-1])
 
@@ -498,6 +498,7 @@ func TestInitTxV1(t *testing.T) {
 		fmt.Printf("coinBaseOutput[0]GetSerialNumber: %v\n", coinBaseOutput[0].CoinDetails.GetSerialNumber())
 
 		/******** init tx with mode no privacy ********/
+		fmt.Println("********************* Tx1 ********************* ")
 		tx1 := Tx{}
 		// calculate serial number for input coins from coin base tx
 		serialNumber := new(privacy.Point).Derive(
@@ -514,7 +515,7 @@ func TestInitTxV1(t *testing.T) {
 
 		// message to receiver
 		msg := "Incognito-chain"
-		receiverTK , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
 		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
 
 		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
@@ -531,7 +532,7 @@ func TestInitTxV1(t *testing.T) {
 
 		outputs := tx1.GetProof().GetOutputCoins()
 		fmt.Printf("%v\n", len(outputs))
-		for i:=0; i<len(outputs); i++{
+		for i := 0; i < len(outputs); i++ {
 			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs[i].CoinDetails.GetValue())
 			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs[i].CoinDetails.GetSNDerivator())
 			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs[i].CoinDetails.GetPublicKey())
@@ -540,12 +541,11 @@ func TestInitTxV1(t *testing.T) {
 
 		assert.Equal(t, len(msgCipherText.Bytes()), len(tx1.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
 
-		if hasPrivacy{
+		if hasPrivacy {
 			assert.NotEqual(t, receiverPubKey, outputs[0].CoinDetails.GetPublicKey())
-		} else{
+		} else {
 			assert.Equal(t, receiverPubKey, outputs[0].CoinDetails.GetPublicKey())
 		}
-
 
 		isValidSanity, err = tx1.ValidateSanityData(nil)
 		assert.Equal(t, true, isValidSanity)
@@ -568,7 +568,10 @@ func TestInitTxV1(t *testing.T) {
 			[][]byte{newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS()},
 			senderShardID)
 
-		/******** init tx with mode no privacy ********/
+		fmt.Printf("newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS(): %v\n", newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS())
+
+		/******** init tx with mode privacy from privacy input ********/
+		fmt.Println("********************* Tx2 ********************* ")
 		tx2 := Tx{}
 		// prepare input: calculate SN, PrivRandOTA, Value, Randomness
 		// calculate privRandOTA
@@ -591,7 +594,6 @@ func TestInitTxV1(t *testing.T) {
 
 		// decrypt Value, Randomness
 
-
 		// transfer amount
 		transferAmount2 := 5
 		hasPrivacy2 := true
@@ -599,7 +601,7 @@ func TestInitTxV1(t *testing.T) {
 
 		// message to receiver
 		msg2 := "Incognito-chain"
-		receiverTK2 , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		receiverTK2, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
 		msgCipherText2, _ := privacy.HybridEncrypt([]byte(msg2), receiverTK2)
 
 		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
@@ -616,7 +618,7 @@ func TestInitTxV1(t *testing.T) {
 
 		outputs2 := tx2.GetProof().GetOutputCoins()
 		fmt.Printf("%v\n", len(outputs2))
-		for i:=0; i<len(outputs2); i++{
+		for i := 0; i < len(outputs2); i++ {
 			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs2[i].CoinDetails.GetValue())
 			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs2[i].CoinDetails.GetSNDerivator())
 			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs2[i].CoinDetails.GetPublicKey())
@@ -627,10 +629,9 @@ func TestInitTxV1(t *testing.T) {
 
 		if hasPrivacy2 {
 			assert.NotEqual(t, receiverPubKey, outputs2[0].CoinDetails.GetPublicKey())
-		} else{
+		} else {
 			assert.Equal(t, receiverPubKey, outputs2[0].CoinDetails.GetPublicKey())
 		}
-
 
 		isValidSanity2, err := tx2.ValidateSanityData(nil)
 		assert.Equal(t, true, isValidSanity2)
@@ -642,7 +643,164 @@ func TestInitTxV1(t *testing.T) {
 		assert.Equal(t, true, isValid2)
 		assert.Equal(t, nil, err)
 
+		outputs2[1].Decrypt(senderKey.KeySet.ReadonlyKey)
 
+		outputFromTx2 := ConvertOutputCoinToInputCoin([]*privacy.OutputCoin{outputs2[1]})
+
+		// store output coin's coin commitments from tx1
+		db.StoreCommitments(
+			common.PRVCoinID,
+			senderPaymentAddress.Pk,
+			[][]byte{outputFromTx2[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+			senderShardID)
+
+		/******** init tx with mode no privacy from privacy input ********/
+		fmt.Println("********************* Tx3 ********************* ")
+		tx3 := Tx{}
+		// prepare input: calculate SN, PrivRandOTA, Value, Randomness
+		// calculate privRandOTA
+		fmt.Printf("AA tx1.Proof.GetEphemeralPubKey(): %v\n", tx2.Proof.GetEphemeralPubKey())
+		fmt.Printf("AAA newOutput[0].CoinDetails.GetPublicKey(): %v\n", outputFromTx2[0].CoinDetails.GetPublicKey())
+		isPair3, privRandOTA3, err := privacy.IsPairOneTimeAddr(outputFromTx2[0].CoinDetails.GetPublicKey(), tx2.Proof.GetEphemeralPubKey(), senderKey.KeySet.ReadonlyKey, 1)
+		fmt.Printf("err check one time address: %v\n", err)
+		assert.Equal(t, true, isPair3)
+		outputFromTx2[0].CoinDetails.SetPrivRandOTA(privRandOTA3)
+		fmt.Printf("privRandOTA : %v\n", privRandOTA3)
+		fmt.Printf("newOutput[0].CoinDetails.GetPrivRandOTA() : %v\n", outputFromTx2[0].CoinDetails.GetPrivRandOTA())
+
+		// calculate serial number for input coins from coin base tx
+		serialNumber3 := new(privacy.Point).Derive(
+			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+			outputFromTx2[0].CoinDetails.GetPrivRandOTA(),
+		)
+		outputFromTx2[0].CoinDetails.SetSerialNumber(serialNumber3)
+
+		// decrypt Value, Randomness
+
+		// transfer amount
+		transferAmount3 := 5
+		hasPrivacy3 := false
+		fee3 := 1
+
+		// message to receiver
+		msg3 := "Incognito-chain"
+		receiverTK3, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText3, _ := privacy.HybridEncrypt([]byte(msg3), receiverTK3)
+
+		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
+		err = tx3.Init(
+			NewTxPrivacyInitParams(
+				&senderKey.KeySet.PrivateKey,
+				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount3), Message: msgCipherText3.Bytes()}},
+				outputFromTx2, uint64(fee3), hasPrivacy3, db, nil, nil, []byte{}, TxVersion2,
+			),
+		)
+		if err != nil {
+			t.Error(err)
+		}
+
+		outputs3 := tx3.GetProof().GetOutputCoins()
+		fmt.Printf("%v\n", len(outputs3))
+		for i := 0; i < len(outputs3); i++ {
+			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs3[i].CoinDetails.GetValue())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs3[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs3[i].CoinDetails.GetPublicKey())
+			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs3[i].CoinDetails.GetPrivRandOTA())
+		}
+
+		assert.Equal(t, len(msgCipherText3.Bytes()), len(tx3.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+
+		if hasPrivacy2 {
+			assert.NotEqual(t, receiverPubKey, outputs3[0].CoinDetails.GetPublicKey())
+		} else {
+			assert.Equal(t, receiverPubKey, outputs3[0].CoinDetails.GetPublicKey())
+		}
+
+		isValidSanity3, err := tx3.ValidateSanityData(nil)
+		assert.Equal(t, true, isValidSanity3)
+		assert.Equal(t, nil, err)
+
+		isValid3, err := tx3.ValidateTransaction(hasPrivacy3, db, senderShardID, nil)
+
+		fmt.Printf("Error: %v\n", err)
+		assert.Equal(t, true, isValid3)
+		assert.Equal(t, nil, err)
+
+		//outputs3[1].Decrypt(senderKey.KeySet.ReadonlyKey)
+
+		outputFromTx3 := ConvertOutputCoinToInputCoin([]*privacy.OutputCoin{outputs3[1]})
+
+		// store output coin's coin commitments from tx1
+		db.StoreCommitments(
+			common.PRVCoinID,
+			senderPaymentAddress.Pk,
+			[][]byte{outputFromTx3[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+			senderShardID)
+
+		/******** init tx with mode no privacy from privacy input ********/
+		fmt.Println("********************* Tx3 ********************* ")
+		tx4 := Tx{}
+		// prepare input: calculate SN, PrivRandOTA, Value, Randomness
+
+		// calculate serial number for input coins from coin base tx
+		serialNumber4 := new(privacy.Point).Derive(
+			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
+			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
+			outputFromTx3[0].CoinDetails.GetSNDerivator(),
+		)
+		outputFromTx3[0].CoinDetails.SetSerialNumber(serialNumber4)
+
+		// decrypt Value, Randomness
+
+		// transfer amount
+		transferAmount4 := 5
+		hasPrivacy4 := false
+		fee4 := 1
+
+		// message to receiver
+		msg4 := "Incognito-chain"
+		receiverTK4, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText4, _ := privacy.HybridEncrypt([]byte(msg4), receiverTK4)
+
+		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
+		err = tx4.Init(
+			NewTxPrivacyInitParams(
+				&senderKey.KeySet.PrivateKey,
+				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount4), Message: msgCipherText4.Bytes()}},
+				outputFromTx3, uint64(fee4), hasPrivacy4, db, nil, nil, []byte{}, TxVersion2,
+			),
+		)
+		if err != nil {
+			t.Error(err)
+		}
+
+		outputs4 := tx4.GetProof().GetOutputCoins()
+		fmt.Printf("%v\n", len(outputs4))
+		for i := 0; i < len(outputs4); i++ {
+			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs4[i].CoinDetails.GetValue())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs4[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs4[i].CoinDetails.GetPublicKey())
+			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs4[i].CoinDetails.GetPrivRandOTA())
+		}
+
+		assert.Equal(t, len(msgCipherText4.Bytes()), len(tx4.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+
+		//if hasPrivacy4 {
+		//	assert.NotEqual(t, receiverPubKey, outputs4[0].CoinDetails.GetPublicKey())
+		//} else{
+		//	assert.Equal(t, receiverPubKey, outputs4[0].CoinDetails.GetPublicKey())
+		//}
+
+		isValidSanity4, err := tx4.ValidateSanityData(nil)
+		assert.Equal(t, true, isValidSanity4)
+		assert.Equal(t, nil, err)
+
+		isValid4, err := tx4.ValidateTransaction(hasPrivacy4, db, senderShardID, nil)
+
+		fmt.Printf("Error: %v\n", err)
+		assert.Equal(t, true, isValid4)
+		assert.Equal(t, nil, err)
 
 		//isValidTxVersion := tx1.CheckTxVersion(1)
 		//assert.Equal(t, true, isValidTxVersion)

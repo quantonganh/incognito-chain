@@ -98,6 +98,14 @@ func (coin *Coin) SetPrivRandOTA(privRandOTA *Scalar) {
 	coin.privRandOTA = privRandOTA
 }
 
+func (coin Coin) GetShardIDLastByte() int {
+	return coin.shardIDLastByte
+}
+
+func (coin *Coin) SetShardIDLastByte(shardIDLastByte int) {
+	coin.shardIDLastByte = shardIDLastByte
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(Point).Identity()

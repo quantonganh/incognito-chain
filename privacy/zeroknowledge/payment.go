@@ -693,7 +693,15 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 		// Check input coins' cm is calculated correctly
 		cmSK := proof.inputCoins[i].CoinDetails.GetPublicKey()
 		cmValue := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(proof.inputCoins[i].CoinDetails.GetValue()))
-		cmSND := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], proof.inputCoins[i].CoinDetails.GetSNDerivator())
+
+		sndTmp := new(privacy.Scalar)
+		cmSND := new(privacy.Point).Identity()
+		snd := proof.inputCoins[i].CoinDetails.GetSNDerivator()
+		if snd != nil && !snd.IsZero(){
+			sndTmp = snd
+			cmSND = new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], sndTmp)
+		}
+
 		cmRandomness := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())
 		cmTmp := new(privacy.Point).Add(cmSK, cmValue)
 		cmTmp.Add(cmTmp, cmSND)
@@ -790,6 +798,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 			}
 
 			commitments[j], err = new(privacy.Point).FromBytesS(commitmentBytes)
+			fmt.Printf("Prove commitments[j]: %v\n", commitments[j])
 
 			if err != nil {
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot decompress commitment from database", index, err)
@@ -801,6 +810,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 				privacy.Logger.Log.Errorf("VERIFICATION PAYMENT PROOF: Cannot sub commitment to sum of commitment inputs", index, err)
 				return false, privacy.NewPrivacyErr(privacy.VerifyOneOutOfManyProofFailedErr, err)
 			}
+			fmt.Printf("Prove commitments[j].Sub: %v\n", commitments[j])
 		}
 
 		proof.oneOfManyProof[i].Statement.Commitments = commitments
@@ -821,7 +831,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 	// Check output coins' cm is calculated correctly
 	for i := 0; i < len(proof.outputCoins); i++ {
 		cmTmp := new(privacy.Point).Add(proof.outputCoins[i].CoinDetails.GetPublicKey(), proof.commitmentOutputValue[i])
-		cmTmp.Add(cmTmp, proof.commitmentOutputSND[i])
+		//cmTmp.Add(cmTmp, proof.commitmentOutputSND[i])
 		cmTmp.Add(cmTmp, proof.commitmentOutputShardID[i])
 
 		if !privacy.IsPointEqual(cmTmp, proof.outputCoins[i].CoinDetails.GetCoinCommitment()) {

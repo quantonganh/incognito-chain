@@ -470,6 +470,10 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			if len(myCommitmentIndexs) != len(params.inputCoins) {
 				return NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
 			}
+
+			fmt.Printf("Init tx: \n")
+			fmt.Printf("commitmentIndexs: %v\n", commitmentIndexs)
+			fmt.Printf("myCommitmentIndexs: %v\n", myCommitmentIndexs)
 		}
 
 		// Calculate execution time for creating payment proof
@@ -566,16 +570,18 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				if err != nil{
 					return NewTransactionErr(GenOneTimeAddrError, err)
 				}
-				fmt.Printf("privRandOTA %v: %v\n", i, privRandOTA)
-				fmt.Printf("pubOTA %v: %v\n", i, pubOTA)
+				fmt.Printf("privRandOTA out %v: %v\n", i, privRandOTA)
+				fmt.Printf("pubOTA out %v: %v\n", i, pubOTA)
 				outputCoins[i].CoinDetails.SetPublicKey(pubOTA)
 				outputCoins[i].CoinDetails.SetPrivRandOTA(privRandOTA)
+				outputCoins[i].CoinDetails.SetShardIDLastByte(int(pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk) - 1]))
 			} else{
 				pubKey, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
 				if err != nil{
 					return NewTransactionErr(DecompressPaymentAddressError, err)
 				}
 				outputCoins[i].CoinDetails.SetPublicKey(pubKey)
+				outputCoins[i].CoinDetails.SetShardIDLastByte(-1)
 			}
 			outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
 		}
@@ -594,12 +600,14 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v", cmIndex, shardID)))
 				return NewTransactionErr(CanNotGetCommitmentFromIndexError, err, cmIndex, shardID)
 			}
+			fmt.Printf("temp cm %v: %v\n", i, temp)
 			commitmentProving[i] = new(privacy.Point)
 			commitmentProving[i], err = commitmentProving[i].FromBytesS(temp)
 			if err != nil {
 				Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", cmIndex, shardID, temp)))
 				return NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, cmIndex, shardID, temp)
 			}
+			fmt.Printf("commitmentProving %v: %v\n", i, commitmentProving[i])
 		}
 
 		// prepare witness for proving
@@ -1290,9 +1298,9 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
 					return false, errors.New("validate sanity Randomness of input coin failed")
 				}
-				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
-					return false, errors.New("validate sanity SNDerivator of input coin failed")
-				}
+				//if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				//	return false, errors.New("validate sanity SNDerivator of input coin failed")
+				//}
 
 			}
 
