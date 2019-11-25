@@ -74,10 +74,10 @@ type TxPrivacyInitParams struct {
 	fee         uint64
 	hasPrivacy  bool
 	db          database.DatabaseInterface
-	tokenID     *common.Hash 				// default is nil -> use for prv coin
+	tokenID     *common.Hash // default is nil -> use for prv coin
 	metaData    metadata.Metadata
-	info        []byte 						// 512 bytes
-	version int8
+	info        []byte // 512 bytes
+	version     int8
 }
 
 func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
@@ -100,7 +100,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 		paymentInfo: paymentInfo,
 		senderSK:    senderSK,
 		info:        info,
-		version: version,
+		version:     version,
 	}
 	return params
 }
@@ -110,7 +110,7 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 // if not want to create a privacy tx proof, set hashPrivacy = false
 // database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
-	if params.version  == TxVersion1 {
+	if params.version == TxVersion1 {
 		Logger.log.Debugf("CREATING TX........\n")
 		tx.Version = TxVersion1
 		var err error
@@ -319,6 +319,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			CommitmentIndices:       commitmentIndexs,
 			MyCommitmentIndices:     myCommitmentIndexs,
 			Fee:                     params.fee,
+			Version:                 params.version,
 		}
 		err = witness.Init(paymentWitnessParam)
 		if err.(*privacy.PrivacyError) != nil {
@@ -547,9 +548,9 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		ephemeralPrivKey := new(privacy.Scalar)
 		ephemeralPubKey := new(privacy.Point).Identity()
 		if len(params.paymentInfo) > 0 && params.hasPrivacy {
-				ephemeralPrivKey = privacy.RandomScalar()
-				ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
-				fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
+			ephemeralPrivKey = privacy.RandomScalar()
+			ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
+			fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
 		}
 
 		// create new output coins with info: Pk, value, last byte of pk, snd
@@ -564,20 +565,20 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			}
 			outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
 
-			if params.hasPrivacy{
+			if params.hasPrivacy {
 				// generate one time address
 				pubOTA, privRandOTA, err := privacy.GenerateOneTimeAddrFromPaymentAddr(pInfo.PaymentAddress, ephemeralPrivKey, i)
-				if err != nil{
+				if err != nil {
 					return NewTransactionErr(GenOneTimeAddrError, err)
 				}
 				fmt.Printf("privRandOTA out %v: %v\n", i, privRandOTA)
 				fmt.Printf("pubOTA out %v: %v\n", i, pubOTA)
 				outputCoins[i].CoinDetails.SetPublicKey(pubOTA)
 				outputCoins[i].CoinDetails.SetPrivRandOTA(privRandOTA)
-				outputCoins[i].CoinDetails.SetShardIDLastByte(int(pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk) - 1]))
-			} else{
+				outputCoins[i].CoinDetails.SetShardIDLastByte(int(pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]))
+			} else {
 				pubKey, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
-				if err != nil{
+				if err != nil {
 					return NewTransactionErr(DecompressPaymentAddressError, err)
 				}
 				outputCoins[i].CoinDetails.SetPublicKey(pubKey)
@@ -622,6 +623,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			CommitmentIndices:       commitmentIndexs,
 			MyCommitmentIndices:     myCommitmentIndexs,
 			Fee:                     params.fee,
+			Version:                 params.version,
 		}
 		err = witness.Init(paymentWitnessParam)
 		if err.(*privacy.PrivacyError) != nil {
@@ -692,7 +694,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
 		Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 		return nil
-	} else{
+	} else {
 		return NewTransactionErr(InvalidVersionTxError, nil)
 	}
 }
@@ -842,7 +844,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 		}
 
 		// Verify the payment proof
-		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID)
+		valid, err = tx.Proof.Verify(hasPrivacy, tx.SigPubKey, tx.Fee, db, shardID, tokenID, tx.Version)
 		if !valid {
 			if err != nil {
 				Logger.log.Error(err)

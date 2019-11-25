@@ -33,6 +33,7 @@ const (
 	SignMultiSigErr
 	InvalidLengthMultiSigErr
 	InvalidMultiSigErr
+	InvalidVersionProofErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -55,6 +56,7 @@ var ErrCodeMessage = map[int]struct {
 	SignMultiSigErr:                 {-9012, "Can not sign multi sig"},
 	InvalidLengthMultiSigErr:        {-9013, "Invalid length of multi sig signature"},
 	InvalidMultiSigErr:              {-9014, "invalid multiSig for converting to bytes array"},
+	InvalidVersionProofErr: {-9015, "invalid version payment proof"},
 
 	ProveSerialNumberNoPrivacyErr: {-9100, "Proving serial number no privacy proof error"},
 	ProveOneOutOfManyErr:          {-9101, "Proving one out of many proof error"},
