@@ -154,7 +154,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 		// calculate serial number for input coins
 		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
-			outputCoins[0].CoinDetails.GetSNDerivator())
+			outputCoins[0].CoinDetails.GetSNDerivatorRandom())
 		outputCoins[0].CoinDetails.SetSerialNumber(serialNumber)
 
 		db.StorePrivacyToken(*tx.GetTokenID(), tx.Hash()[:])

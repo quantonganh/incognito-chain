@@ -178,8 +178,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			if input.CoinDetails.GetRandomness() != nil {
 				in.CoinDetails.Randomness = *input.CoinDetails.GetRandomness()
 			}
-			if input.CoinDetails.GetSNDerivator() != nil {
-				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivator()
+			if input.CoinDetails.GetSNDerivatorRandom() != nil {
+				in.CoinDetails.SNDerivator = *input.CoinDetails.GetSNDerivatorRandom()
 			}
 			if input.CoinDetails.GetSerialNumber() != nil {
 				in.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(input.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)
@@ -204,8 +204,8 @@ func (proofDetail *ProofDetail) ConvertFromProof(proof *zkp.PaymentProof) {
 			if output.CoinDetails.GetRandomness() != nil {
 				out.CoinDetails.Randomness = *output.CoinDetails.GetRandomness()
 			}
-			if output.CoinDetails.GetSNDerivator() != nil {
-				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivator()
+			if output.CoinDetails.GetSNDerivatorRandom() != nil {
+				out.CoinDetails.SNDerivator = *output.CoinDetails.GetSNDerivatorRandom()
 			}
 			if output.CoinDetails.GetSerialNumber() != nil {
 				out.CoinDetails.SerialNumber = base58.Base58Check{}.Encode(output.CoinDetails.GetSerialNumber().ToBytesS(), 0x0)

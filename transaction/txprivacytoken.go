@@ -260,7 +260,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			}
 
 			sndOut := privacy.RandomScalar()
-			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			tempOutputCoin[0].CoinDetails.SetSNDerivatorRandom(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment
@@ -816,7 +816,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			}
 
 			sndOut := privacy.RandomScalar()
-			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			tempOutputCoin[0].CoinDetails.SetSNDerivatorRandom(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment

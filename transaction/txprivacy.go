@@ -282,7 +282,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				return NewTransactionErr(DecompressPaymentAddressError, err, pInfo.PaymentAddress)
 			}
 			outputCoins[i].CoinDetails.SetPublicKey(PK)
-			outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
+			outputCoins[i].CoinDetails.SetSNDerivatorRandom(sndOuts[i])
 		}
 
 		// assign fee tx
@@ -359,7 +359,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetValue(0)
-				tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivatorRandom(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
 			}
@@ -584,7 +584,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 				outputCoins[i].CoinDetails.SetPublicKey(pubKey)
 				outputCoins[i].CoinDetails.SetShardIDLastByte(-1)
 			}
-			outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
+			outputCoins[i].CoinDetails.SetSNDerivatorRandom(sndOuts[i])
 		}
 
 		// assign fee tx
@@ -669,7 +669,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetValue(0)
-				tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivatorRandom(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
 				tx.Proof.GetInputCoins()[i].CoinDetails.SetPrivRandOTA(nil)
@@ -823,7 +823,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 			sndOutputs := make([]*privacy.Scalar, len(tx.Proof.GetOutputCoins()))
 			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
-				sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator()
+				sndOutputs[i] = tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivatorRandom()
 			}
 
 			if privacy.CheckDuplicateScalarArray(sndOutputs) {
@@ -833,7 +833,7 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 
 			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
 				// Check output coins' SND is not exists in SND list (Database)
-				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator(), db); ok || err != nil {
+				if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivatorRandom(), db); ok || err != nil {
 					if err != nil {
 						Logger.log.Error(err)
 					}
@@ -1231,7 +1231,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetCoinCommitment().PointValid() {
 					return false, errors.New("validate sanity Coin commitment of output coin failed")
 				}
-				//if txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				//if txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivatorRandom().ScalarValid() {
 				//	return false, errors.New("validate sanity SNDerivator of output coin failed")
 				//}
 			}
@@ -1300,7 +1300,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetInputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
 					return false, errors.New("validate sanity Randomness of input coin failed")
 				}
-				//if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				//if !txN.Proof.GetInputCoins()[i].CoinDetails.GetSNDerivatorRandom().ScalarValid() {
 				//	return false, errors.New("validate sanity SNDerivator of input coin failed")
 				//}
 
@@ -1317,7 +1317,7 @@ func (txN Tx) validateSanityDataOfProof() (bool, error) {
 				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetRandomness().ScalarValid() {
 					return false, errors.New("validate sanity Randomness of output coin failed")
 				}
-				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivator().ScalarValid() {
+				if !txN.Proof.GetOutputCoins()[i].CoinDetails.GetSNDerivatorRandom().ScalarValid() {
 					return false, errors.New("validate sanity SNDerivator of output coin failed")
 				}
 			}
@@ -1515,7 +1515,7 @@ func (tx *Tx) InitTxSalary(
 			break
 		}
 	}
-	tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+	tempOutputCoin[0].CoinDetails.SetSNDerivatorRandom(sndOut)
 	// create coin commitment
 	err = tempOutputCoin[0].CoinDetails.CommitAll()
 	if err != nil {
@@ -1562,7 +1562,7 @@ func (tx Tx) ValidateTxSalary(
 	if err != nil {
 		return false, NewTransactionErr(TokenIDInvalidError, err)
 	}
-	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivator(), db); ok || err != nil {
+	if ok, err := CheckSNDerivatorExistence(tokenID, tx.Proof.GetOutputCoins()[0].CoinDetails.GetSNDerivatorRandom(), db); ok || err != nil {
 		return false, err
 	}
 
@@ -1571,7 +1571,7 @@ func (tx Tx) ValidateTxSalary(
 	shardID2 := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 	cmTmp2 := new(privacy.Point)
 	cmTmp2.Add(coin.GetPublicKey(), new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(uint64(coin.GetValue()))))
-	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivator()))
+	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], coin.GetSNDerivatorRandom()))
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenShardIDIndex], new(privacy.Scalar).FromUint64(uint64(shardID2))))
 	cmTmp2.Add(cmTmp2, new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], coin.GetRandomness()))
 
@@ -1808,7 +1808,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 			return NewTransactionErr(DecompressPaymentAddressError, err, pInfo.PaymentAddress)
 		}
 		outputCoins[i].CoinDetails.SetPublicKey(PK)
-		outputCoins[i].CoinDetails.SetSNDerivator(sndOuts[i])
+		outputCoins[i].CoinDetails.SetSNDerivatorRandom(sndOuts[i])
 	}
 
 	// assign fee tx
@@ -1879,7 +1879,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetValue(0)
-			tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivator(nil)
+			tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivatorRandom(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
 			tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
 		}

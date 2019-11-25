@@ -1018,7 +1018,7 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 				new(privacy.Point).Derive(
 					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 					new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
-					result.CoinDetails.GetSNDerivator()))
+					result.CoinDetails.GetSNDerivatorRandom()))
 			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.GetSerialNumber().ToBytesS(), shardID)
 			if ok || err != nil {
 				return nil

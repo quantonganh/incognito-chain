@@ -1161,7 +1161,7 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 		if err != nil {
 			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("snderivator output is invalid", out.SNDerivator)))
 		}
-		outputCoin.CoinDetails.SetSNDerivator(new(privacy.Scalar).FromBytesS(SNDerivatorInBytes))
+		outputCoin.CoinDetails.SetSNDerivatorRandom(new(privacy.Scalar).FromBytesS(SNDerivatorInBytes))
 
 		CoinCommitmentBytes, _, err := base58.Base58Check{}.Decode(out.CoinCommitment)
 		if err != nil {

@@ -82,7 +82,7 @@ func TestInitTx(t *testing.T) {
 		// calculate serial number for input coins
 		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
-			coinBaseOutput[0].CoinDetails.GetSNDerivator())
+			coinBaseOutput[0].CoinDetails.GetSNDerivatorRandom())
 
 		coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
 
@@ -292,7 +292,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 		// calculate serial number for input coins
 		serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
-			coinBaseOutput[0].CoinDetails.GetSNDerivator())
+			coinBaseOutput[0].CoinDetails.GetSNDerivatorRandom())
 
 		coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
 
@@ -431,7 +431,7 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 		coins[i] = new(privacy.InputCoin).Init()
 		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
 		coins[i].CoinDetails.SetCoinCommitment(coinCommitmentPoint)
-		coins[i].CoinDetails.SetSNDerivator(sndBN)
+		coins[i].CoinDetails.SetSNDerivatorRandom(sndBN)
 		coins[i].CoinDetails.SetSerialNumber(serialNumberPoint)
 		coins[i].CoinDetails.SetRandomness(randomnessBN)
 		coins[i].CoinDetails.SetValue(coinObjects[i].Value)
@@ -489,7 +489,7 @@ func TestInitTxV1(t *testing.T) {
 		coinBaseOutput := ConvertOutputCoinToInputCoin(coinBaseTx.(*Tx).Proof.GetOutputCoins())
 
 		fmt.Printf("coinBaseOutput[0]GetValue: %v\n", coinBaseOutput[0].CoinDetails.GetValue())
-		fmt.Printf("coinBaseOutput[0]GetSNDerivator: %v\n", coinBaseOutput[0].CoinDetails.GetSNDerivator())
+		fmt.Printf("coinBaseOutput[0]GetSNDerivatorRandom: %v\n", coinBaseOutput[0].CoinDetails.GetSNDerivatorRandom())
 		fmt.Printf("coinBaseOutput[0]GetCoinCommitment: %v\n", coinBaseOutput[0].CoinDetails.GetCoinCommitment())
 		fmt.Printf("coinBaseOutput[0]GetPrivRandOTA: %v\n", coinBaseOutput[0].CoinDetails.GetPrivRandOTA())
 		fmt.Printf("coinBaseOutput[0]GetRandomness: %v\n", coinBaseOutput[0].CoinDetails.GetRandomness())
@@ -504,7 +504,7 @@ func TestInitTxV1(t *testing.T) {
 		serialNumber := new(privacy.Point).Derive(
 			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
-			coinBaseOutput[0].CoinDetails.GetSNDerivator(),
+			coinBaseOutput[0].CoinDetails.GetSNDerivatorRandom(),
 		)
 		coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
 
@@ -534,7 +534,7 @@ func TestInitTxV1(t *testing.T) {
 		fmt.Printf("%v\n", len(outputs))
 		for i := 0; i < len(outputs); i++ {
 			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs[i].CoinDetails.GetValue())
-			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivatorRandom(): %v\n", outputs[i].CoinDetails.GetSNDerivatorRandom())
 			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs[i].CoinDetails.GetPublicKey())
 			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs[i].CoinDetails.GetPrivRandOTA())
 		}
@@ -620,7 +620,7 @@ func TestInitTxV1(t *testing.T) {
 		fmt.Printf("%v\n", len(outputs2))
 		for i := 0; i < len(outputs2); i++ {
 			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs2[i].CoinDetails.GetValue())
-			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs2[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivatorRandom(): %v\n", outputs2[i].CoinDetails.GetSNDerivatorRandom())
 			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs2[i].CoinDetails.GetPublicKey())
 			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs2[i].CoinDetails.GetPrivRandOTA())
 		}
@@ -704,7 +704,7 @@ func TestInitTxV1(t *testing.T) {
 		fmt.Printf("%v\n", len(outputs3))
 		for i := 0; i < len(outputs3); i++ {
 			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs3[i].CoinDetails.GetValue())
-			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs3[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivatorRandom(): %v\n", outputs3[i].CoinDetails.GetSNDerivatorRandom())
 			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs3[i].CoinDetails.GetPublicKey())
 			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs3[i].CoinDetails.GetPrivRandOTA())
 		}
@@ -747,7 +747,7 @@ func TestInitTxV1(t *testing.T) {
 		serialNumber4 := new(privacy.Point).Derive(
 			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
-			outputFromTx3[0].CoinDetails.GetSNDerivator(),
+			outputFromTx3[0].CoinDetails.GetSNDerivatorRandom(),
 		)
 		outputFromTx3[0].CoinDetails.SetSerialNumber(serialNumber4)
 
@@ -779,7 +779,7 @@ func TestInitTxV1(t *testing.T) {
 		fmt.Printf("%v\n", len(outputs4))
 		for i := 0; i < len(outputs4); i++ {
 			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs4[i].CoinDetails.GetValue())
-			fmt.Printf("outputs[i].CoinDetails.GetSNDerivator(): %v\n", outputs4[i].CoinDetails.GetSNDerivator())
+			fmt.Printf("outputs[i].CoinDetails.GetSNDerivatorRandom(): %v\n", outputs4[i].CoinDetails.GetSNDerivatorRandom())
 			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs4[i].CoinDetails.GetPublicKey())
 			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs4[i].CoinDetails.GetPrivRandOTA())
 		}

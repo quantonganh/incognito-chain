@@ -35,17 +35,17 @@ func TestCoinCommitAll(t *testing.T) {
 		// init other fields for coin
 		coin.publicKey.FromBytesS(publicKey)
 
-		coin.snDerivator = RandomScalar()
+		coin.snDerivatorRandom = RandomScalar()
 		coin.randomness = RandomScalar()
 		coin.value = new(big.Int).SetBytes(RandBytes(2)).Uint64()
-		coin.serialNumber = new(Point).Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivator)
+		coin.serialNumber = new(Point).Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivatorRandom)
 		coin.CommitAll()
 		coin.info = []byte("Incognito chain")
 
 		cmTmp := coin.GetPublicKey()
 		shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
 		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenValueIndex], new(Scalar).FromUint64(uint64(coin.GetValue()))))
-		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenSndIndex], coin.snDerivator))
+		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenSndIndex], coin.snDerivatorRandom))
 		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenShardIDIndex], new(Scalar).FromUint64(uint64(shardID))))
 		cmTmp.Add(cmTmp, new(Point).ScalarMult(PedCom.G[PedersenRandomnessIndex], coin.GetRandomness()))
 
@@ -64,10 +64,10 @@ func TestCoinMarshalJSON(t *testing.T) {
 
 		// init other fields for coin
 		coin.publicKey.FromBytesS(publicKey)
-		coin.snDerivator = RandomScalar()
+		coin.snDerivatorRandom = RandomScalar()
 		coin.randomness = RandomScalar()
 		coin.value = uint64(100)
-		coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivator)
+		coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivatorRandom)
 		coin.CommitAll()
 		coin.info = []byte("Incognito chain")
 
@@ -97,10 +97,10 @@ func TestCoinBytesSetBytes(t *testing.T) {
 
 		// init other fields for coin
 		coin.publicKey.FromBytesS(publicKey)
-		coin.snDerivator = RandomScalar()
+		coin.snDerivatorRandom = RandomScalar()
 		coin.randomness = RandomScalar()
 		coin.value = uint64(100)
-		coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivator)
+		coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivatorRandom)
 		coin.CommitAll()
 		coin.info = []byte("Incognito chain")
 
@@ -128,10 +128,10 @@ func TestCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 		// init other fields for coin
 		coin.publicKey.FromBytesS(publicKey)
-		coin.snDerivator = RandomScalar()
+		coin.snDerivatorRandom = RandomScalar()
 		coin.randomness = RandomScalar()
 		coin.value = uint64(100)
-		coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivator)
+		coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivatorRandom)
 		//coin.CommitAll()
 		coin.info = []byte("Incognito chain")
 
@@ -159,10 +159,10 @@ func TestCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 	// init other fields for coin
 	coin.publicKey.FromBytesS(publicKey)
-	coin.snDerivator = RandomScalar()
+	coin.snDerivatorRandom = RandomScalar()
 	coin.randomness = RandomScalar()
 	coin.value = uint64(100)
-	coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivator)
+	coin.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.snDerivatorRandom)
 	coin.CommitAll()
 	coin.info = []byte("Incognito chain")
 
@@ -203,10 +203,10 @@ func TestInputCoinBytesSetBytes(t *testing.T) {
 		// init other fields for coin
 		coin.CoinDetails.publicKey.FromBytesS(publicKey)
 
-		coin.CoinDetails.snDerivator = RandomScalar()
+		coin.CoinDetails.snDerivatorRandom = RandomScalar()
 		coin.CoinDetails.randomness = RandomScalar()
 		coin.CoinDetails.value = uint64(100)
-		coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivator)
+		coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivatorRandom)
 		coin.CoinDetails.CommitAll()
 		coin.CoinDetails.info = []byte("Incognito chain")
 
@@ -232,10 +232,10 @@ func TestInputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 	coin.CoinDetails.publicKey.FromBytesS(publicKey)
 
-	coin.CoinDetails.snDerivator = RandomScalar()
+	coin.CoinDetails.snDerivatorRandom = RandomScalar()
 	coin.CoinDetails.randomness = RandomScalar()
 	coin.CoinDetails.value = uint64(100)
-	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivator)
+	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivatorRandom)
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
 
@@ -259,10 +259,10 @@ func TestInputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 	coin.CoinDetails.publicKey.FromBytesS(publicKey)
 
-	coin.CoinDetails.snDerivator = RandomScalar()
+	coin.CoinDetails.snDerivatorRandom = RandomScalar()
 	coin.CoinDetails.randomness = RandomScalar()
 	coin.CoinDetails.value = uint64(100)
-	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivator)
+	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivatorRandom)
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
 
@@ -303,10 +303,10 @@ func TestOutputCoinBytesSetBytes(t *testing.T) {
 
 	coin.CoinDetails.publicKey.FromBytesS(publicKey)
 
-	coin.CoinDetails.snDerivator = RandomScalar()
+	coin.CoinDetails.snDerivatorRandom = RandomScalar()
 	coin.CoinDetails.randomness = RandomScalar()
 	coin.CoinDetails.value = uint64(100)
-	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivator)
+	coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytesS(privateKey), coin.CoinDetails.snDerivatorRandom)
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.Encrypt(paymentAddr.Tk)
@@ -333,10 +333,10 @@ func TestOutputCoinBytesSetBytesWithMissingFields(t *testing.T) {
 
 	coin.CoinDetails.publicKey.FromBytesS(publicKey)
 
-	coin.CoinDetails.snDerivator = RandomScalar()
+	coin.CoinDetails.snDerivatorRandom = RandomScalar()
 	coin.CoinDetails.randomness = RandomScalar()
 	coin.CoinDetails.value = uint64(100)
-	//coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytes(SliceToArray(privateKey)), coin.CoinDetails.snDerivator)
+	//coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytes(SliceToArray(privateKey)), coin.CoinDetails.snDerivatorRandom)
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.Encrypt(paymentAddr.Tk)
@@ -363,10 +363,10 @@ func TestOutputCoinBytesSetBytesWithInvalidBytes(t *testing.T) {
 
 	coin.CoinDetails.publicKey.FromBytesS(publicKey)
 
-	coin.CoinDetails.snDerivator = RandomScalar()
+	coin.CoinDetails.snDerivatorRandom = RandomScalar()
 	coin.CoinDetails.randomness = RandomScalar()
 	coin.CoinDetails.value = uint64(100)
-	//coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytes(SliceToArray(privateKey)), coin.CoinDetails.snDerivator)
+	//coin.CoinDetails.serialNumber = PedCom.G[0].Derive(PedCom.G[0], new(Scalar).FromBytes(SliceToArray(privateKey)), coin.CoinDetails.snDerivatorRandom)
 	//coin.CoinDetails.CommitAll()
 	coin.CoinDetails.info = []byte("Incognito chain")
 	coin.Encrypt(paymentAddr.Tk)

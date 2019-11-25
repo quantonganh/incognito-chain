@@ -53,7 +53,7 @@ func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
 		Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
 		CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().ToBytesS(), common.ZeroByte),
 		Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().ToBytesS(), common.ZeroByte),
-		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().ToBytesS(), common.ZeroByte),
+		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivatorRandom().ToBytesS(), common.ZeroByte),
 		SerialNumber:   serialNumber,
 	}
 

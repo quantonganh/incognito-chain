@@ -14,12 +14,13 @@ import (
 type Coin struct {
 	publicKey      *Point
 	coinCommitment *Point
-	// snDerivator only has in no privacy tx version
-	snDerivator    *Scalar
-	serialNumber   *Point
-	randomness     *Scalar
-	value          uint64
-	info        []byte //256 bytes
+	// snDerivatorRandom only has in no privacy tx version
+	// it is a random scalar, is used to generate serial number
+	snDerivatorRandom *Scalar
+	serialNumber      *Point
+	randomness        *Scalar
+	value             uint64
+	info              []byte //256 bytes
 
 	// shardIDLastByte shardId of receiver
 	// only has in privacy tx
@@ -29,6 +30,7 @@ type Coin struct {
 
 	// it used to be witness for output coins with one-time address
 	// only has in privacy tx
+	// and it used to generate serial number in privacy tx
 	privRandOTA *Scalar
 }
 
@@ -49,12 +51,12 @@ func (coin *Coin) SetCoinCommitment(v *Point) {
 	coin.coinCommitment = v
 }
 
-func (coin Coin) GetSNDerivator() *Scalar {
-	return coin.snDerivator
+func (coin Coin) GetSNDerivatorRandom() *Scalar {
+	return coin.snDerivatorRandom
 }
 
-func (coin *Coin) SetSNDerivator(v *Scalar) {
-	coin.snDerivator = v
+func (coin *Coin) SetSNDerivatorRandom(v *Scalar) {
+	coin.snDerivatorRandom = v
 }
 
 func (coin Coin) GetSerialNumber() *Point {
@@ -106,13 +108,27 @@ func (coin *Coin) SetShardIDLastByte(shardIDLastByte int) {
 	coin.shardIDLastByte = shardIDLastByte
 }
 
+func (coin Coin) GetSerialNumberDerivator() (*Scalar, *PrivacyError){
+	sndRandom := coin.GetSNDerivatorRandom()
+	privRandOTA := coin.GetPrivRandOTA()
+	if sndRandom != nil && !sndRandom.IsZero() {
+		// input from tx version 0 or tx version 1 no privacy
+		return sndRandom, nil
+	} else if privRandOTA != nil && !privRandOTA.IsZero() {
+		// input from tx version 1 has privacy
+		return privRandOTA, nil
+	} else {
+		return nil, NewPrivacyErr(InvalidCoinSNDErr, nil)
+	}
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(Point).Identity()
 
 	coin.coinCommitment = new(Point).Identity()
 
-	coin.snDerivator = new(Scalar).FromUint64(0)
+	coin.snDerivatorRandom = new(Scalar).FromUint64(0)
 
 	coin.serialNumber = new(Point).Identity()
 
@@ -163,7 +179,7 @@ func (coin *Coin) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*Scalar{new(Scalar).FromUint64(0), new(Scalar).FromUint64(coin.value), coin.snDerivator, new(Scalar).FromUint64(uint64(shardID)), coin.randomness}
+	values := []*Scalar{new(Scalar).FromUint64(0), new(Scalar).FromUint64(coin.value), coin.snDerivatorRandom, new(Scalar).FromUint64(uint64(shardID)), coin.randomness}
 	commitment, err := PedCom.commitAll(values)
 	if err != nil {
 		return err
@@ -198,9 +214,9 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.snDerivator != nil {
+	if coin.snDerivatorRandom != nil {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
-		coinBytes = append(coinBytes, coin.snDerivator.ToBytesS()...)
+		coinBytes = append(coinBytes, coin.snDerivatorRandom.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -313,7 +329,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse SNDerivator")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.snDerivator = new(Scalar).FromBytesS(data)
+		coin.snDerivatorRandom = new(Scalar).FromBytesS(data)
 
 		offset += int(lenField)
 	}
@@ -466,7 +482,7 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 		if err != nil {
 			return err
 		}
-		inputCoin.CoinDetails.SetSNDerivator(snderivatorScalar)
+		inputCoin.CoinDetails.SetSNDerivatorRandom(snderivatorScalar)
 	}
 
 	if coinObj.SerialNumber != "" {
