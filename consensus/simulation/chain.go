@@ -14,7 +14,7 @@ type Chain struct {
 }
 
 func NewChain(name string, committeePkStruct []incognitokey.CommitteePublicKey) *Chain {
-	rootBlock := NewBlock(1, time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix(), common.Hash{})
+	rootBlock := NewBlock(1, START_TIME, common.Hash{})
 	bg := NewBlockGraph(name, rootBlock)
 	bg.GetBestViewBlock()
 
@@ -38,11 +38,11 @@ func (s *Chain) GetLastBlockTimeStamp() int64 {
 }
 
 func (Chain) GetMinBlkInterval() time.Duration {
-	return time.Second * 1
+	return time.Second * TIMESLOT
 }
 
 func (Chain) GetMaxBlkCreateTime() time.Duration {
-	return time.Second * 1
+	return time.Second * TIMESLOT
 }
 
 func (Chain) IsReady() bool {
@@ -85,7 +85,7 @@ func (Chain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
 
 func (s *Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	b := s.BlockGraph.bestView.block
-	nb := NewBlock(b.GetHeight()+1, time.Now().Unix(), common.Hash{})
+	nb := NewBlock(b.GetHeight()+1, time.Now().Unix(), *b.Hash())
 	return nb, nil
 }
 

@@ -60,26 +60,31 @@ func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []st
 func (s *Node) Start() {
 	s.consensusEngine.Start()
 }
-func (Node) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+func (s Node) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
 	panic("implement me")
 }
 
 func (Node) UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string) {
+	//not use in bft
 	return
 }
 
 func (Node) IsEnableMining() bool {
+	//not use in bft
 	return true
 }
 
 func (Node) GetMiningKeys() string {
+	//not use in bft
 	panic("implement me")
 }
 
 func (Node) GetPrivateKey() string {
+	//not use in bft
 	panic("implement me")
 }
 
 func (Node) DropAllConnections() {
+	//not use in bft
 	return
 }

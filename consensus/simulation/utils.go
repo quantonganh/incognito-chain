@@ -8,6 +8,7 @@ import (
 )
 
 const TIMESLOT = 2 //s
+var START_TIME = time.Now().Unix()
 
 func failOnError(err error) {
 	if err != nil {
@@ -30,8 +31,8 @@ func NewBlock(height uint64, time int64, prev common.Hash) common.BlockInterface
 	}
 }
 
-func GetTimeSlot(t int64) int {
-	return int(math.Floor(float64(time.Now().Unix()-t) / 10))
+func GetTimeSlot(t int64) int64 {
+	return int64(math.Floor(float64(t-START_TIME) / TIMESLOT))
 }
 func NextTimeSlot(t int64) int64 {
 	return t + TIMESLOT

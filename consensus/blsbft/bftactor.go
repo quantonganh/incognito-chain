@@ -156,18 +156,21 @@ func (e *BLSBFT) Start() error {
 										return
 									}
 								}
-								go func() {
-									voteCtnBytes, err := json.Marshal(voteMsg)
-									if err != nil {
-										e.Logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
-										return
-									}
-									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
-									msg.(*wire.MessageBFT).ChainKey = e.ChainKey
-									msg.(*wire.MessageBFT).Content = voteCtnBytes
-									msg.(*wire.MessageBFT).Type = MSG_VOTE
-									e.Node.PushMessageToChain(msg, e.Chain)
-								}()
+
+								//TODO: uncomment
+								//go func() {
+								//	voteCtnBytes, err := json.Marshal(voteMsg)
+								//	if err != nil {
+								//		e.Logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+								//		return
+								//	}
+								//	msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
+								//	msg.(*wire.MessageBFT).ChainKey = e.ChainKey
+								//	msg.(*wire.MessageBFT).Content = voteCtnBytes
+								//	msg.(*wire.MessageBFT).Type = MSG_VOTE
+								//	e.Node.PushMessageToChain(msg, e.Chain)
+								//}()
+
 								e.addVote(voteMsg)
 							}(msg, e.RoundData.BlockHash, append([]incognitokey.CommitteePublicKey{}, e.RoundData.Committee...))
 							continue
@@ -218,9 +221,10 @@ func (e *BLSBFT) Start() error {
 						}
 
 						if e.RoundData.Block == nil {
-							blockData, _ := json.Marshal(e.Blocks[roundKey])
-							msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-							go e.Node.PushMessageToChain(msg, e.Chain)
+							//TODO: uncomment
+							//blockData, _ := json.Marshal(e.Blocks[roundKey])
+							//msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+							//go e.Node.PushMessageToChain(msg, e.Chain)
 
 							e.RoundData.Block = e.Blocks[roundKey]
 							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
@@ -355,16 +359,15 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	e.isOngoing = false
-	e.setState(newround)
 	if e.waitForNextRound() {
 		return
 	}
+	e.setState(newround)
 	e.InitRoundData()
 	e.Logger.Info("")
 	e.Logger.Info("============================================")
 	e.Logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
-
 	e.Logger.Info(pubKey.GetMiningKeyBase58(consensusName))
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
 		e.Logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
@@ -373,7 +376,6 @@ func (e *BLSBFT) enterNewRound() {
 		e.Logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterListenPhase()
 	}
-
 }
 
 func (e *BLSBFT) addVote(voteMsg BFTVote) {

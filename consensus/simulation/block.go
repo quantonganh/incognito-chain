@@ -70,7 +70,7 @@ node [shape=record];
 //    rankdir="LR";
 newrank=true;
 `
-	maxTimeSlot := 0
+	maxTimeSlot := int64(0)
 	for k, v := range s.node {
 		shortK := k.String()[0:5]
 		dotContent += fmt.Sprintf(`%s_%d_%s [label = "%d:%s"]`, s.name, v.block.GetHeight(), string(shortK), v.block.GetHeight(), string(shortK)) + "\n"
@@ -80,7 +80,7 @@ newrank=true;
 		}
 	}
 
-	for i := 1; i < maxTimeSlot; i++ {
+	for i := int64(0); i < maxTimeSlot; i++ {
 		dotContent += fmt.Sprintf("slot_%d -> slot_%d;", i, i+1) + "\n"
 	}
 
