@@ -14,9 +14,42 @@ type Block struct {
 	PrevBlock   common.Hash
 }
 
-func (s *Block) Hash() common.Hash {
+func (s *Block) GetHeight() uint64 {
+	panic("implement me")
+}
+
+func (s *Block) GetProducer() string {
+	panic("implement me")
+}
+
+func (s *Block) GetValidationField() string {
+	panic("implement me")
+}
+
+func (s *Block) GetRound() int {
+	panic("implement me")
+}
+
+func (s *Block) GetRoundKey() string {
+	panic("implement me")
+}
+
+func (s *Block) GetInstructions() [][]string {
+	panic("implement me")
+}
+
+func (s *Block) GetConsensusType() string {
+	panic("implement me")
+}
+
+func (s *Block) GetCurrentEpoch() uint64 {
+	panic("implement me")
+}
+
+func (s *Block) Hash() *common.Hash {
 	b, _ := json.Marshal(s)
-	return common.HashH(b)
+	h := common.HashH(b)
+	return &h
 }
 
 type GraphNode struct {
@@ -42,18 +75,18 @@ func NewBlockGraph(name string, rootBlock *Block) *BlockGraph {
 	s.node = make(map[common.Hash]*GraphNode)
 	s.root = &GraphNode{
 		rootBlock,
-		rootBlock.Hash(),
+		*rootBlock.Hash(),
 		nil,
 		make(map[common.Hash]*GraphNode),
 	}
-	s.leaf[rootBlock.Hash()] = s.root
-	s.node[rootBlock.Hash()] = s.root
+	s.leaf[*rootBlock.Hash()] = s.root
+	s.node[*rootBlock.Hash()] = s.root
 	s.confirmBlock = s.root
 	return s
 }
 
 func (s *BlockGraph) AddBlock(b *Block) {
-	newBlockHash := b.Hash()
+	newBlockHash := *b.Hash()
 	for h, v := range s.node {
 		if h == b.PrevBlock {
 			delete(s.leaf, h)

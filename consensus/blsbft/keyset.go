@@ -68,6 +68,25 @@ func (miningKey *MiningKey) BriSignData(
 	return sig, nil
 }
 
+func GetMiningKeyFromPrivateSeed(privateSeed string) (*MiningKey, error) {
+	var miningKey MiningKey
+	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
+	if err != nil {
+		return nil, consensus.NewConsensusError(consensus.LoadKeyError, err)
+	}
+
+	blsPriKey, blsPubKey := blsmultisig.KeyGen(privateSeedBytes)
+
+	miningKey.PriKey = map[string][]byte{}
+	miningKey.PubKey = map[string][]byte{}
+	miningKey.PriKey[common.BlsConsensus] = blsmultisig.SKBytes(blsPriKey)
+	miningKey.PubKey[common.BlsConsensus] = blsmultisig.PKBytes(blsPubKey)
+	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
+	miningKey.PriKey[common.BridgeConsensus] = bridgesig.SKBytes(&bridgePriKey)
+	miningKey.PubKey[common.BridgeConsensus] = bridgesig.PKBytes(&bridgePubKey)
+
+	return &miningKey, nil
+}
 func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	var miningKey MiningKey
 	privateSeedBytes, _, err := base58.Base58Check{}.Decode(privateSeed)
@@ -86,8 +105,22 @@ func (e *BLSBFT) LoadUserKey(privateSeed string) error {
 	bridgePriKey, bridgePubKey := bridgesig.KeyGen(privateSeedBytes)
 	miningKey.PriKey[common.BridgeConsensus] = bridgesig.SKBytes(&bridgePriKey)
 	miningKey.PubKey[common.BridgeConsensus] = bridgesig.PKBytes(&bridgePubKey)
+
 	e.UserKeySet = &miningKey
 	return nil
+}
+
+func LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {
+	wl, err := wallet.Base58CheckDeserialize(privateKey)
+	if err != nil {
+		return "", consensus.NewConsensusError(consensus.LoadKeyError, err)
+	}
+	privateSeedBytes := common.HashB(common.HashB(wl.KeySet.PrivateKey))
+	if err != nil {
+		return "", consensus.NewConsensusError(consensus.LoadKeyError, err)
+	}
+	privateSeed := base58.Base58Check{}.Encode(privateSeedBytes, common.Base58Version)
+	return privateSeed, nil
 }
 
 func (e *BLSBFT) LoadUserKeyFromIncPrivateKey(privateKey string) (string, error) {

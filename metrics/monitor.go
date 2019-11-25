@@ -64,6 +64,9 @@ func init() {
 		idle0, total0 := getCPUSample()
 		var m runtime.MemStats
 		for _ = range ticker.C {
+			if _, ok := globalParam.param["Bootnode"]; !ok {
+				continue
+			}
 			l := NewLog()
 			idle1, total1 := getCPUSample()
 			idleTicks := float64(idle1 - idle0)
@@ -148,7 +151,6 @@ func NewLog(p ...interface{}) *logKV {
 
 func (s *logKV) Add(p ...interface{}) *logKV {
 	if len(p) == 0 || len(p)%2 != 0 {
-		fmt.Println(len(p))
 		return s
 	}
 	s.Lock()

@@ -1,23 +1,25 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"time"
 )
 
 type Chain struct {
-	Blocks    []Block
-	Committee []string
+	Blocks          []Block
+	CommitteePubkey []incognitokey.CommitteePublicKey
 }
 
-func NewChain() *Chain {
+func NewChain(committeePkStruct []incognitokey.CommitteePublicKey) *Chain {
 	return &Chain{
 		Blocks: []Block{Block{
 			Height:      1,
 			Timestamp:   time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix(),
 			ProposerIdx: 3,
 		}},
+		CommitteePubkey: committeePkStruct,
 	}
 }
 
@@ -54,11 +56,12 @@ func (s *Chain) CurrentHeight() uint64 {
 }
 
 func (s *Chain) GetCommitteeSize() int {
-	return len(s.Committee)
+	return len(s.CommitteePubkey)
 }
 
-func (s *Chain) GetPubKeyCommitteeIndex(string) int {
-	panic("implement me")
+func (s *Chain) GetPubKeyCommitteeIndex(pk string) int {
+	strArr, _ := incognitokey.CommitteeKeyListToString(s.CommitteePubkey)
+	return common.IndexOfStr(pk, strArr)
 }
 
 func (s *Chain) GetLastProposerIndex() int {
@@ -66,7 +69,9 @@ func (s *Chain) GetLastProposerIndex() int {
 }
 
 func (Chain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
-	panic("implement me")
+	b := &Block{}
+	e := json.Unmarshal(blockString, &b)
+	return b, e
 }
 
 func (Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
@@ -86,7 +91,7 @@ func (Chain) GetShardID() int {
 }
 
 func (s *Chain) GetCommittee() []incognitokey.CommitteePublicKey {
-	return nil
+	return s.CommitteePubkey
 }
 
 func (Chain) GetPubkeyRole(pubkey string, round int) (string, byte) {

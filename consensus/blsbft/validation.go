@@ -59,20 +59,20 @@ func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData
 }
 
 func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
-	e.logger.Info("verifying block...")
-	e.logger.Info("ValidateProducerPosition...")
+	e.Logger.Info("verifying block...")
+	e.Logger.Info("ValidateProducerPosition...")
 	if err := e.ValidateProducerPosition(block, e.RoundData.LastProposerIndex, e.RoundData.Committee); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	e.logger.Info("ValidateProducerSig...")
+	e.Logger.Info("ValidateProducerSig...")
 	if err := e.ValidateProducerSig(block); err != nil {
 		return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
 	}
-	e.logger.Info("ValidatePreSignBlock...")
+	e.Logger.Info("ValidatePreSignBlock...")
 	if err := e.Chain.ValidatePreSignBlock(block); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
-	e.logger.Info("done verify block...")
+	e.Logger.Info("done verify block...")
 	return nil
 }
 

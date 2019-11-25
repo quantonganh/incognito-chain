@@ -75,7 +75,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		}
 		e.VoteMessageCh <- msgVote
 	default:
-		e.logger.Critical("???")
+		e.Logger.Critical("???")
 		return
 	}
 }
@@ -133,7 +133,7 @@ func (e *BLSBFT) sendVote() error {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
-	e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+	e.Logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.RoundData.NotYetSendVote = false
 	return nil

@@ -20,14 +20,14 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		2,
 		2,
 		1,
-		root.Hash(),
+		*root.Hash(),
 	}
 	b2b := &Block{
 		2,
 		3,
 		3,
 		2,
-		root.Hash(),
+		*root.Hash(),
 	}
 
 	b3a := &Block{
@@ -35,7 +35,7 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		4,
 		4,
 		3,
-		b2a.Hash(),
+		*b2a.Hash(),
 	}
 
 	b3b := &Block{
@@ -43,7 +43,7 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		5,
 		5,
 		0,
-		b2b.Hash(),
+		*b2b.Hash(),
 	}
 
 	b4 := &Block{
@@ -51,14 +51,14 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		6,
 		6,
 		1,
-		b3a.Hash(),
+		*b3a.Hash(),
 	}
 	b5 := &Block{
 		5,
 		7,
 		7,
 		2,
-		b4.Hash(),
+		*b4.Hash(),
 	}
 
 	b6 := &Block{
@@ -66,7 +66,7 @@ func TestBlockGraph_AddBlock(t *testing.T) {
 		8,
 		8,
 		3,
-		b5.Hash(),
+		*b5.Hash(),
 	}
 
 	bg.AddBlock(b2a)

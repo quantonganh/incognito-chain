@@ -73,14 +73,14 @@ func (e *BLSBFT) isHasMajorityVotes() bool {
 				validatorIdx := common.IndexOfStr(validatorKey, e.RoundData.CommitteeBLS.StringList)
 				if err := e.preValidateVote(blockHashBytes, &voteData, e.RoundData.Committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err == nil {
 					// if err := validateSingleBLSSig(e.RoundData.Block.Hash(), vote.BLS, validatorIdx, e.RoundData.CommitteeBLS.ByteList); err != nil {
-					// 	e.logger.Error(err)
+					// 	e.Logger.Error(err)
 					// 	continue
 					// }
 					e.RoundData.lockVotes.Lock()
 					e.RoundData.Votes[validatorKey] = voteData
 					e.RoundData.lockVotes.Unlock()
 				} else {
-					e.logger.Error(err)
+					e.Logger.Error(err)
 				}
 			}(k, v)
 		}
@@ -135,7 +135,7 @@ func (e *BLSBFT) UpdateCommitteeBLSList() {
 		}
 		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(e.RoundData.Committee, consensusName)
 		if err != nil {
-			e.logger.Error(err)
+			e.Logger.Error(err)
 			return
 		}
 		e.RoundData.CommitteeBLS.StringList = committeeBLSString

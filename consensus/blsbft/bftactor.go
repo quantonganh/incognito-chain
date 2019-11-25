@@ -52,7 +52,7 @@ type BLSBFT struct {
 	isOngoing      bool
 	isStarted      bool
 	StopCh         chan struct{}
-	logger         common.Logger
+	Logger         common.Logger
 }
 
 func (e *BLSBFT) IsOngoing() bool {
@@ -91,9 +91,8 @@ func (e *BLSBFT) Start() error {
 	e.InitRoundData()
 
 	ticker := time.Tick(500 * time.Millisecond)
-	e.logger.Info("start bls-bft consensus for chain", e.ChainKey)
+	e.Logger.Info("start bls-bft consensus for chain", e.ChainKey)
 	go func() {
-		fmt.Println("action")
 		for { //actor loop
 			select {
 			case <-e.StopCh:
@@ -101,11 +100,11 @@ func (e *BLSBFT) Start() error {
 			case proposeMsg := <-e.ProposeMessageCh:
 				block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
 				if err != nil {
-					e.logger.Info(err)
+					e.Logger.Info(err)
 					continue
 				}
 				blockRoundKey := getRoundKey(block.GetHeight(), block.GetRound())
-				e.logger.Info("receive block", blockRoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+				e.Logger.Info("receive block", blockRoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				if block.GetHeight() == e.RoundData.NextHeight {
 					if e.RoundData.Round == block.GetRound() {
 						if e.RoundData.Block == nil {
@@ -125,7 +124,7 @@ func (e *BLSBFT) Start() error {
 					continue
 				}
 			case msg := <-e.VoteMessageCh:
-				e.logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+				e.Logger.Info("receive vote", msg.RoundKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
 				validatorIdx := common.IndexOfStr(msg.Validator, e.RoundData.CommitteeBLS.StringList)
 				if validatorIdx == -1 {
 					continue
@@ -148,19 +147,19 @@ func (e *BLSBFT) Start() error {
 							e.RoundData.lockVotes.Unlock()
 							go func(voteMsg BFTVote, blockHash common.Hash, committee []incognitokey.CommitteePublicKey) {
 								if err := e.preValidateVote(blockHash.GetBytes(), &(voteMsg.Vote), committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-									e.logger.Error(err)
+									e.Logger.Error(err)
 									return
 								}
 								if len(voteMsg.Vote.BRI) != 0 {
 									if err := validateSingleBriSig(&blockHash, voteMsg.Vote.BRI, committee[validatorIdx].MiningPubKey[common.BridgeConsensus]); err != nil {
-										e.logger.Error(err)
+										e.Logger.Error(err)
 										return
 									}
 								}
 								go func() {
 									voteCtnBytes, err := json.Marshal(voteMsg)
 									if err != nil {
-										e.logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
+										e.Logger.Error(consensus.NewConsensusError(consensus.UnExpectedError, err))
 										return
 									}
 									msg, _ := wire.MakeEmptyMessage(wire.CmdBFT)
@@ -183,8 +182,8 @@ func (e *BLSBFT) Start() error {
 			case <-ticker:
 
 				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
-
 				pubKey := e.UserKeySet.GetPublicKey()
+
 				if common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList) == -1 {
 					e.enterNewRound()
 					continue
@@ -214,7 +213,7 @@ func (e *BLSBFT) Start() error {
 						//fmt.Println("CONSENSUS: listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
-							e.logger.Error(err)
+							e.Logger.Error(err)
 							continue
 						}
 
@@ -227,7 +226,7 @@ func (e *BLSBFT) Start() error {
 							e.RoundData.BlockHash = *e.RoundData.Block.Hash()
 							valData, err := DecodeValidationData(e.RoundData.Block.GetValidationField())
 							if err != nil {
-								e.logger.Error(err)
+								e.Logger.Error(err)
 								continue
 							}
 							e.RoundData.BlockValidateData = *valData
@@ -238,7 +237,7 @@ func (e *BLSBFT) Start() error {
 					if e.RoundData.NotYetSendVote {
 						err := e.sendVote()
 						if err != nil {
-							e.logger.Error(err)
+							e.Logger.Error(err)
 							continue
 						}
 					}
@@ -247,7 +246,7 @@ func (e *BLSBFT) Start() error {
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
 						e.RoundData.lockVotes.Unlock()
 						if err != nil {
-							e.logger.Error(err)
+							e.Logger.Error(err)
 							continue
 						}
 
@@ -263,29 +262,29 @@ func (e *BLSBFT) Start() error {
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
 						if err != nil {
 							fmt.Print("\n")
-							e.logger.Critical(e.RoundData.Block.GetValidationField())
+							e.Logger.Critical(e.RoundData.Block.GetValidationField())
 							fmt.Print("\n")
-							e.logger.Critical(e.RoundData.Committee)
+							e.Logger.Critical(e.RoundData.Committee)
 							fmt.Print("\n")
 							for _, member := range e.RoundData.Committee {
 								fmt.Println(base58.Base58Check{}.Encode(member.MiningPubKey[consensusName], common.Base58Version))
 							}
-							e.logger.Critical(err)
+							e.Logger.Critical(err)
 							continue
 						}
 
 						if err := e.Chain.InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
-							e.logger.Error(err)
+							e.Logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
-									e.logger.Error(err)
+									e.Logger.Error(err)
 								}
 							}
 							continue
 						}
 						// e.Node.PushMessageToAll()
 						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
-						e.logger.Warn("Commit block! Wait for next round")
+						e.Logger.Warn("Commit block! Wait for next round")
 						e.enterNewRound()
 					}
 				}
@@ -304,7 +303,7 @@ func (e *BLSBFT) enterProposePhase() {
 	block, err := e.createNewBlock()
 	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 	if err != nil {
-		e.logger.Error("can't create block", err)
+		e.Logger.Error("can't create block", err)
 		return
 	}
 
@@ -318,7 +317,7 @@ func (e *BLSBFT) enterProposePhase() {
 
 	blockData, _ := json.Marshal(e.RoundData.Block)
 	msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-	// e.logger.Info("push block", time.Since(time1).Seconds())
+	// e.Logger.Info("push block", time.Since(time1).Seconds())
 	go e.Node.PushMessageToChain(msg, e.Chain)
 	e.enterVotePhase()
 }
@@ -331,7 +330,7 @@ func (e *BLSBFT) enterListenPhase() {
 }
 
 func (e *BLSBFT) enterVotePhase() {
-	e.logger.Info("enter voting phase")
+	e.Logger.Info("enter voting phase")
 	if !e.isInTimeFrame() || e.RoundData.State == votePhase {
 		return
 	}
@@ -339,7 +338,7 @@ func (e *BLSBFT) enterVotePhase() {
 	e.setState(votePhase)
 	err := e.sendVote()
 	if err != nil {
-		e.logger.Error(err)
+		e.Logger.Error(err)
 	}
 }
 
@@ -350,7 +349,7 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	//if already running a round for current timeframe
-	if e.isInTimeFrame() && e.RoundData.State != newround {
+	if e.isInTimeFrame() && (e.RoundData.State != "" && e.RoundData.State != newround) {
 		return
 	}
 	e.isOngoing = false
@@ -359,15 +358,15 @@ func (e *BLSBFT) enterNewRound() {
 		return
 	}
 	e.InitRoundData()
-	e.logger.Info("")
-	e.logger.Info("============================================")
-	e.logger.Info("")
+	e.Logger.Info("")
+	e.Logger.Info("============================================")
+	e.Logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
-		e.logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
+		e.Logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
 	} else {
-		e.logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
+		e.Logger.Info("BFT: new round => LISTEN", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterListenPhase()
 	}
 
@@ -377,7 +376,7 @@ func (e *BLSBFT) addVote(voteMsg BFTVote) {
 	e.RoundData.lockVotes.Lock()
 	defer e.RoundData.lockVotes.Unlock()
 	e.RoundData.Votes[voteMsg.Validator] = voteMsg.Vote
-	e.logger.Warn("vote added...")
+	e.Logger.Warn("vote added...")
 	return
 }
 
@@ -411,7 +410,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		time1 := time.Now()
 		var err error
 		block, err = e.Chain.CreateNewBlock(int(e.RoundData.Round))
-		e.logger.Info("create block", time.Since(time1).Seconds())
+		e.Logger.Info("create block", time.Since(time1).Seconds())
 		errCh <- err
 	}()
 
@@ -421,7 +420,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 		close(timeoutCh)
 		return block, err
 	case <-timeoutCh:
-		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block crea185tion timeout"))
+		return nil, consensus.NewConsensusError(consensus.BlockCreationError, errors.New("block creation timeout"))
 	}
 
 }
@@ -431,7 +430,7 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 	newInstance.ChainKey = chainKey
 	newInstance.Node = node
 	newInstance.UserKeySet = e.UserKeySet
-	newInstance.logger = logger
+	newInstance.Logger = logger
 	return &newInstance
 }
 
