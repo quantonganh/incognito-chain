@@ -8,17 +8,18 @@ import (
 )
 
 type Chain struct {
-	Blocks          []Block
+	BlockGraph      *BlockGraph
+	UserPubKey      incognitokey.CommitteePublicKey
 	CommitteePubkey []incognitokey.CommitteePublicKey
 }
 
-func NewChain(committeePkStruct []incognitokey.CommitteePublicKey) *Chain {
+func NewChain(name string, committeePkStruct []incognitokey.CommitteePublicKey) *Chain {
+	rootBlock := NewBlock(1, time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix(), common.Hash{})
+	bg := NewBlockGraph(name, rootBlock)
+	bg.GetBestViewBlock()
+
 	return &Chain{
-		Blocks: []Block{Block{
-			Height:      1,
-			Timestamp:   time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix(),
-			ProposerIdx: 3,
-		}},
+		BlockGraph:      bg,
 		CommitteePubkey: committeePkStruct,
 	}
 }
@@ -32,7 +33,8 @@ func (Chain) GetConsensusType() string {
 }
 
 func (s *Chain) GetLastBlockTimeStamp() int64 {
-	return s.Blocks[len(s.Blocks)-1].Timestamp
+	b := s.BlockGraph.bestView.block
+	return b.GetTimeStamp()
 }
 
 func (Chain) GetMinBlkInterval() time.Duration {
@@ -52,7 +54,8 @@ func (Chain) GetActiveShardNumber() int {
 }
 
 func (s *Chain) CurrentHeight() uint64 {
-	return s.Blocks[len(s.Blocks)-1].Height
+	b := s.BlockGraph.bestView.block
+	return b.GetHeight()
 }
 
 func (s *Chain) GetCommitteeSize() int {
@@ -69,18 +72,21 @@ func (s *Chain) GetPubKeyCommitteeIndex(pk string) int {
 }
 
 func (s *Chain) GetLastProposerIndex() int {
-	return s.Blocks[len(s.Blocks)-1].ProposerIdx
+	b := s.BlockGraph.bestView.block
+	strArr, _ := incognitokey.CommitteeKeyListToString(s.CommitteePubkey)
+	return common.IndexOfStr(b.GetProducer(), strArr)
 }
 
 func (Chain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
-	b := &Block{}
+	b := NewEmptyBlock()
 	e := json.Unmarshal(blockString, &b)
 	return b, e
 }
 
-func (Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
-	panic("implement me")
-
+func (s *Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
+	b := s.BlockGraph.bestView.block
+	nb := NewBlock(b.GetHeight()+1, time.Now().Unix(), common.Hash{})
+	return nb, nil
 }
 
 func (Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {

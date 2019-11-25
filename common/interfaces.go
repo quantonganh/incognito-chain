@@ -8,7 +8,12 @@ type BlockInterface interface {
 	GetValidationField() string
 	GetRound() int
 	GetRoundKey() string
+
 	GetInstructions() [][]string
 	GetConsensusType() string
 	GetCurrentEpoch() uint64
+
+	//GetTimeSlot() int
+	GetPrevBlockHash() Hash
+	GetTimeStamp() int64
 }

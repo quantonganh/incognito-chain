@@ -3,71 +3,22 @@ package main
 import (
 	"github.com/incognitochain/incognito-chain/common"
 	"testing"
+	"time"
 )
 
 func TestBlockGraph_AddBlock(t *testing.T) {
-	root := Block{
-		1,
-		1,
-		1,
-		0,
-		common.Hash{},
-	}
-	bg := NewBlockGraph("n1", &root)
+	StartTime := time.Date(2019, 01, 01, 00, 00, 00, 00, time.Local).Unix()
+	root := NewBlock(1, StartTime, common.Hash{})
+	bg := NewBlockGraph("n1", root)
+	b2a := NewBlock(2, NextTimeSlot(root.GetTimeStamp()), *root.Hash())
+	b2b := NewBlock(2, NextTimeSlot(b2a.GetTimeStamp()), *root.Hash())
 
-	b2a := &Block{
-		2,
-		2,
-		2,
-		1,
-		*root.Hash(),
-	}
-	b2b := &Block{
-		2,
-		3,
-		3,
-		2,
-		*root.Hash(),
-	}
+	b3a := NewBlock(3, NextTimeSlot(b2b.GetTimeStamp()), *b2a.Hash())
+	b3b := NewBlock(3, NextTimeSlot(b3a.GetTimeStamp()), *b2b.Hash())
 
-	b3a := &Block{
-		3,
-		4,
-		4,
-		3,
-		*b2a.Hash(),
-	}
-
-	b3b := &Block{
-		3,
-		5,
-		5,
-		0,
-		*b2b.Hash(),
-	}
-
-	b4 := &Block{
-		4,
-		6,
-		6,
-		1,
-		*b3a.Hash(),
-	}
-	b5 := &Block{
-		5,
-		7,
-		7,
-		2,
-		*b4.Hash(),
-	}
-
-	b6 := &Block{
-		6,
-		8,
-		8,
-		3,
-		*b5.Hash(),
-	}
+	b4 := NewBlock(4, NextTimeSlot(b3b.GetTimeStamp()), *b3a.Hash())
+	b5 := NewBlock(5, NextTimeSlot(b4.GetTimeStamp()), *b4.Hash())
+	b6 := NewBlock(6, NextTimeSlot(b5.GetTimeStamp()), *b5.Hash())
 
 	bg.AddBlock(b2a)
 	bg.AddBlock(b2b)

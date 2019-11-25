@@ -6,54 +6,8 @@ import (
 	"github.com/incognitochain/incognito-chain/common"
 )
 
-type Block struct {
-	Height      uint64
-	Timestamp   int64
-	TimeSlot    int
-	ProposerIdx int
-	PrevBlock   common.Hash
-}
-
-func (s *Block) GetHeight() uint64 {
-	panic("implement me")
-}
-
-func (s *Block) GetProducer() string {
-	panic("implement me")
-}
-
-func (s *Block) GetValidationField() string {
-	panic("implement me")
-}
-
-func (s *Block) GetRound() int {
-	panic("implement me")
-}
-
-func (s *Block) GetRoundKey() string {
-	panic("implement me")
-}
-
-func (s *Block) GetInstructions() [][]string {
-	panic("implement me")
-}
-
-func (s *Block) GetConsensusType() string {
-	panic("implement me")
-}
-
-func (s *Block) GetCurrentEpoch() uint64 {
-	panic("implement me")
-}
-
-func (s *Block) Hash() *common.Hash {
-	b, _ := json.Marshal(s)
-	h := common.HashH(b)
-	return &h
-}
-
 type GraphNode struct {
-	block *Block
+	block common.BlockInterface
 	hash  common.Hash
 	prev  *GraphNode
 	next  map[common.Hash]*GraphNode
@@ -69,7 +23,7 @@ type BlockGraph struct {
 	confirmBlock *GraphNode
 }
 
-func NewBlockGraph(name string, rootBlock *Block) *BlockGraph {
+func NewBlockGraph(name string, rootBlock common.BlockInterface) *BlockGraph {
 	s := &BlockGraph{name: name}
 	s.leaf = make(map[common.Hash]*GraphNode)
 	s.node = make(map[common.Hash]*GraphNode)
@@ -85,10 +39,10 @@ func NewBlockGraph(name string, rootBlock *Block) *BlockGraph {
 	return s
 }
 
-func (s *BlockGraph) AddBlock(b *Block) {
+func (s *BlockGraph) AddBlock(b common.BlockInterface) {
 	newBlockHash := *b.Hash()
 	for h, v := range s.node {
-		if h == b.PrevBlock {
+		if h == b.GetPrevBlockHash() {
 			delete(s.leaf, h)
 			s.leaf[newBlockHash] = &GraphNode{
 				b,
@@ -102,9 +56,8 @@ func (s *BlockGraph) AddBlock(b *Block) {
 	}
 }
 
-func (s *BlockGraph) GetBestViewBlock() *Block {
+func (s *BlockGraph) GetBestViewBlock() common.BlockInterface {
 	s.traverse(s.root)
-	fmt.Println(s.bestView.block.Height, s.bestView.block.TimeSlot)
 	return s.bestView.block
 }
 
@@ -120,10 +73,10 @@ newrank=true;
 	maxTimeSlot := 0
 	for k, v := range s.node {
 		shortK := k.String()[0:5]
-		dotContent += fmt.Sprintf(`%s_%d_%s [label = "%d:%s"]`, s.name, v.block.Height, string(shortK), v.block.Height, string(shortK)) + "\n"
-		dotContent += fmt.Sprintf(`{rank=same; %s_%d_%s; slot_%d;}`, s.name, v.block.Height, string(shortK), v.block.TimeSlot) + "\n"
-		if v.block.TimeSlot > maxTimeSlot {
-			maxTimeSlot = v.block.TimeSlot
+		dotContent += fmt.Sprintf(`%s_%d_%s [label = "%d:%s"]`, s.name, v.block.GetHeight(), string(shortK), v.block.GetHeight(), string(shortK)) + "\n"
+		dotContent += fmt.Sprintf(`{rank=same; %s_%d_%s; slot_%d;}`, s.name, v.block.GetHeight(), string(shortK), GetTimeSlot(v.block.GetTimeStamp())) + "\n"
+		if GetTimeSlot(v.block.GetTimeStamp()) > maxTimeSlot {
+			maxTimeSlot = GetTimeSlot(v.block.GetTimeStamp())
 		}
 	}
 
@@ -146,17 +99,17 @@ newrank=true;
 func (s *BlockGraph) traverse(n *GraphNode) {
 	if n.next != nil && len(n.next) != 0 {
 		for h, v := range n.next {
-			s.edgeStr += fmt.Sprintf("%s_%d_%s -> %s_%d_%s;\n", s.name, n.block.Height, string(n.block.Hash().String()[0:5]), s.name, v.block.Height, string(h.String()[0:5]))
+			s.edgeStr += fmt.Sprintf("%s_%d_%s -> %s_%d_%s;\n", s.name, n.block.GetHeight(), string(n.block.Hash().String()[0:5]), s.name, v.block.GetHeight(), string(h.String()[0:5]))
 			s.traverse(v)
 		}
 	} else {
 		if s.bestView == nil {
 			s.bestView = n
 		} else {
-			if n.block.Height > s.bestView.block.Height {
+			if n.block.GetHeight() > s.bestView.block.GetHeight() {
 				s.bestView = n
 			}
-			if n.block.Height == s.bestView.block.Height && n.block.TimeSlot < s.bestView.block.TimeSlot {
+			if n.block.GetHeight() == s.bestView.block.GetHeight() && GetTimeSlot(n.block.GetTimeStamp()) < GetTimeSlot(s.bestView.block.GetTimeStamp()) {
 				s.bestView = n
 			}
 		}
@@ -174,7 +127,7 @@ func (s *BlockGraph) updateConfirmBlock(node *GraphNode) {
 		s.confirmBlock = _1block
 		return
 	}
-	if _2block.block.TimeSlot == _1block.block.TimeSlot-1 && _2block.block.TimeSlot == node.block.TimeSlot-2 {
+	if GetTimeSlot(_2block.block.GetTimeStamp()) == GetTimeSlot(_1block.block.GetTimeStamp())-1 && GetTimeSlot(_2block.block.GetTimeStamp()) == GetTimeSlot(node.block.GetTimeStamp())-2 {
 		s.confirmBlock = _2block
 		return
 	}

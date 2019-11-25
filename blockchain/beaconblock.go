@@ -91,3 +91,10 @@ func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
 func (beaconBlock BeaconBlock) GetConsensusType() string {
 	return beaconBlock.Header.ConsensusType
 }
+func (beaconBlock BeaconBlock) GetTimeStamp() int64 {
+	return beaconBlock.Header.Timestamp
+}
+
+func (beaconBlock BeaconBlock) GetPrevBlockHash() common.Hash {
+	return beaconBlock.Header.PreviousBlockHash
+}

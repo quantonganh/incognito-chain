@@ -28,16 +28,17 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 }
 
 func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []string, index int) *Node {
+	name := fmt.Sprintf("node-%d", index)
 	node := Node{}
-	node.chain = NewChain(committeePkStruct)
-
-	fd, err := os.OpenFile(fmt.Sprintf("node-%d.log", index), os.O_CREATE|os.O_WRONLY, 0666)
+	node.chain = NewChain(name, committeePkStruct)
+	node.chain.UserPubKey = committeePkStruct[index]
+	fd, err := os.OpenFile(fmt.Sprintf("%s.log", name), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}
 	fd.Truncate(0)
 	backendLog := common.NewBackend(logWriter{
-		NodeID: fmt.Sprintf("node-%d", index),
+		NodeID: name,
 		fd:     fd,
 	})
 	logger := backendLog.Logger("Consensus", false)
@@ -46,7 +47,7 @@ func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []st
 		Chain:    node.chain,
 		Node:     node,
 		ChainKey: "shard",
-		PeerID:   fmt.Sprintf("node-%d", index),
+		PeerID:   name,
 		Logger:   logger,
 	}
 

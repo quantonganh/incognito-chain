@@ -438,6 +438,14 @@ func (block ShardBlock) GetInstructions() [][]string {
 	return block.Body.Instructions
 }
 
+func (block ShardBlock) GetTimeStamp() int64 {
+	return block.Header.Timestamp
+}
+
+func (beaconBlock ShardBlock) GetPrevBlockHash() common.Hash {
+	return beaconBlock.Header.PreviousBlockHash
+}
+
 func (block CrossShardBlock) GetProducer() string {
 	return block.Header.Producer
 }
@@ -493,6 +501,20 @@ func (block CrossShardBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
 }
 
+func (block CrossShardBlock) GetTimeStamp() int64 {
+	return block.Header.Timestamp
+}
+func (beaconBlock CrossShardBlock) GetPrevBlockHash() common.Hash {
+	return beaconBlock.Header.PreviousBlockHash
+}
+
 func (block ShardToBeaconBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
+}
+
+func (block ShardToBeaconBlock) GetTimeStamp() int64 {
+	return block.Header.Timestamp
+}
+func (beaconBlock ShardToBeaconBlock) GetPrevBlockHash() common.Hash {
+	return beaconBlock.Header.PreviousBlockHash
 }

@@ -1,7 +1,6 @@
 package main
 
 type Simulation struct {
-	blocks   map[string]*Block
 	scenario Scenario
 	expected Expected
 }
