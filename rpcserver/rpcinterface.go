@@ -155,6 +155,7 @@ var HttpHandler = map[string]httpHandler{
 	getChainMiningStatus:        (*HttpServer).handleGetChainMiningStatus,
 	getPublickeyMining:          (*HttpServer).handleGetPublicKeyMining,
 	getPublicKeyRole:            (*HttpServer).handleGetPublicKeyRole,
+	getRoleByValidatorKey:       (*HttpServer).handleGetValidatorKeyRole,
 	getIncognitoPublicKeyRole:   (*HttpServer).handleGetIncognitoPublicKeyRole,
 	getMinerRewardFromMiningKey: (*HttpServer).handleGetMinerRewardFromMiningKey,
 	getProducersBlackList:       (*HttpServer).handleGetProducersBlackList,
@@ -170,6 +171,8 @@ var HttpHandler = map[string]httpHandler{
 	getPDEContributionStatus:              (*HttpServer).handleGetPDEContributionStatus,
 	getPDETradeStatus:                     (*HttpServer).handleGetPDETradeStatus,
 	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
+	convertPDEPrices:                      (*HttpServer).handleConvertPDEPrices,
+	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 }
 
 // Commands that are available to a limited user
