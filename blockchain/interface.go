@@ -138,10 +138,11 @@ type ChainViewInterface interface {
 	GetCommittee() []string
 	GetLastProposerIdx() int
 
+	GetTimeslot() uint64
 	GetConsensusType() string
 	GetPubKeyCommitteeIndex(string) int
 	GetLastProposerIndex() int
-	CreateNewBlock(round int) (common.BlockInterface, error)
+	CreateNewBlock(timeslot uint64) (common.BlockInterface, error)
 	InsertBlk(block common.BlockInterface) error
 	InsertAndBroadcastBlock(block common.BlockInterface) error
 	ValidatePreSignBlock(block common.BlockInterface) error

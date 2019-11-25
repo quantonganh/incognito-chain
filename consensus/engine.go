@@ -348,11 +348,13 @@ func RegisterConsensus(name string, consensus ConsensusInterface) error {
 }
 
 func (engine *Engine) IsOngoing(chainName string) bool {
-	consensusModule, ok := engine.ChainConsensusList[chainName]
-	if ok {
-		return consensusModule.IsOngoing()
-	}
-	return false
+	//TO_BE_DELETE
+	// consensusModule, ok := engine.ChainConsensusList[chainName]
+	// if ok {
+	// 	return consensusModule.IsOngoing()
+	// }
+	// return false
+	return true
 }
 
 func (engine *Engine) OnBFTMsg(msg *wire.MessageBFT) {

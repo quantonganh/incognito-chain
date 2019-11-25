@@ -2,11 +2,8 @@ package blsbftv2
 
 import (
 	"encoding/json"
-	"fmt"
 
-	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
-	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
 )
 
@@ -16,14 +13,15 @@ const (
 )
 
 type BFTPropose struct {
-	ProposerVote vote
-	Block        json.RawMessage
+	Block json.RawMessage
 }
 
 type BFTVote struct {
-	RoundKey  string
+	BlockHash string
 	Validator string
-	Vote      vote
+	BLS       []byte
+	BRI       []byte
+	VoteSig   []byte
 }
 
 func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wire.Message, error) {
@@ -40,12 +38,8 @@ func MakeBFTProposeMsg(block []byte, chainKey string, userKeySet *MiningKey) (wi
 	return msg, nil
 }
 
-func MakeBFTVoteMsg(userPublicKey string, chainKey, roundKey string, vote vote) (wire.Message, error) {
-	var voteCtn BFTVote
-	voteCtn.RoundKey = roundKey
-	voteCtn.Validator = userPublicKey
-	voteCtn.Vote = vote
-	voteCtnBytes, err := json.Marshal(voteCtn)
+func MakeBFTVoteMsg(vote BFTVote, chainKey string) (wire.Message, error) {
+	voteCtnBytes, err := json.Marshal(vote)
 	if err != nil {
 		return nil, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
@@ -57,85 +51,75 @@ func MakeBFTVoteMsg(userPublicKey string, chainKey, roundKey string, vote vote) 
 }
 
 //TODO merman
-func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
-	switch msg.Type {
-	case MSG_PROPOSE:
-		var msgPropose BFTPropose
-		err := json.Unmarshal(msg.Content, &msgPropose)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		e.ProposeMessageCh <- msgPropose
-	case MSG_VOTE:
-		var msgVote BFTVote
-		err := json.Unmarshal(msg.Content, &msgVote)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		e.VoteMessageCh <- msgVote
-	default:
-		e.logger.Critical("???")
-		return
-	}
-}
+// func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
+// 	switch msg.Type {
+// 	case MSG_PROPOSE:
+// 		var msgPropose BFTPropose
+// 		err := json.Unmarshal(msg.Content, &msgPropose)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			return
+// 		}
+// 		e.ProposeMessageCh <- msgPropose
+// 	case MSG_VOTE:
+// 		var msgVote BFTVote
+// 		err := json.Unmarshal(msg.Content, &msgVote)
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			return
+// 		}
+// 		e.VoteMessageCh <- msgVote
+// 	default:
+// 		e.logger.Critical("???")
+// 		return
+// 	}
+// }
 
-func (e *BLSBFT) confirmVote(Vote *vote) error {
-	data := e.RoundData.Block.Hash().GetBytes()
-	data = append(data, Vote.BLS...)
-	data = append(data, Vote.BRI...)
-	data = common.HashB(data)
-	var err error
-	Vote.Confirmation, err = e.UserKeySet.BriSignData(data)
-	return err
-}
-
-func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *vote, candidate []byte) error {
-	data := []byte{}
-	data = append(data, blockHash...)
-	data = append(data, Vote.BLS...)
-	data = append(data, Vote.BRI...)
-	dataHash := common.HashH(data)
-	err := validateSingleBriSig(&dataHash, Vote.Confirmation, candidate)
-	return err
-}
+// func (e *BLSBFT) confirmVote(Vote *vote) error {
+// 	data := e.RoundData.Block.Hash().GetBytes()
+// 	data = append(data, Vote.BLS...)
+// 	data = append(data, Vote.BRI...)
+// 	data = common.HashB(data)
+// 	var err error
+// 	Vote.Confirmation, err = e.UserKeySet.BriSignData(data)
+// 	return err
+// }
 
 func (e *BLSBFT) sendVote() error {
-	var Vote vote
+	// var Vote BFTVote
 
-	pubKey := e.UserKeySet.GetPublicKey()
-	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
+	// pubKey := e.UserKeySet.GetPublicKey()
+	// selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
 
-	blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
-	if err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	}
-	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
-		bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
-		if err != nil {
-			return consensus.NewConsensusError(consensus.UnExpectedError, err)
-		}
-	}
+	// blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
+	// if err != nil {
+	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// }
+	// bridgeSig := []byte{}
+	// if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+	// 	bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+	// 	if err != nil {
+	// 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// 	}
+	// }
 
-	Vote.BLS = blsSig
-	Vote.BRI = bridgeSig
+	// Vote.BLS = blsSig
+	// Vote.BRI = bridgeSig
 
-	//TODO hy
-	err = e.confirmVote(&Vote)
-	if err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	}
-	key := e.UserKeySet.GetPublicKey()
+	// //TODO hy
+	// err = e.confirmVote(&Vote)
+	// if err != nil {
+	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// }
+	// key := e.UserKeySet.GetPublicKey()
 
-	msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
-	if err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	}
-	e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
-	e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-	go e.Node.PushMessageToChain(msg, e.Chain)
-	e.RoundData.NotYetSendVote = false
+	// msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
+	// if err != nil {
+	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	// }
+	// e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
+	// e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+	// go e.Node.PushMessageToChain(msg, e.Chain)
+	// e.RoundData.NotYetSendVote = false
 	return nil
 }

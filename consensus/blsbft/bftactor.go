@@ -409,7 +409,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	go func() {
 		time1 := time.Now()
 		var err error
-		block, err = e.Chain.GetBestView().CreateNewBlock(int(e.RoundData.Round))
+		block, err = e.Chain.GetBestView().CreateNewBlock(uint64(e.RoundData.Round))
 		e.logger.Info("create block", time.Since(time1).Seconds())
 		errCh <- err
 	}()
