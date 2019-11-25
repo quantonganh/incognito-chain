@@ -229,9 +229,12 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 		return nil, nil
 	}
 
-	meta := metadata.NewPDEWithdrawalResponse(wdAcceptedContent.TxReqID, metadata.PDEWithdrawalResponseMeta)
-
 	withdrawalTokenIDStr := wdAcceptedContent.WithdrawalTokenIDStr
+	meta := metadata.NewPDEWithdrawalResponse(
+		withdrawalTokenIDStr,
+		wdAcceptedContent.TxReqID,
+		metadata.PDEWithdrawalResponseMeta,
+	)
 	tokenID, err := common.Hash{}.NewHashFromStr(withdrawalTokenIDStr)
 	if err != nil {
 		Logger.log.Errorf("ERROR: an error occured while converting tokenid to hash: %+v", err)
@@ -272,8 +275,8 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 	propID := common.Hash(propertyID)
 	tokenParams := &transaction.CustomTokenPrivacyParamTx{
 		PropertyID: propID.String(),
-		// PropertyName:   issuingAcceptedInst.IncTokenName,
-		// PropertySymbol: issuingAcceptedInst.IncTokenName,
+		// PropertyName:   tokeName,
+		// PropertySymbol: tokenSymbol,
 		Amount:      wdAcceptedContent.DeductingPoolValue,
 		TokenTxType: transaction.CustomTokenInit,
 		Receiver:    []*privacy.PaymentInfo{receiver},

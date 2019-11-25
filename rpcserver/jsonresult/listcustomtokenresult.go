@@ -3,6 +3,7 @@ package jsonresult
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
+	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -14,7 +15,9 @@ type CustomToken struct {
 	Amount             uint64   `json:"Amount"`
 	IsPrivacy          bool     `json:"IsPrivacy"`
 	ListTxs            []string `json:"ListTxs"`
+	CountTxs           int      `json:"CountTxs"`
 	InitiatorPublicKey string   `json:"InitiatorPublicKey"`
+	TxInfo             string   `json:"TxInfo"`
 }
 
 func NewNormalToken(obj transaction.TxNormalToken) *CustomToken {
@@ -35,6 +38,7 @@ func NewPrivacyToken(obj transaction.TxCustomTokenPrivacy) *CustomToken {
 	customToken.Amount = obj.TxPrivacyTokenData.Amount
 	//customToken.Image = common.Render(obj.TxPrivacyTokenData.PropertyID[:])
 	customToken.IsPrivacy = true
+	customToken.TxInfo = base58.Base58Check{}.Encode(obj.Info, common.ZeroByte)
 	return customToken
 }
 
