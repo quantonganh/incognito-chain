@@ -312,3 +312,66 @@ func TestPrivateKeyToPaymentAddress(t *testing.T){
 	fmt.Printf("paymentAddStr: %v\n", paymentAddStr)
 
 }
+
+
+func TestSpecificDecrypt(t *testing.T) {
+
+	privateKeyStr := "112t8rnsALNFKxaqBPX44veYrxpapdZjCHGxAZuMFhmicrSntsthnhm1TXKofUii1zqwqRWj7cnYzg6rBGbFHUK7cstiBJ3Eceyqw15wge4R"
+
+	keyWallet, err := Base58CheckDeserialize(privateKeyStr)
+	if err != nil{
+		fmt.Printf("err: %v\n", err)
+	}
+
+	err = keyWallet.KeySet.InitFromPrivateKeyByte(keyWallet.KeySet.PrivateKey)
+	if err != nil{
+		fmt.Printf("err import key: %v\n", err)
+	}
+
+	publicKeyStr := base58.Base58Check{}.Encode(keyWallet.KeySet.PaymentAddress.Pk, common.ZeroByte)
+	fmt.Printf("publicKeyStr: %v\n", publicKeyStr)
+
+	fmt.Printf("ShardID: %v\n", common.GetShardIDFromLastByte(keyWallet.KeySet.PaymentAddress.Pk[len(keyWallet.KeySet.PaymentAddress.Pk) - 1]))
+
+	paymentAddress := keyWallet.Base58CheckSerialize(PaymentAddressType)
+	fmt.Printf("paymentAddress %v\n", paymentAddress)
+
+	viewingKey := keyWallet.Base58CheckSerialize(ReadonlyKeyType)
+	fmt.Printf("viewingKey %v\n", viewingKey)
+
+
+	coin := new(privacy.OutputCoin).Init()
+	coin.CoinDetailsEncrypted = new(privacy.HybridCipherText)
+
+	ciphertextStr := "1HCa3wu1zWYbsoxLg4p8aEqFckfYFubtdLYJ3hh6mCfGBV5ZGCnSF3KKRLGDEpBu3sPkGCtqowM1QysAAZiErs1W1bAJGDwTPMX6pNKM2rLEn4fULAZu8pwovjoXQJCc19Bb4CNRrFKBdovkAtsTRyCg73KkA95u3GeTZ"
+	cipherTextBytes,_,  err := base58.Base58Check{}.Decode(ciphertextStr)
+	if err != nil{
+		fmt.Printf("err decode ciphertext: %v\n", err)
+	}
+
+	coin.CoinDetailsEncrypted.SetBytes(cipherTextBytes)
+	err = coin.Decrypt(keyWallet.KeySet.ReadonlyKey)
+
+	fmt.Printf("coin.CoinDetails.GetValue(): %v\n", coin.CoinDetails.GetValue())
+	fmt.Printf("coin.CoinDetails.GetRandomness(): %v\n", coin.CoinDetails.GetRandomness())
+
+
+
+	coin2 := new(privacy.OutputCoin).Init()
+	coin2.CoinDetailsEncrypted = new(privacy.HybridCipherText)
+
+	ciphertextStr2 := "123LnYfvLoTqeR8Aqgb7rzHGywctNuZirMbR2H6qy4EBEmy7Z2UUh5Qz5YPnSKx241Hs1ggr4wVKUkjoSQF1kvWNzK76SyBPd55pwHCajxUnqcxMUBF8Nau61X1SbE2XTL5om1Dff4y1N4K4aeaqCBiSgPzZgcFyHTP"
+	cipherTextBytes2,_,  err := base58.Base58Check{}.Decode(ciphertextStr2)
+	if err != nil{
+		fmt.Printf("err decode ciphertext: %v\n", err)
+	}
+
+	coin2.CoinDetailsEncrypted.SetBytes(cipherTextBytes2)
+	err = coin2.Decrypt(keyWallet.KeySet.ReadonlyKey)
+
+	fmt.Printf("coin2.CoinDetails.GetValue(): %v\n", coin2.CoinDetails.GetValue())
+	fmt.Printf("coin2.CoinDetails.GetRandomness(): %v\n", coin2.CoinDetails.GetRandomness())
+
+
+}
+

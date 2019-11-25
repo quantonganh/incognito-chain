@@ -274,16 +274,19 @@ func TestInitTxPTokenV1(t *testing.T) {
 		assert.Equal(t, nil, err)
 
 		tokenID := tx1.TxPrivacyTokenData.TxNormal.GetTokenID()
+		tokenIDStr := tokenID.String()
+
+		outputFromTx1 := tx1.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()
 
 		// store output coin's coin commitments in coin base tx
 		db.StoreCommitments(
 			*tokenID,
 			senderPaymentAddress.Pk,
-			[][]byte{tx1.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+			[][]byte{outputFromTx1[0].CoinDetails.GetCoinCommitment().ToBytesS()},
 			senderShardID)
 
 		/******** get output coins from coin base tx to create new tx ********/
-		coinBaseOutput := ConvertOutputCoinToInputCoin(tx1.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins())
+		coinBaseOutput := ConvertOutputCoinToInputCoin(outputFromTx1)
 
 		//fmt.Printf("coinBaseOutput[0]GetValue: %v\n", coinBaseOutput[0].CoinDetails.GetValue())
 		//fmt.Printf("coinBaseOutput[0]GetSNDerivatorRandom: %v\n", coinBaseOutput[0].CoinDetails.GetSNDerivatorRandom())
@@ -296,77 +299,84 @@ func TestInitTxPTokenV1(t *testing.T) {
 
 		/******** init tx with mode no privacy ********/
 		fmt.Println("********************* Tx2 ********************* ")
-		tx2 := new(TxCustomTokenPrivacy)
 		// calculate serial number for input coins from coin base tx
-		serialNumber := new(privacy.Point).Derive(
+		serialNumber1 := new(privacy.Point).Derive(
 			privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 			new(privacy.Scalar).FromBytesS(senderKey.KeySet.PrivateKey),
 			coinBaseOutput[0].CoinDetails.GetSNDerivatorRandom(),
 		)
-		coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber)
-
-		// transfer amount
-		transferAmount := 5
-		hasPrivacy := true
-		fee := 1
+		coinBaseOutput[0].CoinDetails.SetSerialNumber(serialNumber1)
 
 		// message to receiver
-		msg := "Incognito-chain"
-		receiverTK, _ := new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
-		msgCipherText, _ := privacy.HybridEncrypt([]byte(msg), receiverTK)
+		msg2 := "Incognito-chain"
+		receiverTK2 , _:= new(privacy.Point).FromBytesS(senderKey.KeySet.PaymentAddress.Tk)
+		msgCipherText2, _ := privacy.HybridEncrypt([]byte(msg2), receiverTK2)
 
-		//fmt.Printf("msgCipherText: %v - len : %v\n", msgCipherText.Bytes(), len(msgCipherText.Bytes()))
-		err = tx2.Init(
-			NewTxPrivacyTokenInitParams(
-				&senderKey.KeySet.PrivateKey,
-				paymentInfoPRV, inputCoinsPRV, 0, tokenParam, db, nil,
-				hasPrivacyForPRV, hasPrivacyForToken, senderShardID, []byte{},
-			),
-		)
-		if err != nil {
-			t.Error(err)
+		transferAmount2 := uint64(10000)
+		paymentInfo2 := []*privacy.PaymentInfo{{PaymentAddress: senderKey.KeySet.PaymentAddress, Amount: transferAmount2, Message: msgCipherText2.Bytes() }}
+
+		inputCoinsPRV2 := []*privacy.InputCoin{}
+		paymentInfoPRV2 := []*privacy.PaymentInfo{}
+
+		// token param for init new token
+		tokenParam2 := &CustomTokenPrivacyParamTx{
+			PropertyID:     tokenIDStr,
+			PropertyName:   "Token 1",
+			PropertySymbol: "Token 1",
+			Amount:         transferAmount2,
+			TokenTxType:    CustomTokenTransfer,
+			Receiver:       paymentInfo2,
+			TokenInput:     []*privacy.InputCoin{},
+			Mintable:       false,
+			Fee:            0,
 		}
 
-		outputs := tx1.GetProof().GetOutputCoins()
-		fmt.Printf("%v\n", len(outputs))
-		for i := 0; i < len(outputs); i++ {
-			fmt.Printf("outputs[i].CoinDetails.GetValue(): %v\n", outputs[i].CoinDetails.GetValue())
-			fmt.Printf("outputs[i].CoinDetails.GetSNDerivatorRandom(): %v\n", outputs[i].CoinDetails.GetSNDerivatorRandom())
-			fmt.Printf("outputs[i].CoinDetails.GetPublicKey(): %v\n", outputs[i].CoinDetails.GetPublicKey())
-			fmt.Printf("outputs[i].CoinDetails.GetPrivRandOTA(): %v\n", outputs[i].CoinDetails.GetPrivRandOTA())
-		}
+		hasPrivacyForPRV2 := false
+		hasPrivacyForToken2 := false
 
-		assert.Equal(t, len(msgCipherText.Bytes()), len(tx1.Proof.GetOutputCoins()[0].CoinDetails.GetInfo()))
+		paramToCreateTx2 := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
+			paymentInfoPRV2, inputCoinsPRV2, 0, tokenParam2, db, nil,
+			hasPrivacyForPRV2, hasPrivacyForToken2, senderShardID, []byte{})
 
-		if hasPrivacy {
-			assert.NotEqual(t, receiverPubKey, outputs[0].CoinDetails.GetPublicKey())
-		} else {
-			assert.Equal(t, receiverPubKey, outputs[0].CoinDetails.GetPublicKey())
-		}
+		// init tx
+		tx2 := new(TxCustomTokenPrivacy)
+		err = tx2.Init(paramToCreateTx2)
+		assert.Equal(t, nil, err)
 
-		isValidSanity, err = tx1.ValidateSanityData(nil)
+		isValidSanity, err := tx2.ValidateSanityData(nil)
 		assert.Equal(t, true, isValidSanity)
 		assert.Equal(t, nil, err)
 
-		isValid, err := tx1.ValidateTransaction(hasPrivacy, db, senderShardID, nil)
+		isValid, err := tx2.ValidateTransaction(hasPrivacyForToken2, db, senderShardID, nil)
 
 		fmt.Printf("Error: %v\n", err)
 		assert.Equal(t, true, isValid)
 		assert.Equal(t, nil, err)
 
-		outputs[1].Decrypt(senderKey.KeySet.ReadonlyKey)
+		outputFromTx2 := tx2.TxPrivacyTokenData.TxNormal.Proof.GetOutputCoins()
 
-		newOutput := ConvertOutputCoinToInputCoin([]*privacy.OutputCoin{outputs[1]})
-
-		// store output coin's coin commitments from tx1
 		db.StoreCommitments(
-			common.PRVCoinID,
+			*tokenID,
 			senderPaymentAddress.Pk,
-			[][]byte{newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS()},
+			[][]byte{outputFromTx2[1].CoinDetails.GetCoinCommitment().ToBytesS()},
 			senderShardID)
 
-		fmt.Printf("newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS(): %v\n", newOutput[0].CoinDetails.GetCoinCommitment().ToBytesS())
+		outputFromTx2[1].Decrypt(senderKey.KeySet.ReadonlyKey)
 
+		inputFromTx2 := ConvertOutputCoinToInputCoin([]*privacy.OutputCoin{outputFromTx2[1]})
+
+
+
+		// store output coin's coin commitments in coin base tx
+
+
+		/******** get output coins from coin base tx to create new tx ********/
+
+
+
+
+
+		// store output coin's coin commitments from tx1
 		/******** init tx with mode privacy from privacy input ********/
 		fmt.Println("********************* Tx2 ********************* ")
 		tx2 := Tx{}
