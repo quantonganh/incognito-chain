@@ -25,10 +25,18 @@ func Test_Main4Committee(t *testing.T) {
 	n2 := NewNode(committeePkStruct, committee, 2)
 	n3 := NewNode(committeePkStruct, committee, 3)
 
-	n0.Start()
-	n1.Start()
-	n2.Start()
-	n3.Start()
+	nodeList := []*Node{
+		n0, n1, n2, n3,
+	}
+	n0.nodeList = nodeList
+	n1.nodeList = nodeList
+	n2.nodeList = nodeList
+	n3.nodeList = nodeList
+
+	go n0.Start()
+	go n1.Start()
+	go n2.Start()
+	go n3.Start()
 
 	//v := []int{	1, 1, 1, 1,/**/0, 0, 0, 0,/**/1, 1, 1, 1,/**/1, 1, 1, 1}
 	//c := []int{	1, 1, 1, 1,/**/0, 0, 0, 0,/**/1, 1, 1, 1,/**/1, 1, 1, 1}

@@ -11,8 +11,10 @@ import (
 )
 
 type Node struct {
+	id              string
 	consensusEngine *blsbft.BLSBFT
 	chain           *Chain
+	nodeList        []*Node
 }
 
 var committeePkStruct int
@@ -29,7 +31,8 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 
 func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []string, index int) *Node {
 	name := fmt.Sprintf("node-%d", index)
-	node := Node{}
+	node := Node{id: fmt.Sprintf("%d", index)}
+
 	node.chain = NewChain(name, committeePkStruct)
 	node.chain.UserPubKey = committeePkStruct[index]
 	fd, err := os.OpenFile(fmt.Sprintf("%s.log", name), os.O_CREATE|os.O_WRONLY, 0666)
@@ -60,7 +63,19 @@ func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []st
 func (s *Node) Start() {
 	s.consensusEngine.Start()
 }
+
 func (s Node) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+	if msg.(*wire.MessageBFT).Type == "propose" {
+		//TODO: get simulation scenario and simulate
+		// using ProcessBFTMsg(msg) of node consensus engine
+		return nil
+	}
+
+	if msg.(*wire.MessageBFT).Type == "vote" {
+		//TODO: get simulation scenario and simulate
+		// using ProcessBFTMsg(msg) of node consensus engine
+		return nil
+	}
 	panic("implement me")
 }
 
