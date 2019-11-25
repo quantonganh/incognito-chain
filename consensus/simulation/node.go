@@ -15,6 +15,8 @@ type Node struct {
 	chain           *Chain
 }
 
+var committeePkStruct int
+
 type logWriter struct {
 	NodeID string
 	fd     *os.File

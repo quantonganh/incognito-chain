@@ -20,12 +20,16 @@ func Test_Main4Committee(t *testing.T) {
 		m, _ := blsbft.GetMiningKeyFromPrivateSeed(p)
 		committeePkStruct = append(committeePkStruct, m.GetPublicKey())
 	}
-	n1 := NewNode(committeePkStruct, committee, 0)
-	//n2 := NewNode(committee, 1)
-	//n3 := NewNode(committee, 2)
-	//n4 := NewNode(committee, 3)
+	n0 := NewNode(committeePkStruct, committee, 0)
+	n1 := NewNode(committeePkStruct, committee, 1)
+	n2 := NewNode(committeePkStruct, committee, 2)
+	n3 := NewNode(committeePkStruct, committee, 3)
 
+	n0.Start()
 	n1.Start()
+	n2.Start()
+	n3.Start()
+
 	//v := []int{	1, 1, 1, 1,/**/0, 0, 0, 0,/**/1, 1, 1, 1,/**/1, 1, 1, 1}
 	//c := []int{	1, 1, 1, 1,/**/0, 0, 0, 0,/**/1, 1, 1, 1,/**/1, 1, 1, 1}
 	select {}

@@ -60,8 +60,12 @@ func (s *Chain) GetCommitteeSize() int {
 }
 
 func (s *Chain) GetPubKeyCommitteeIndex(pk string) int {
-	strArr, _ := incognitokey.CommitteeKeyListToString(s.CommitteePubkey)
-	return common.IndexOfStr(pk, strArr)
+	for index, key := range s.CommitteePubkey {
+		if key.GetMiningKeyBase58("bls") == pk {
+			return index
+		}
+	}
+	return -1
 }
 
 func (s *Chain) GetLastProposerIndex() int {
@@ -76,6 +80,7 @@ func (Chain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
 
 func (Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	panic("implement me")
+
 }
 
 func (Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {

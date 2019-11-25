@@ -362,6 +362,8 @@ func (e *BLSBFT) enterNewRound() {
 	e.Logger.Info("============================================")
 	e.Logger.Info("")
 	pubKey := e.UserKeySet.GetPublicKey()
+
+	e.Logger.Info(pubKey.GetMiningKeyBase58(consensusName))
 	if e.Chain.GetPubKeyCommitteeIndex(pubKey.GetMiningKeyBase58(consensusName)) == (e.Chain.GetLastProposerIndex()+e.RoundData.Round)%e.Chain.GetCommitteeSize() {
 		e.Logger.Info("BFT: new round => PROPOSE", e.RoundData.NextHeight, e.RoundData.Round)
 		e.enterProposePhase()
