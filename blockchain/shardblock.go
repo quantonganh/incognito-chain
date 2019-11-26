@@ -113,6 +113,8 @@ func (shardBlock ShardBlock) Hash() *common.Hash {
 	return &hash
 }
 func (shardBlock *ShardBlock) validateSanityData() (bool, error) {
+	//TODO: only for simulaiton
+	return true, nil
 	//Check Header
 	if shardBlock.Header.Height == 1 && len(shardBlock.ValidationData) != 0 {
 		return false, NewBlockChainError(ShardBlockSanityError, errors.New("Expect Shard Block with Height 1 to not have validationData"))

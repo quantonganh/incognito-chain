@@ -48,7 +48,7 @@ func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []st
 
 	node.consensusEngine = &blsbft.BLSBFT{
 		Chain:    node.chain,
-		Node:     node,
+		Node:     &node,
 		ChainKey: "shard",
 		PeerID:   name,
 		Logger:   logger,
@@ -64,16 +64,48 @@ func (s *Node) Start() {
 	s.consensusEngine.Start()
 }
 
-func (s Node) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+func (s *Node) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
 	if msg.(*wire.MessageBFT).Type == "propose" {
-		//TODO: get simulation scenario and simulate
-		// using ProcessBFTMsg(msg) of node consensus engine
+		timeSlot := GetTimeSlot(msg.(*wire.MessageBFT).Timestamp)
+		pComm := GetSimulation().scenario.proposeComm
+		if comm, ok := pComm[timeSlot]; ok {
+			for i, c := range s.nodeList {
+				if senderComm, ok := comm[s.id]; ok {
+					if senderComm[i] == 1 {
+						c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+					}
+				} else {
+					c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+				}
+
+			}
+		} else {
+			for _, c := range s.nodeList {
+				c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+			}
+		}
 		return nil
 	}
 
 	if msg.(*wire.MessageBFT).Type == "vote" {
-		//TODO: get simulation scenario and simulate
-		// using ProcessBFTMsg(msg) of node consensus engine
+		vComm := GetSimulation().scenario.voteComm
+		timeSlot := GetTimeSlot(msg.(*wire.MessageBFT).Timestamp)
+		if comm, ok := vComm[timeSlot]; ok {
+			for i, c := range s.nodeList {
+				if senderComm, ok := comm[s.id]; ok {
+					if senderComm[i] == 1 {
+						c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+					}
+				} else {
+					c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+				}
+
+			}
+		} else {
+			for _, c := range s.nodeList {
+				c.consensusEngine.ProcessBFTMsg(msg.(*wire.MessageBFT))
+			}
+		}
 		return nil
 	}
 	panic("implement me")

@@ -288,7 +288,7 @@ func (e *BLSBFT) Start() error {
 						}
 						// e.Node.PushMessageToAll()
 						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
-						e.Logger.Warn("Commit block! Wait for next round")
+						e.Logger.Warn("Commit block! Wait for next round", e.RoundData.State)
 						e.enterNewRound()
 					}
 				}
@@ -356,10 +356,12 @@ func (e *BLSBFT) enterNewRound() {
 	}
 	//if already running a round for current timeframe
 	if e.isInTimeFrame() && (e.RoundData.State != "" && e.RoundData.State != newround) {
+		e.Logger.Info("isInTimeFrame", e.isInTimeFrame())
 		return
 	}
 	e.isOngoing = false
-	if e.waitForNextRound() {
+	if e.RoundData.State != "" && e.waitForNextRound() {
+		e.setState("Commit")
 		return
 	}
 	e.setState(newround)

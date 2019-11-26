@@ -14,7 +14,7 @@ type Chain struct {
 }
 
 func NewChain(name string, committeePkStruct []incognitokey.CommitteePublicKey) *Chain {
-	rootBlock := NewBlock(1, START_TIME, common.Hash{})
+	rootBlock := NewBlock(1, START_TIME, "", common.Hash{})
 	bg := NewBlockGraph(name, rootBlock)
 	bg.GetBestViewBlock()
 
@@ -85,11 +85,14 @@ func (Chain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
 
 func (s *Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	b := s.BlockGraph.bestView.block
-	nb := NewBlock(b.GetHeight()+1, time.Now().Unix(), *b.Hash())
+	str, _ := s.UserPubKey.ToBase58()
+	nb := NewBlock(b.GetHeight()+1, time.Now().Unix(), str, *b.Hash())
 	return nb, nil
 }
 
-func (Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+func (s *Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {
+	s.BlockGraph.AddBlock(block)
+	s.BlockGraph.GetBestViewBlock()
 	return nil
 }
 

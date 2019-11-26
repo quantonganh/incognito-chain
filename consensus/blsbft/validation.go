@@ -85,7 +85,7 @@ func (e BLSBFT) ValidateProducerPosition(block common.BlockInterface, lastPropos
 	if tempProducer == block.GetProducer() {
 		return nil
 	}
-	return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
+	return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer+" but get "+block.GetProducer()))
 }
 
 func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
