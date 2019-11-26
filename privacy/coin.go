@@ -405,6 +405,24 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	return nil
 }
 
+func (coin *Coin) CalSerialNumber(privateKey *Scalar) error {
+	snd := new(Scalar).FromUint64(0)
+	if coin.snDerivatorRandom != nil && !coin.snDerivatorRandom.IsZero() {
+		snd = coin.snDerivatorRandom
+	}
+
+	if coin.privRandOTA != nil && !coin.privRandOTA.IsZero() {
+		snd = coin.privRandOTA
+	}
+
+	if snd == nil || snd.IsZero() {
+		return  errors.New("serial number derivator is nil")
+	}
+
+	coin.serialNumber.Derive(PedCom.G[PedersenPrivateKeyIndex], snd, privateKey)
+	return nil
+}
+
 // InputCoin represents a input coin of transaction
 type InputCoin struct {
 	CoinDetails *Coin
