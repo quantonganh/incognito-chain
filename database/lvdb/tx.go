@@ -564,3 +564,163 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 	}
 	return result, nil
 }
+
+/*********************************** TRANSACTION VERSION 2 ***********************************/
+
+//StoreOutputCoins - store output coin bytes of publicKey in indexOutputInTx at blockHeight
+// key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][publicKey][indexOutputInTx][ephemeralPubKey][hash(output)]
+// value: output in bytes
+func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []int, ephemeralPubKey *privacy.Point) error {
+	keyTmp := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+	keyTmp = append(keyTmp, shardID)
+	keyTmp = append(keyTmp, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
+	keyTmp = append(keyTmp, publicKey...)
+
+	batchData := []database.BatchData{}
+	for i, item := range outputCoinBytes {
+		key := []byte{}
+		// has privacy
+		if ephemeralPubKey != nil {
+			key = append(keyTmp, byte(indexOutputInTx[i]))
+			key = append(key, ephemeralPubKey.ToBytesS()...)
+		}
+
+		key = append(key, common.HashB(item)...)
+		// Put to batch
+		batchData = append(batchData, database.BatchData{
+			Key:   key,
+			Value: item,
+		})
+	}
+
+	if len(batchData) > 0 {
+		err := db.PutBatch(batchData)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreOutputCoinsError, err)
+		}
+	}
+
+	return nil
+}
+
+//GetOutcoinsByPubkeyV2 - get all output coin of pubkey at blockheight
+// key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][pubKey]
+// value: output in bytes
+func (db *db) GetOutcoinsByPubKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, pubKey []byte) ([][]byte, error) {
+	key := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+	key = append(key, shardID)
+	key = append(key, new(big.Int).SetUint64(blockHeight).Bytes()...)
+	key = append(key, pubKey...)
+
+	arrDatabyPubkey := make([][]byte, 0)
+	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+	if iter.Error() != nil {
+		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+	}
+	for iter.Next() {
+		value := make([]byte, len(iter.Value()))
+		copy(value, iter.Value())
+		arrDatabyPubkey = append(arrDatabyPubkey, value)
+	}
+	iter.Release()
+	return arrDatabyPubkey, nil
+}
+
+//GetOutcoinsByViewKeyV2 - get list of output coins corresponding to viewKey at blockHeight
+// both UTXO with fixec public key and one time public key
+// key: [outcoinsPrefixV2][tokenID][shardID][blockHeight]
+// value: output in bytes
+func (db *db) GetOutcoinsByViewKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
+	// get output coins with fixed public key
+	outCoinFromPubKeyBytes, err := db.GetOutcoinsByPubKeyV2(tokenID, shardID, blockHeight, viewKey.Pk)
+	if err != nil {
+		database.Logger.Log.Errorf("Can not get output coin from public key: %v\n", viewKey.Pk)
+	}
+
+	// get output coins with one time public key corresponding to viewKey
+	outCoinsFromViewKeyBytes := make([][]byte, 0)
+	keyPrefix := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+	keyPrefix = append(keyPrefix, shardID)
+	keyPrefix = append(keyPrefix, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
+	lenKeyPrefix := len(keyPrefix)
+
+	iter := db.lvdb.NewIterator(util.BytesPrefix(keyPrefix), nil)
+	if iter.Error() != nil {
+		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+	}
+
+	for iter.Next() {
+		// get public one-time address, index of output in tx from key
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+
+		// 97 = len(PK) + len(index) + len(EphemeralPubKey) + len(hash(outCoins))
+		if len(key) == lenKeyPrefix+97 {
+			offset := lenKeyPrefix
+			pubOneTimeAddr := key[offset : offset+privacy.Ed25519KeySize]
+			pubOneTimeAddrPoint, err := new(privacy.Point).FromBytesS(pubOneTimeAddr)
+			if err != nil {
+				database.Logger.Log.Errorf("Invalid one time address from db")
+				return nil, err
+			}
+			offset += privacy.Ed25519KeySize
+
+			indexOutInTx := key[offset]
+			offset += 1
+
+			ephemeralPubKey := key[offset : offset+privacy.Ed25519KeySize]
+			ephemeralPubKeyPoint, err := new(privacy.Point).FromBytesS(ephemeralPubKey)
+			if err != nil {
+				database.Logger.Log.Errorf("Invalid ephemeralPubKey from db")
+				return nil, err
+			}
+
+			isPair, randOTA, err := privacy.IsPairOneTimeAddr(pubOneTimeAddrPoint, ephemeralPubKeyPoint, viewKey, int(indexOutInTx))
+			if isPair && err == nil {
+				outCoinBytes := make([]byte, len(iter.Value()))
+				copy(outCoinBytes, iter.Value())
+
+				tmpCoin := new(privacy.OutputCoin)
+				err := tmpCoin.SetBytes(outCoinBytes)
+				if err != nil {
+					database.Logger.Log.Errorf("Can not setbytes output coins from db")
+				}
+				tmpCoin.CoinDetails.SetPrivRandOTA(randOTA)
+
+				outCoinsFromViewKeyBytes = append(outCoinsFromViewKeyBytes, tmpCoin.Bytes())
+			}
+		}
+	}
+
+	result := append(outCoinFromPubKeyBytes, outCoinsFromViewKeyBytes...)
+	iter.Release()
+	return result, nil
+}
+
+func (db *db) GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error) {
+	outCoins := make([][]byte, 0)
+
+	for i := fromBlock; i <= toBlock; i++ {
+		outCoinsTmp, err := db.GetOutcoinsByPubKeyV2(tokenID, shardID, i, pubKey)
+		if err != nil {
+			return nil, err
+		}
+		outCoins = append(outCoins, outCoinsTmp...)
+	}
+
+	return outCoins, nil
+}
+
+func (db *db) GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
+	outCoins := make([][]byte, 0)
+
+	for i := fromBlock; i <= toBlock; i++ {
+		outCoinsTmp, err := db.GetOutcoinsByViewKeyV2(tokenID, shardID, i, viewKey)
+		if err != nil {
+			return nil, err
+		}
+		outCoins = append(outCoins, outCoinsTmp...)
+	}
+
+	return outCoins, nil
+}

@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/incognitochain/incognito-chain/privacy"
 	"math/big"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -207,4 +208,11 @@ type DatabaseInterface interface {
 	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
 	TrackPDEStatus(prefix []byte, suffix []byte, status byte) error
 	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
+
+	// transaction v2
+	StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []int, ephemeralPubKey *privacy.Point) error
+	GetOutcoinsByPubKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, pubKey []byte) ([][]byte, error)
+	GetOutcoinsByViewKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, viewKey privacy.ViewingKey) ([][]byte, error)
+	GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error)
+	GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, viewKey privacy.ViewingKey) ([][]byte, error)
 }

@@ -120,7 +120,7 @@ func Test_newMiningKey(t *testing.T) {
 }
 
 func TestGenerateKey(t *testing.T) {
-	lenOutput := 22
+	lenOutput := 100
 	seed := []byte("safafsafafsafafsafafsafafsafafsafafsafafsafafsafafsafaf")
 	for j := 0; j < common.MaxShardNumber; j++ {
 		privKeyLs := make([]string, 0)
@@ -154,14 +154,27 @@ func TestGenerateKey(t *testing.T) {
 		}
 
 		fmt.Printf("\n\n\n ***** Shard %+v **** \n\n\n", j)
+		for i := 0; i < len(paymentAddLs); i++ {
+			//fmt.Println(i)
+			//fmt.Println("Private Key: " + privKeyLs[i])
+			//fmt.Println("Payment Address: " + paymentAddLs[i])
+			//fmt.Println("Public key: " + publicKeyLs[i])
+			//fmt.Println("Mining key: " + miningSeedLs[i])
+			//fmt.Println("Committee key set: " + committeeKeyLs[i])
+			//fmt.Println("------------------------------------------------------------")
+
+			fmt.Println(paymentAddLs[i])
+		}
 		for i := 0; i < len(privKeyLs); i++ {
-			fmt.Println(i)
-			fmt.Println("Private Key: " + privKeyLs[i])
-			fmt.Println("Payment Address: " + paymentAddLs[i])
-			fmt.Println("Public key: " + publicKeyLs[i])
-			fmt.Println("Mining key: " + miningSeedLs[i])
-			fmt.Println("Committee key set: " + committeeKeyLs[i])
-			fmt.Println("------------------------------------------------------------")
+			//fmt.Println(i)
+			//fmt.Println("Private Key: " + privKeyLs[i])
+			//fmt.Println("Payment Address: " + paymentAddLs[i])
+			//fmt.Println("Public key: " + publicKeyLs[i])
+			//fmt.Println("Mining key: " + miningSeedLs[i])
+			//fmt.Println("Committee key set: " + committeeKeyLs[i])
+			//fmt.Println("------------------------------------------------------------")
+
+			fmt.Println(privKeyLs[i])
 		}
 	}
 }

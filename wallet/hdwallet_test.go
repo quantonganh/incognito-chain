@@ -371,7 +371,14 @@ func TestSpecificDecrypt(t *testing.T) {
 
 	fmt.Printf("coin2.CoinDetails.GetValue(): %v\n", coin2.CoinDetails.GetValue())
 	fmt.Printf("coin2.CoinDetails.GetRandomness(): %v\n", coin2.CoinDetails.GetRandomness())
+}
+
+
+func TestGenerateKey(t * testing.T){
+	numberAccount := 100
+
 
 
 }
+
 

@@ -739,7 +739,7 @@ func TestInitTxV1(t *testing.T) {
 			senderShardID)
 
 		/******** init tx with mode no privacy from privacy input ********/
-		fmt.Println("********************* Tx3 ********************* ")
+		fmt.Println("********************* Tx4 ********************* ")
 		tx4 := Tx{}
 		// prepare input: calculate SN, PrivRandOTA, Value, Randomness
 
