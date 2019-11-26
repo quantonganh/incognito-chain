@@ -30,7 +30,7 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 }
 
 func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []string, index int) *Node {
-	name := fmt.Sprintf("node-%d", index)
+	name := fmt.Sprintf("node_%d", index)
 	node := Node{id: fmt.Sprintf("%d", index)}
 
 	node.chain = NewChain(name, committeePkStruct)

@@ -93,6 +93,7 @@ func (s *Chain) CreateNewBlock(round int) (common.BlockInterface, error) {
 func (s *Chain) InsertAndBroadcastBlock(block common.BlockInterface) error {
 	s.BlockGraph.AddBlock(block)
 	s.BlockGraph.GetBestViewBlock()
+	s.BlockGraph.Print()
 	return nil
 }
 

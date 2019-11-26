@@ -305,8 +305,8 @@ func (e *BLSBFT) enterProposePhase() {
 	e.setState(proposePhase)
 
 	block, err := e.createNewBlock()
-	b, _ := json.MarshalIndent(block, "", "\t")
-	fmt.Println(string(b))
+	//b, _ := json.MarshalIndent(block, "", "\t")
+	//fmt.Println(string(b))
 	metrics.SetGlobalParam("CreateTime", time.Since(e.RoundData.TimeStart).Seconds())
 	if err != nil {
 		e.Logger.Error("can't create block", err)

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/incognitochain/incognito-chain/common"
+	"os"
 )
 
 type GraphNode struct {
@@ -58,6 +58,7 @@ func (s *BlockGraph) AddBlock(b common.BlockInterface) {
 
 func (s *BlockGraph) GetBestViewBlock() common.BlockInterface {
 	s.traverse(s.root)
+	s.updateConfirmBlock(s.bestView)
 	return s.bestView.block
 }
 
@@ -86,13 +87,11 @@ newrank=true;
 
 	dotContent += s.edgeStr
 	dotContent += `}`
-	fmt.Println(dotContent)
-	s.updateConfirmBlock(s.bestView)
 
-	b, _ := json.MarshalIndent(s.bestView.block, "", "\t")
-	fmt.Println(string(b))
-	c, _ := json.MarshalIndent(s.confirmBlock.block, "", "\t")
-	fmt.Println(string(c))
+	fd, _ := os.OpenFile(s.name+".dot", os.O_WRONLY|os.O_CREATE, 0666)
+	fd.Truncate(0)
+	fd.Write([]byte(dotContent))
+	fd.Close()
 
 }
 
@@ -118,11 +117,11 @@ func (s *BlockGraph) traverse(n *GraphNode) {
 
 func (s *BlockGraph) updateConfirmBlock(node *GraphNode) {
 	_1block := node.prev
-	_2block := _1block.prev
 	if _1block == nil {
 		s.confirmBlock = node
 		return
 	}
+	_2block := _1block.prev
 	if _2block == nil {
 		s.confirmBlock = _1block
 		return
