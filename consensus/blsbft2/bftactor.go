@@ -28,7 +28,7 @@ type BLSBFT struct {
 
 	currentTimeslot          uint64
 	bestProposeBlock         string
-	ongoingViews             map[string]viewConsensusInstance
+	onGoingBlocks            map[string]viewConsensusInstance
 	lockBlocksToCollectVotes sync.RWMutex
 }
 
