@@ -85,41 +85,41 @@ func MakeBFTVoteMsg(vote BFTVote, chainKey string) (wire.Message, error) {
 // 	return err
 // }
 
-func (e *BLSBFT) sendVote() error {
-	// var Vote BFTVote
+// func (e *BLSBFT) sendVote() error {
+// var Vote BFTVote
 
-	// pubKey := e.UserKeySet.GetPublicKey()
-	// selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
+// pubKey := e.UserKeySet.GetPublicKey()
+// selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), e.RoundData.CommitteeBLS.StringList)
 
-	// blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
-	// if err != nil {
-	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// }
-	// bridgeSig := []byte{}
-	// if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
-	// 	bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
-	// 	if err != nil {
-	// 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// 	}
-	// }
+// blsSig, err := e.UserKeySet.BLSSignData(e.RoundData.Block.Hash().GetBytes(), selfIdx, e.RoundData.CommitteeBLS.ByteList)
+// if err != nil {
+// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+// }
+// bridgeSig := []byte{}
+// if metadata.HasBridgeInstructions(e.RoundData.Block.GetInstructions()) {
+// 	bridgeSig, err = e.UserKeySet.BriSignData(e.RoundData.Block.Hash().GetBytes())
+// 	if err != nil {
+// 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+// 	}
+// }
 
-	// Vote.BLS = blsSig
-	// Vote.BRI = bridgeSig
+// Vote.BLS = blsSig
+// Vote.BRI = bridgeSig
 
-	// //TODO hy
-	// err = e.confirmVote(&Vote)
-	// if err != nil {
-	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// }
-	// key := e.UserKeySet.GetPublicKey()
+// //TODO hy
+// err = e.confirmVote(&Vote)
+// if err != nil {
+// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+// }
+// key := e.UserKeySet.GetPublicKey()
 
-	// msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
-	// if err != nil {
-	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// }
-	// e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
-	// e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
-	// go e.Node.PushMessageToChain(msg, e.Chain)
-	// e.RoundData.NotYetSendVote = false
-	return nil
-}
+// msg, err := MakeBFTVoteMsg(key.GetMiningKeyBase58(consensusName), e.ChainKey, getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), Vote)
+// if err != nil {
+// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
+// }
+// e.RoundData.Votes[pubKey.GetMiningKeyBase58(consensusName)] = Vote
+// e.logger.Info("sending vote...", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round))
+// go e.Node.PushMessageToChain(msg, e.Chain)
+// e.RoundData.NotYetSendVote = false
+// return nil
+// }

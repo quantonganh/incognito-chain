@@ -202,3 +202,8 @@ func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *BFTVote, validatorPk []
 	err := validateSingleBriSig(&dataHash, Vote.VoteSig, validatorPk)
 	return err
 }
+
+func (e BLSBFT) ValidateBlockWithConsensus(block common.BlockInterface) error {
+
+	return nil
+}

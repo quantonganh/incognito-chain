@@ -86,25 +86,6 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	return newBlock, nil
 }
 
-// func (chain *ShardChain) ValidateAndInsertBlock(block common.BlockInterface) error {
-// 	//@Bahamoot review later
-// 	chain.lock.Lock()
-// 	defer chain.lock.Unlock()
-// 	var shardbestView ShardbestView
-// 	shardBlock := block.(*ShardBlock)
-// 	shardbestView.cloneShardbestViewFrom(chain.bestView)
-// 	producerPublicKey := shardBlock.Header.Producer
-// 	producerPosition := (shardbestView.ShardProposerIdx + shardBlock.Header.Round) % len(shardbestView.ShardCommittee)
-// 	tempProducer := shardbestView.ShardCommittee[producerPosition].GetMiningKeyBase58(shardbestView.ConsensusAlgorithm)
-// 	if strings.Compare(tempProducer, producerPublicKey) != 0 {
-// 		return NewBlockChainError(BeaconBlockProducerError, fmt.Errorf("Expect Producer Public Key to be equal but get %+v From Index, %+v From Header", tempProducer, producerPublicKey))
-// 	}
-// 	if err := chain.ValidateBlockSignatures(block, shardbestView.ShardCommittee); err != nil {
-// 		return err
-// 	}
-// 	return chain.Blockchain.InsertShardBlock(shardBlock, false)
-// }
-
 func (chain *ShardChain) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	if err := chain.Blockchain.config.ConsensusEngine.ValidateProducerSig(block, chain.GetConsensusType()); err != nil {
 		return err
@@ -197,4 +178,8 @@ func (chain *ShardChain) GetBestView() ChainViewInterface {
 }
 func (chain *ShardChain) GetAllViews() map[string]ChainViewInterface {
 	return nil
+}
+
+func (chain *ShardChain) GetViewByHash(hash *common.Hash) (ChainViewInterface, error) {
+	return nil, nil
 }

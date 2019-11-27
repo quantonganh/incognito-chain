@@ -118,7 +118,7 @@ type ChainInterface interface {
 
 	GetBestView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
-
+	GetViewByHash(*common.Hash) (ChainViewInterface, error)
 	// GetBestViewConsensusType() string
 	// GetBestViewLastBlockTimeStamp() int64
 	// GetBestViewMinBlkInterval() time.Duration

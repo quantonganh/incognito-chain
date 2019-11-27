@@ -211,3 +211,7 @@ func (chain *BeaconChain) GetBestView() ChainViewInterface {
 func (chain *BeaconChain) GetAllViews() map[string]ChainViewInterface {
 	return nil
 }
+
+func (chain *BeaconChain) GetViewByHash(hash *common.Hash) (ChainViewInterface, error) {
+	return nil, nil
+}

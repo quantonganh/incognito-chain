@@ -91,3 +91,7 @@ func (beaconBlock BeaconBlock) GetProducerPubKeyStr() string {
 func (beaconBlock BeaconBlock) GetConsensusType() string {
 	return beaconBlock.Header.ConsensusType
 }
+
+func (beaconBlock BeaconBlock) GetPreviousViewHash() *common.Hash {
+	return nil
+}

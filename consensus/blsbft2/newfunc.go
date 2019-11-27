@@ -30,7 +30,16 @@ func (e BLSBFT) getProposeBlock() (common.BlockInterface, error) {
 
 }
 
-func (e *BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
+func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
+	block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
+	if err != nil {
+		return err
+	}
+	view, err := e.Chain.GetViewByHash(block.GetPreviousViewHash())
+	if err != nil {
+		return err
+	}
+	_ = view
 	return nil
 }
 
@@ -71,17 +80,17 @@ func (e *BLSBFT) enterNewTimeslot() error {
 	return nil
 }
 
-func (blockCss *blockConsensusInstance) addVote(vote *BFTVote) error {
+func (blockCss *viewConsensusInstance) addVote(vote *BFTVote) error {
 	blockCss.lockVote.Lock()
 	defer blockCss.lockVote.Unlock()
 	return nil
 }
 
-func (blockCss *blockConsensusInstance) confirmVote(vote *BFTVote) error {
+func (blockCss *viewConsensusInstance) confirmVote(vote *BFTVote) error {
 	return nil
 }
 
-func (blockCss *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
+func (blockCss *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
 	var vote BFTVote
 
 	pubKey := blockCss.Engine.UserKeySet.GetPublicKey()
@@ -110,17 +119,20 @@ func (blockCss *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
 	blockCss.Votes[pubKey.GetMiningKeyBase58(consensusName)] = vote
 	blockCss.Engine.logger.Info("sending vote...")
 	go blockCss.Engine.Node.PushMessageToChain(msg, blockCss.Engine.Chain)
-	// e.RoundData.NotYetSendVote = false
-
 	return vote, nil
 }
 
-func (blockCss *blockConsensusInstance) processProposeBlock() (BFTVote, error) {
+func validateProposeBlock(block common.BlockInterface, view blockchain.ChainViewInterface) (BFTVote, error) {
+	err := view.ValidatePreSignBlock(block)
+	if err != nil {
+		return BFTVote{}, err
+	}
 	var v BFTVote
+
 	return v, nil
 }
 
-func (blockCss *blockConsensusInstance) initInstance(view blockchain.ChainViewInterface) error {
+func (blockCss *viewConsensusInstance) initInstance(view blockchain.ChainViewInterface) error {
 	return nil
 }
 

@@ -85,7 +85,7 @@ const (
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
 	IncKeyType      = "inc"
-	Bls2Consensus   = "bls2"
+	BlsConsensus2   = "bls2"
 )
 
 const (

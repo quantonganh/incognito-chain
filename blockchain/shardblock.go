@@ -496,3 +496,15 @@ func (block CrossShardBlock) GetConsensusType() string {
 func (block ShardToBeaconBlock) GetConsensusType() string {
 	return block.Header.ConsensusType
 }
+
+func (block ShardBlock) GetPreviousViewHash() *common.Hash {
+	return nil
+}
+
+func (block CrossShardBlock) GetPreviousViewHash() *common.Hash {
+	return nil
+}
+
+func (block ShardToBeaconBlock) GetPreviousViewHash() *common.Hash {
+	return nil
+}
