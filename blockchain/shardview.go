@@ -50,8 +50,8 @@ type ShardView struct {
 	BlockInterval      time.Duration
 	BlockMaxCreateTime time.Duration
 
-	MetricBlockHeight uint64
-	lock              sync.RWMutex
+	// MetricBlockHeight uint64
+	lock sync.RWMutex
 }
 
 func NewShardView() *ShardView {

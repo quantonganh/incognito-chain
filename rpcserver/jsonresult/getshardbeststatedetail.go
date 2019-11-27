@@ -24,20 +24,20 @@ type GetShardBestStateDetail struct {
 	TotalTxns              uint64                            `json:"TotalTxns"`              // The total number of txns in the chain.
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int                               `json:"ActiveShards"`
-	MetricBlockHeight      uint64                            `json:"MetricBlockHeight"`
+	// MetricBlockHeight      uint64                            `json:"MetricBlockHeight"`
 }
 
 func NewGetShardBestStateDetail(data *blockchain.ShardView) *GetShardBestStateDetail {
 	result := &GetShardBestStateDetail{
-		Epoch:                  data.Epoch,
-		ShardID:                data.ShardID,
-		MinShardCommitteeSize:  data.MinShardCommitteeSize,
-		ActiveShards:           data.ActiveShards,
-		BeaconHeight:           data.BeaconHeight,
-		BestBeaconHash:         data.BestBeaconHash,
-		BestBlockHash:          data.BestBlockHash,
-		MaxShardCommitteeSize:  data.MaxShardCommitteeSize,
-		MetricBlockHeight:      data.MetricBlockHeight,
+		Epoch:                 data.Epoch,
+		ShardID:               data.ShardID,
+		MinShardCommitteeSize: data.MinShardCommitteeSize,
+		ActiveShards:          data.ActiveShards,
+		BeaconHeight:          data.BeaconHeight,
+		BestBeaconHash:        data.BestBeaconHash,
+		BestBlockHash:         data.BestBlockHash,
+		MaxShardCommitteeSize: data.MaxShardCommitteeSize,
+		// MetricBlockHeight:      data.MetricBlockHeight,
 		NumTxns:                data.NumTxns,
 		ShardHeight:            data.ShardHeight,
 		ShardProposerIdx:       data.ShardProposerIdx,
