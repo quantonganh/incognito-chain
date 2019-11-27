@@ -216,6 +216,6 @@ type DatabaseInterface interface {
 	GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error)
 	GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, viewKey privacy.ViewingKey) ([][]byte, error)
 
-	StoreEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralPubKey []byte) error
-	HasEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralPubKey []byte) (bool, error)
+	StoreEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) error
+	HasEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) (bool, error)
 }

@@ -70,7 +70,7 @@ var (
 
 	// transaction v2
 	outcoinsPrefixV2               = []byte("outcoinsv2-")
-	ephemeralPubKey               = []byte("ephemeralpubkey-")
+	ephemeralPubKeyPrefix               = []byte("ephemeralpubkey-")
 )
 
 // value

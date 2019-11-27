@@ -726,9 +726,8 @@ func (db *db) GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, 
 }
 
 // StoreEphemeralPubKey - store ephemeralPubKey by shardID and tokenID
-func (db *db) StoreEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralPubKey []byte) error {
-	key := addPrefixToKeyHash(string(ephemeralPubKey), tokenID)
-	key = append(key, shardID)
+func (db *db) StoreEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) error {
+	key := addPrefixToKeyHash(string(ephemeralPubKeyPrefix), tokenID)
 	key = append(key, ephemeralPubKey...)
 
 	if err := db.Put(key, nil); err != nil {
@@ -739,14 +738,13 @@ func (db *db) StoreEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralP
 }
 
 // HasEphemeralPubKey - Check ephemeralPubKey in list ephemeralPubKey by shardID and tokenID
-func (db *db) HasEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralPubKey []byte) (bool, error) {
-	key := addPrefixToKeyHash(string(ephemeralPubKey), tokenID)
-	key = append(key, shardID)
+func (db *db) HasEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) (bool, error) {
+	key := addPrefixToKeyHash(string(ephemeralPubKeyPrefix), tokenID)
 	keySpec := append(key, ephemeralPubKey...)
 
 	hasValue, err := db.HasValue(keySpec)
 	if err != nil {
-		return false, database.NewDatabaseError(database.HasEphemeralPubKeyError, err, ephemeralPubKey, shardID, tokenID.String())
+		return false, database.NewDatabaseError(database.HasEphemeralPubKeyError, err, ephemeralPubKey, tokenID.String())
 	} else {
 		return hasValue, nil
 	}

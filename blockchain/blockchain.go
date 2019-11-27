@@ -2254,7 +2254,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint
 					err = blockchain.config.DataBase.StoreOutputCoinsV2(*view.tokenID, publicKeyShardID, view.blockHeight,
 						publicKeyBytes, outputCoinBytesArray, view.indexOutCoinInTx[k], view.ephemeralPubKey[k])
 
-					err1 :=  blockchain.config.DataBase.StoreEphemeralPubKey(*view.tokenID, publicKeyShardID, view.ephemeralPubKey[k])
+					err1 :=  blockchain.config.DataBase.StoreEphemeralPubKey(*view.tokenID, view.ephemeralPubKey[k])
 					if err1 != nil {
 						return err1
 					}

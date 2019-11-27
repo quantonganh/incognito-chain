@@ -107,9 +107,12 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	ephemeralPubKeyTmp := []byte{}
 	if proof.GetEphemeralPubKey() != nil && !proof.GetEphemeralPubKey().IsIdentity() {
 		ephemeralPubKeyTmp =  proof.GetEphemeralPubKey().ToBytesS()
-		ok, err := db.HasEphemeralPubKey(*tokenID, shardID, ephemeralPubKeyTmp)
-		if ok && err != nil {
+		ok, err := db.HasEphemeralPubKey(*tokenID, ephemeralPubKeyTmp)
+		if err != nil {
 			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, ephemeralPubKey, err
+		}
+		if ok {
+			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, ephemeralPubKey, errors.New("ephemeral public key is existed")
 		}
 	}
 
@@ -454,6 +457,7 @@ func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
 }
 
+
 func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
 	allShardCrossTransactions := block.Body.CrossTransactions
 	// Loop through all of the transaction descs (except for the salary tx)
@@ -474,7 +478,7 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	for _, shardID := range shardIDs {
 		crossTransactions := allShardCrossTransactions[byte(shardID)]
 		for _, crossTransaction := range crossTransactions {
-			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, prvCoinID)
+			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin,  prvCoinID)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
