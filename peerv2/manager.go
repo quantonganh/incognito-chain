@@ -124,11 +124,13 @@ func (manager *Manager) Start(ns NetSync) {
 	manager.subs = m2t{}
 	manager.messages = make(chan *pubsub.Message, 1000)
 
-	// Wait until connection to highway is established to make sure gRPC won't fail
+	// Maintain list of addresses to connect to if needed
+	indexer := NewIndexer()
+	go indexer.Start()
+
 	// NOTE: must Connect after creating FloodSub
-	connected := make(chan error)
-	go manager.keepHighwayConnection(connected)
-	<-connected
+	connector := NewConnector(manager.LocalHost.Host, manager.LocalHost.GRPC, addrInfo.ID)
+	go connector.KeepHighwayConnection()
 
 	req, err := NewRequester(manager.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
