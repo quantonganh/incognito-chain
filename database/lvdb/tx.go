@@ -570,7 +570,7 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 //StoreOutputCoins - store output coin bytes of publicKey in indexOutputInTx at blockHeight
 // key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][publicKey][indexOutputInTx][ephemeralPubKey][hash(output)]
 // value: output in bytes
-func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey *privacy.Point) error {
+func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey []byte) error {
 	keyTmp := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
 	keyTmp = append(keyTmp, shardID)
 	keyTmp = append(keyTmp, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
@@ -582,7 +582,7 @@ func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight 
 		// has privacy
 		if ephemeralPubKey != nil {
 			key = append(keyTmp, indexOutputInTx[i])
-			key = append(key, ephemeralPubKey.ToBytesS()...)
+			key = append(key, ephemeralPubKey...)
 		}
 
 		key = append(key, common.HashB(item)...)
@@ -723,4 +723,31 @@ func (db *db) GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, 
 	}
 
 	return outCoins, nil
+}
+
+// StoreEphemeralPubKey - store ephemeralPubKey by shardID and tokenID
+func (db *db) StoreEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralPubKey []byte) error {
+	key := addPrefixToKeyHash(string(ephemeralPubKey), tokenID)
+	key = append(key, shardID)
+	key = append(key, ephemeralPubKey...)
+
+	if err := db.Put(key, nil); err != nil {
+		return database.NewDatabaseError(database.StoreEphemeralPubKeyError, err)
+	}
+
+	return nil
+}
+
+// HasEphemeralPubKey - Check ephemeralPubKey in list ephemeralPubKey by shardID and tokenID
+func (db *db) HasEphemeralPubKey(tokenID common.Hash, shardID byte, ephemeralPubKey []byte) (bool, error) {
+	key := addPrefixToKeyHash(string(ephemeralPubKey), tokenID)
+	key = append(key, shardID)
+	keySpec := append(key, ephemeralPubKey...)
+
+	hasValue, err := db.HasValue(keySpec)
+	if err != nil {
+		return false, database.NewDatabaseError(database.HasEphemeralPubKeyError, err, ephemeralPubKey, shardID, tokenID.String())
+	} else {
+		return hasValue, nil
+	}
 }

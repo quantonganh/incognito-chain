@@ -778,7 +778,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 			return err
 		}
 
-		err = blockchain.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreCommitmentsFromTxViewPointV2(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
 			return err
 		}
@@ -797,7 +797,7 @@ func (blockchain *BlockChain) CreateAndSaveTxViewPointFromBlock(block *ShardBloc
 		return err
 	}
 
-	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
+	err = blockchain.StoreCommitmentsFromTxViewPointV2(*view, block.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -875,7 +875,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 			}
 		}*/
 		// Store both commitment and outcoin
-		err = blockchain.StoreCommitmentsFromTxViewPoint(*privacyCustomTokenSubView, block.Header.ShardID)
+		err = blockchain.StoreCommitmentsFromTxViewPointV2(*privacyCustomTokenSubView, block.Header.ShardID)
 		if err != nil {
 			return err
 		}
@@ -889,7 +889,7 @@ func (blockchain *BlockChain) CreateAndSaveCrossTransactionCoinViewPointFromBloc
 	// updateShardBestState the list serialNumber and commitment, snd set using the state of the used tx view point. This
 	// entails adding the new
 	// ones created by the block.
-	err = blockchain.StoreCommitmentsFromTxViewPoint(*view, block.Header.ShardID)
+	err = blockchain.StoreCommitmentsFromTxViewPointV2(*view, block.Header.ShardID)
 	if err != nil {
 		return err
 	}
@@ -2253,6 +2253,11 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint
 					// store v2
 					err = blockchain.config.DataBase.StoreOutputCoinsV2(*view.tokenID, publicKeyShardID, view.blockHeight,
 						publicKeyBytes, outputCoinBytesArray, view.indexOutCoinInTx[k], view.ephemeralPubKey[k])
+
+					err1 :=  blockchain.config.DataBase.StoreEphemeralPubKey(*view.tokenID, publicKeyShardID, view.ephemeralPubKey[k])
+					if err1 != nil {
+						return err1
+					}
 				}
 
 

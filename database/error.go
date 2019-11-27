@@ -103,6 +103,10 @@ const (
 	DeduceShareError
 	TrackPDEStatusError
 	GetPDEStatusError
+
+	// ephemeralPubKey
+	StoreEphemeralPubKeyError
+	HasEphemeralPubKeyError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -206,6 +210,10 @@ var ErrCodeMessage = map[int]struct {
 	DeduceShareError:                       {-13012, "Deduce share error"},
 	TrackPDEStatusError:                    {-13013, "Track pde status error"},
 	GetPDEStatusError:                      {-13014, "Get pde status error"},
+
+	// -14xxx PDE
+	StoreEphemeralPubKeyError: {-14001, "Store ephemeral public key error"},
+	HasEphemeralPubKeyError: {-14002, "Check has ephemeral public key error"},
 }
 
 type DatabaseError struct {

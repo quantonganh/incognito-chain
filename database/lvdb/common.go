@@ -26,7 +26,6 @@ var (
 	serialNumbersPrefix          = []byte("serinalnumbers-")
 	commitmentsPrefix            = []byte("commitments-")
 	outcoinsPrefix               = []byte("outcoins-")
-	outcoinsPrefixV2               = []byte("outcoinsv2-")
 	snderivatorsPrefix           = []byte("snderivators-")
 	bestBlockKeyPrefix           = []byte("bestBlock")
 	feeEstimatorPrefix           = []byte("feeEstimator")
@@ -67,6 +66,11 @@ var (
 	PDEContributionStatusPrefix  = []byte("pdecontributionstatus-")
 	PDETradeStatusPrefix         = []byte("pdetradestatus-")
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
+
+
+	// transaction v2
+	outcoinsPrefixV2               = []byte("outcoinsv2-")
+	ephemeralPubKey               = []byte("ephemeralpubkey-")
 )
 
 // value
