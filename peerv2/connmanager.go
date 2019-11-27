@@ -21,7 +21,7 @@ import (
 var MasterNodeID = "QmVsCnV9kRZ182MX11CpcHMyFAReyXV49a599AbqmwtNrV"
 var HighwayBeaconID = byte(255)
 
-func NewConnManager(
+func NewManager(
 	host *Host,
 	dpa string,
 	ikey *incognitokey.CommitteePublicKey,
@@ -29,10 +29,10 @@ func NewConnManager(
 	dispatcher *Dispatcher,
 	nodeMode string,
 	relayShard []byte,
-) *ConnManager {
+) *Manager {
 	master := peer.IDB58Encode(host.Host.ID()) == MasterNodeID
 	log.Println("IsMasterNode:", master)
-	return &ConnManager{
+	return &Manager{
 		LocalHost:            host,
 		DiscoverPeersAddress: dpa,
 		IdentityKey:          ikey,
@@ -45,7 +45,7 @@ func NewConnManager(
 	}
 }
 
-func (cm *ConnManager) PublishMessage(msg wire.Message) error {
+func (manager *Manager) PublishMessage(msg wire.Message) error {
 	var topic string
 	publishable := []string{wire.CmdBlockShard, wire.CmdBFT, wire.CmdBlockBeacon, wire.CmdTx, wire.CmdCustomToken, wire.CmdPeerState, wire.CmdBlkShardToBeacon}
 
@@ -54,14 +54,14 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	for _, p := range publishable {
 		topic = ""
 		if msgType == p {
-			for _, availableTopic := range cm.subs[msgType] {
+			for _, availableTopic := range manager.subs[msgType] {
 				// fmt.Println("[hy]", availableTopic)
 				if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
 					topic = availableTopic.Name
 					// if p == wire.CmdTx {
 					// 	fmt.Printf("[hy] broadcast tx to topic %v\n", topic)
 					// }
-					err := broadcastMessage(msg, topic, cm.ps)
+					err := broadcastMessage(msg, topic, manager.ps)
 					if err != nil {
 						fmt.Printf("Broadcast to topic %v error %v\n", topic, err)
 						return err
@@ -73,7 +73,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 				return errors.New("Can not find topic of this message type " + msgType + "for publish")
 			}
 
-			// return broadcastMessage(msg, topic, cm.ps)
+			// return broadcastMessage(msg, topic, manager.ps)
 		}
 	}
 
@@ -81,7 +81,7 @@ func (cm *ConnManager) PublishMessage(msg wire.Message) error {
 	return nil
 }
 
-func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) error {
+func (manager *Manager) PublishMessageToShard(msg wire.Message, shardID byte) error {
 	publishable := []string{wire.CmdCrossShard, wire.CmdBFT}
 	msgType := msg.MessageType()
 	for _, p := range publishable {
@@ -90,12 +90,12 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 			//TODO hy add more logic
 			if msgType == wire.CmdCrossShard {
 				// TODO(@0xakk0r0kamui): implicit order of subscriptions?
-				return broadcastMessage(msg, cm.subs[msgType][shardID].Name, cm.ps)
+				return broadcastMessage(msg, manager.subs[msgType][shardID].Name, manager.ps)
 			} else {
-				for _, availableTopic := range cm.subs[msgType] {
+				for _, availableTopic := range manager.subs[msgType] {
 					fmt.Println(availableTopic)
 					if (availableTopic.Act == MessageTopicPair_PUB) || (availableTopic.Act == MessageTopicPair_PUBSUB) {
-						return broadcastMessage(msg, availableTopic.Name, cm.ps)
+						return broadcastMessage(msg, availableTopic.Name, manager.ps)
 					}
 				}
 			}
@@ -106,9 +106,9 @@ func (cm *ConnManager) PublishMessageToShard(msg wire.Message, shardID byte) err
 	return nil
 }
 
-func (cm *ConnManager) Start(ns NetSync) {
+func (manager *Manager) Start(ns NetSync) {
 	// connect to proxy node
-	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
+	addr, err := multiaddr.NewMultiaddr(manager.DiscoverPeersAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -120,38 +120,38 @@ func (cm *ConnManager) Start(ns NetSync) {
 
 	// Pubsub
 	// TODO(@0xbunyip): handle error
-	cm.ps, _ = pubsub.NewFloodSub(context.Background(), cm.LocalHost.Host)
-	cm.subs = m2t{}
-	cm.messages = make(chan *pubsub.Message, 1000)
+	manager.ps, _ = pubsub.NewFloodSub(context.Background(), manager.LocalHost.Host)
+	manager.subs = m2t{}
+	manager.messages = make(chan *pubsub.Message, 1000)
 
 	// Wait until connection to highway is established to make sure gRPC won't fail
 	// NOTE: must Connect after creating FloodSub
 	connected := make(chan error)
-	go cm.keepHighwayConnection(connected)
+	go manager.keepHighwayConnection(connected)
 	<-connected
 
-	req, err := NewRequester(cm.LocalHost.GRPC, addrInfo.ID)
+	req, err := NewRequester(manager.LocalHost.GRPC, addrInfo.ID)
 	if err != nil {
 		panic(err)
 	}
-	cm.Requester = req
+	manager.Requester = req
 
-	cm.Provider = NewBlockProvider(cm.LocalHost.GRPC, ns)
+	manager.Provider = NewBlockProvider(manager.LocalHost.GRPC, ns)
 
-	go cm.manageRoleSubscription()
+	go manager.manageRoleSubscription()
 
-	cm.process()
+	manager.process()
 }
 
 // BroadcastCommittee floods message to topic `chain_committee` for highways
 // Only masternode actually does the broadcast, other's messages will be ignored by highway
-func (cm *ConnManager) BroadcastCommittee(
+func (manager *Manager) BroadcastCommittee(
 	epoch uint64,
 	newBeaconCommittee []incognitokey.CommitteePublicKey,
 	newAllShardCommittee map[byte][]incognitokey.CommitteePublicKey,
 	newAllShardPending map[byte][]incognitokey.CommitteePublicKey,
 ) {
-	if !cm.IsMasterNode {
+	if !manager.IsMasterNode {
 		return
 	}
 
@@ -169,7 +169,7 @@ func (cm *ConnManager) BroadcastCommittee(
 	}
 
 	topic := "chain_committee"
-	err = cm.ps.Publish(topic, data)
+	err = manager.ps.Publish(topic, data)
 	if err != nil {
 		log.Println(err)
 	}
@@ -185,7 +185,7 @@ type Topic struct {
 	Act  MessageTopicPair_Action
 }
 
-type ConnManager struct {
+type Manager struct {
 	LocalHost            *Host
 	DiscoverPeersAddress string
 	IdentityKey          *incognitokey.CommitteePublicKey
@@ -205,17 +205,17 @@ type ConnManager struct {
 	Provider  *BlockProvider
 }
 
-func (cm *ConnManager) PutMessage(msg *pubsub.Message) {
-	cm.messages <- msg
+func (manager *Manager) PutMessage(msg *pubsub.Message) {
+	manager.messages <- msg
 }
 
-func (cm *ConnManager) process() {
+func (manager *Manager) process() {
 	for {
 		select {
-		case msg := <-cm.messages:
-			// fmt.Println("[db] go cm.disp.processInMessageString(string(msg.Data))")
-			// go cm.disp.processInMessageString(string(msg.Data))
-			err := cm.disp.processInMessageString(string(msg.Data))
+		case msg := <-manager.messages:
+			// fmt.Println("[db] go manager.disp.processInMessageString(string(msg.Data))")
+			// go manager.disp.processInMessageString(string(msg.Data))
+			err := manager.disp.processInMessageString(string(msg.Data))
 			if err != nil {
 				log.Println(err)
 			}
@@ -227,8 +227,8 @@ func (cm *ConnManager) process() {
 // and try to connect if it's not available.
 // The method push data to the given channel to signal that the first attempt had finished.
 // Constructor can use this info to initialize other objects.
-func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
-	addr, err := multiaddr.NewMultiaddr(cm.DiscoverPeersAddress)
+func (manager *Manager) keepHighwayConnection(connectedOnce chan error) {
+	addr, err := multiaddr.NewMultiaddr(manager.DiscoverPeersAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -240,7 +240,7 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 	hwPID := hwPeerInfo.ID
 
 	first := true
-	net := cm.LocalHost.Host.Network()
+	net := manager.LocalHost.Host.Network()
 	disconnected := true
 	for ; true; <-time.Tick(10 * time.Second) {
 		// Reconnect if not connected
@@ -249,7 +249,7 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 			disconnected = true
 			log.Println("Not connected to highway, connecting")
 			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-			if err = cm.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
+			if err = manager.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
 				log.Println("Could not connect to highway:", err, hwPeerInfo)
 			}
 		}
@@ -257,7 +257,7 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 		if disconnected && net.Connectedness(hwPID) == network.Connected {
 			// Register again since this might be a new highway
 			log.Println("Connected to highway, sending register request")
-			cm.registerRequests <- 1
+			manager.registerRequests <- 1
 			disconnected = false
 		}
 
@@ -282,20 +282,20 @@ func encodeMessage(msg wire.Message) (string, error) {
 	// Add 24 bytes headerBytes into messageHex
 	headerBytes := make([]byte, wire.MessageHeaderSize)
 	// add command type of message
-	cmdType, messageErr := wire.GetCmdType(reflect.TypeOf(msg))
+	managerdType, messageErr := wire.GetCmdType(reflect.TypeOf(msg))
 	if messageErr != nil {
-		fmt.Println("Can not get cmd type for " + msg.MessageType())
+		fmt.Println("Can not get managerd type for " + msg.MessageType())
 		fmt.Println(messageErr)
 		return "", err
 	}
-	copy(headerBytes[:], []byte(cmdType))
+	copy(headerBytes[:], []byte(managerdType))
 	// add forward type of message at 13st byte
 	forwardType := byte('s')
 	forwardValue := byte(0)
 	copy(headerBytes[wire.MessageCmdTypeSize:], []byte{forwardType})
 	copy(headerBytes[wire.MessageCmdTypeSize+1:], []byte{forwardValue})
 	messageBytes = append(messageBytes, headerBytes...)
-	log.Printf("Encoded message TYPE %s CONTENT %s", cmdType, string(messageBytes))
+	log.Printf("Encoded message TYPE %s CONTENT %s", managerdType, string(messageBytes))
 
 	// zip data before send
 	messageBytes, err = common.GZipFromBytes(messageBytes)
@@ -324,7 +324,7 @@ func broadcastMessage(msg wire.Message, topic string, ps *pubsub.PubSub) error {
 }
 
 // manageRoleSubscription: polling current role every minute and subscribe to relevant topics
-func (cm *ConnManager) manageRoleSubscription() {
+func (manager *Manager) manageRoleSubscription() {
 	role := newUserRole("dummyLayer", "dummyRole", -1000)
 	topics := m2t{}
 	forced := false // only subscribe when role changed or last forced subscribe failed
@@ -332,22 +332,22 @@ func (cm *ConnManager) manageRoleSubscription() {
 	for {
 		select {
 		case <-time.Tick(10 * time.Second):
-			role, topics, err = cm.subscribe(role, topics, forced)
+			role, topics, err = manager.subscribe(role, topics, forced)
 			if err != nil {
 				log.Printf("subscribe failed: %v %+v", forced, err)
 			} else {
 				forced = false
 			}
 
-		case <-cm.registerRequests:
+		case <-manager.registerRequests:
 			log.Println("Received request to register")
 			forced = true // register no matter if role changed or not
 		}
 	}
 }
 
-func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRole, m2t, error) {
-	newRole := newUserRole(cm.cd.GetUserRole())
+func (manager *Manager) subscribe(role userRole, topics m2t, forced bool) (userRole, m2t, error) {
+	newRole := newUserRole(manager.cd.GetUserRole())
 	if newRole == role && !forced { // Not forced => no need to subscribe when role stays the same
 		return newRole, topics, nil
 	}
@@ -358,16 +358,16 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	}
 
 	// Registering
-	pubkey, _ := cm.IdentityKey.ToBase58()
+	pubkey, _ := manager.IdentityKey.ToBase58()
 	roleSID := newRole.shardID
 	if roleSID == -2 { // normal node
 		roleSID = -1
 	}
 	shardIDs := []byte{byte(roleSID)}
-	if cm.nodeMode == common.NodeModeRelay {
-		shardIDs = append(cm.relayShard, HighwayBeaconID)
+	if manager.nodeMode == common.NodeModeRelay {
+		shardIDs = append(manager.relayShard, HighwayBeaconID)
 	}
-	newTopics, roleOfTopics, err := cm.registerToProxy(pubkey, newRole.layer, shardIDs)
+	newTopics, roleOfTopics, err := manager.registerToProxy(pubkey, newRole.layer, shardIDs)
 	if err != nil {
 		return role, topics, err
 	}
@@ -379,7 +379,7 @@ func (cm *ConnManager) subscribe(role userRole, topics m2t, forced bool) (userRo
 	log.Printf("Received topics = %+v, oldTopics = %+v", newTopics, topics)
 
 	// Subscribing
-	if err := cm.subscribeNewTopics(newTopics, topics); err != nil {
+	if err := manager.subscribeNewTopics(newTopics, topics); err != nil {
 		return role, topics, err
 	}
 
@@ -401,7 +401,7 @@ func newUserRole(layer, role string, shardID int) userRole {
 }
 
 // subscribeNewTopics subscribes to new topics and unsubcribes any topics that aren't needed anymore
-func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
+func (manager *Manager) subscribeNewTopics(newTopics, subscribed m2t) error {
 	found := func(tName string, tmap m2t) bool {
 		for _, topicList := range tmap {
 			for _, t := range topicList {
@@ -425,19 +425,19 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 
 			// TODO(@0xakk0r0kamui): check here
 			if t.Act == MessageTopicPair_PUB {
-				cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
+				manager.subs[m] = append(manager.subs[m], Topic{Name: t.Name, Sub: nil, Act: t.Act})
 				fmt.Printf("Countinue 2 %v %v\n", t.Name, subscribed)
 				continue
 			}
 
 			fmt.Println("[db] subscribing", m, t.Name)
 
-			s, err := cm.ps.Subscribe(t.Name)
+			s, err := manager.ps.Subscribe(t.Name)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			cm.subs[m] = append(cm.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
-			go processSubscriptionMessage(cm.messages, s)
+			manager.subs[m] = append(manager.subs[m], Topic{Name: t.Name, Sub: s, Act: t.Act})
+			go processSubscriptionMessage(manager.messages, s)
 		}
 	}
 
@@ -454,12 +454,12 @@ func (cm *ConnManager) subscribeNewTopics(newTopics, subscribed m2t) error {
 			}
 
 			fmt.Println("[db] unsubscribing", m, t.Name)
-			for _, s := range cm.subs[m] {
+			for _, s := range manager.subs[m] {
 				if s.Name == t.Name {
 					s.Sub.Cancel() // TODO(@0xbunyip): lock
 				}
 			}
-			delete(cm.subs, m)
+			delete(manager.subs, m)
 		}
 	}
 	return nil
@@ -482,20 +482,20 @@ func processSubscriptionMessage(inbox chan *pubsub.Message, sub *pubsub.Subscrip
 
 type m2t map[string][]Topic // Message to topics
 
-func (cm *ConnManager) registerToProxy(
+func (manager *Manager) registerToProxy(
 	pubkey string,
 	layer string,
 	shardID []byte,
 ) (m2t, userRole, error) {
-	messagesWanted := getMessagesForLayer(cm.nodeMode, layer, shardID)
-	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, cm.nodeMode, shardID)
+	messagesWanted := getMessagesForLayer(manager.nodeMode, layer, shardID)
+	fmt.Printf("-%v-;;;-%v-;;;-%v-;;;\n", messagesWanted, manager.nodeMode, shardID)
 	// os.Exit(9)
-	pairs, role, err := cm.Requester.Register(
+	pairs, role, err := manager.Requester.Register(
 		context.Background(),
 		pubkey,
 		messagesWanted,
 		shardID,
-		cm.LocalHost.Host.ID(),
+		manager.LocalHost.Host.ID(),
 	)
 	if err != nil {
 		return nil, userRole{}, err

@@ -84,7 +84,7 @@ type Server struct {
 	// The fee estimator keeps track of how long transactions are left in
 	// the mempool before they are mined into blocks.
 	feeEstimator map[byte]*mempool.FeeEstimator
-	highway      *peerv2.ConnManager
+	highway      *peerv2.Manager
 
 	cQuit     chan struct{}
 	cNewPeers chan *peer.Peer
@@ -304,7 +304,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			OnPeerState: serverObj.OnPeerState,
 		},
 	}
-	serverObj.highway = peerv2.NewConnManager(
+	serverObj.highway = peerv2.NewManager(
 		host,
 		cfg.DiscoverPeersAddress,
 		&pubkey,
