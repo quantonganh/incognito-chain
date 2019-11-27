@@ -210,7 +210,7 @@ type DatabaseInterface interface {
 	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
 
 	// transaction v2
-	StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []int, ephemeralPubKey *privacy.Point) error
+	StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey *privacy.Point) error
 	GetOutcoinsByPubKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, pubKey []byte) ([][]byte, error)
 	GetOutcoinsByViewKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, viewKey privacy.ViewingKey) ([][]byte, error)
 	GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error)

@@ -570,7 +570,7 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 //StoreOutputCoins - store output coin bytes of publicKey in indexOutputInTx at blockHeight
 // key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][publicKey][indexOutputInTx][ephemeralPubKey][hash(output)]
 // value: output in bytes
-func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []int, ephemeralPubKey *privacy.Point) error {
+func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey *privacy.Point) error {
 	keyTmp := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
 	keyTmp = append(keyTmp, shardID)
 	keyTmp = append(keyTmp, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
@@ -581,7 +581,7 @@ func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight 
 		key := []byte{}
 		// has privacy
 		if ephemeralPubKey != nil {
-			key = append(keyTmp, byte(indexOutputInTx[i]))
+			key = append(keyTmp, indexOutputInTx[i])
 			key = append(key, ephemeralPubKey.ToBytesS()...)
 		}
 

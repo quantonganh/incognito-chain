@@ -2194,3 +2194,87 @@ func (blockchain *BlockChain) GetActiveShardNumber() int {
 // 	}
 // 	return nil
 // }
+
+
+/**========================= TRANSACTION V2 =========================**/
+
+/*
+Uses an existing database to update the set of not used tx by saving list commitments of privacy,
+this is a list tx-in which are used by a new tx
+*/
+func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint, shardID byte) error {
+
+	// commitment and output are the same key in map
+	// SORT KEY
+	keys := make([]string, 0, len(view.mapCommitments))
+	for k := range view.mapCommitments {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		outputCoins := view.mapOutputCoins[k]
+
+		if len(outputCoins) > 0 {
+			shardIDLastByte := outputCoins[0].CoinDetails.GetShardIDLastByte()
+			lastByte := byte(0)
+
+			if shardIDLastByte == -1 {
+				lastByte = byte(outputCoins[0].CoinDetails.GetPubKeyLastByte())
+			} else{
+				lastByte = byte(shardIDLastByte)
+			}
+
+			publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
+
+			if publicKeyShardID == shardID {
+				publicKey := k
+				publicKeyBytes, _, err := base58.Base58Check{}.Decode(publicKey)
+				if err != nil {
+					return err
+				}
+				// store commitments
+				commitmentsArray := view.mapCommitments[k]
+				err = blockchain.config.DataBase.StoreCommitments(*view.tokenID, publicKeyBytes, commitmentsArray, view.shardID)
+				if err != nil {
+					return err
+				}
+
+				// outputs
+				outputCoinBytesArray := make([][]byte, 0)
+				for _, outputCoin := range outputCoins {
+					outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
+				}
+
+				if view.blockHeight <= BlockHeightShard[shardID] {
+					// store v1
+					err = blockchain.config.DataBase.StoreOutputCoins(*view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+				} else {
+					// store v2
+					err = blockchain.config.DataBase.StoreOutputCoinsV2(*view.tokenID, publicKeyShardID, view.blockHeight,
+						publicKeyBytes, outputCoinBytesArray, view.indexOutCoinInTx[k], view.ephemeralPubKey[k])
+				}
+
+
+				// clear cached data
+				if blockchain.config.MemCache != nil {
+					cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
+					if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e == nil {
+						er := blockchain.config.MemCache.Delete(cachedKey)
+						if er != nil {
+							Logger.log.Error("can not delete memcache", "GetListOutputcoinCachedKey", base58.Base58Check{}.Encode(cachedKey, 0x0))
+						}
+					}
+				}
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			continue
+		}
+
+	}
+
+	return nil
+}
