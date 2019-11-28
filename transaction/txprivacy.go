@@ -1591,6 +1591,10 @@ func (tx Tx) GetTokenID() *common.Hash {
 	return &common.PRVCoinID
 }
 
+func (tx Tx) GetVersionTx() int8 {
+	return tx.Version
+}
+
 func (tx Tx) VerifyMinerCreatedTxBeforeGettingInBlock(
 	txsInBlock []metadata.Transaction,
 	txsUsed []int,

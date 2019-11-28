@@ -606,37 +606,31 @@ func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight 
 //GetOutcoinsByPubkeyV2 - get all output coin of pubkey at blockheight
 // key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][pubKey]
 // value: output in bytes
-func (db *db) GetOutcoinsByPubKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, pubKey []byte) ([][]byte, error) {
-	key := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
-	key = append(key, shardID)
-	key = append(key, new(big.Int).SetUint64(blockHeight).Bytes()...)
-	key = append(key, pubKey...)
-
-	arrDatabyPubkey := make([][]byte, 0)
-	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
-	if iter.Error() != nil {
-		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
-	}
-	for iter.Next() {
-		value := make([]byte, len(iter.Value()))
-		copy(value, iter.Value())
-		arrDatabyPubkey = append(arrDatabyPubkey, value)
-	}
-	iter.Release()
-	return arrDatabyPubkey, nil
-}
+//func (db *db) GetOutcoinsByPubKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, pubKey []byte) ([][]byte, error) {
+//	key := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+//	key = append(key, shardID)
+//	key = append(key, new(big.Int).SetUint64(blockHeight).Bytes()...)
+//	key = append(key, pubKey...)
+//
+//	arrDatabyPubkey := make([][]byte, 0)
+//	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+//	if iter.Error() != nil {
+//		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+//	}
+//	for iter.Next() {
+//		value := make([]byte, len(iter.Value()))
+//		copy(value, iter.Value())
+//		arrDatabyPubkey = append(arrDatabyPubkey, value)
+//	}
+//	iter.Release()
+//	return arrDatabyPubkey, nil
+//}
 
 //GetOutcoinsByViewKeyV2 - get list of output coins corresponding to viewKey at blockHeight
 // both UTXO with fixec public key and one time public key
 // key: [outcoinsPrefixV2][tokenID][shardID][blockHeight]
 // value: output in bytes
 func (db *db) GetOutcoinsByViewKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
-	// get output coins with fixed public key
-	outCoinFromPubKeyBytes, err := db.GetOutcoinsByPubKeyV2(tokenID, shardID, blockHeight, viewKey.Pk)
-	if err != nil {
-		database.Logger.Log.Errorf("Can not get output coin from public key: %v\n", viewKey.Pk)
-	}
-
 	// get output coins with one time public key corresponding to viewKey
 	outCoinsFromViewKeyBytes := make([][]byte, 0)
 	keyPrefix := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
@@ -692,28 +686,34 @@ func (db *db) GetOutcoinsByViewKeyV2(tokenID common.Hash, shardID byte, blockHei
 		}
 	}
 
-	result := append(outCoinFromPubKeyBytes, outCoinsFromViewKeyBytes...)
 	iter.Release()
-	return result, nil
+	return outCoinsFromViewKeyBytes, nil
 }
 
-func (db *db) GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error) {
-	outCoins := make([][]byte, 0)
+//func (db *db) GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error) {
+//	outCoins := make([][]byte, 0)
+//
+//	for i := fromBlock; i <= toBlock; i++ {
+//		outCoinsTmp, err := db.GetOutcoinsByPubKeyV2(tokenID, shardID, i, pubKey)
+//		if err != nil {
+//			return nil, err
+//		}
+//		outCoins = append(outCoins, outCoinsTmp...)
+//	}
+//
+//	return outCoins, nil
+//}
 
-	for i := fromBlock; i <= toBlock; i++ {
-		outCoinsTmp, err := db.GetOutcoinsByPubKeyV2(tokenID, shardID, i, pubKey)
-		if err != nil {
-			return nil, err
-		}
-		outCoins = append(outCoins, outCoinsTmp...)
+// GetOutcoinsByViewKeyV2InBlocks returns all output coins with fixed publicKey in all blocks
+// and output coins with one-time address corresponding to viewing Key in block [fromBlock, toBlock]
+func (db *db) GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
+	// get all output coins with fixed public key in all blocks
+	outCoins, err := db.GetOutcoinsByPubkey(tokenID, viewKey.Pk, shardID)
+	if err != nil {
+		return nil, err
 	}
 
-	return outCoins, nil
-}
-
-func (db *db) GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
-	outCoins := make([][]byte, 0)
-
+	// get output coins with one-time address corresponding to viewing Key in block [fromBlock, toBlock]
 	for i := fromBlock; i <= toBlock; i++ {
 		outCoinsTmp, err := db.GetOutcoinsByViewKeyV2(tokenID, shardID, i, viewKey)
 		if err != nil {

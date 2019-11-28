@@ -51,7 +51,7 @@ func (coinService CoinService) ListUnspentOutputCoinsByKey(listKeyParams []inter
 		}
 		keyWallet.KeySet = *keySetTmp
 
-		outCoins, err := coinService.ListOutputCoinsByKeySet(&keyWallet.KeySet, shardID)
+		outCoins, err := coinService.ListOutputCoinsByKeySetV2(&keyWallet.KeySet, shardID, 0, 0)
 		if err != nil {
 			return nil, NewRPCError(UnexpectedError, err)
 		}
@@ -132,13 +132,6 @@ func (coinService CoinService) ListOutputCoinsByKeyV2(listKeyParams []interface{
 		Outputs: make(map[string][]jsonresult.OutCoin),
 	}
 
-	fromBlockHeight := uint64(0)
-	if fromBlockHeightParam <= 0 {
-		fromBlockHeight = 1
-	} else {
-		fromBlockHeight = uint64(fromBlockHeightParam)
-	}
-
 	for _, keyParam := range listKeyParams {
 		keys, ok := keyParam.(map[string]interface{})
 		if !ok {
@@ -175,20 +168,14 @@ func (coinService CoinService) ListOutputCoinsByKeyV2(listKeyParams []interface{
 		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
 		shardIDSender := common.GetShardIDFromLastByte(lastByte)
 
-		toBlockHeight := uint64(0)
-		if toBlockHeightParam <=0 {
-			// get latest block height
-			toBlockHeight = coinService.BlockChain.GetChainHeight(shardIDSender)
-		} else{
-			toBlockHeight = uint64(toBlockHeightParam)
-		}
-
-		outputCoins, err := coinService.BlockChain.GetListOutputCoinsByKeysetV2(&keySet, shardIDSender, &tokenID, fromBlockHeight, toBlockHeight)
+		// get outout coins from version 2 from fromBlockHeight to toBlockHeight
+		outputCoins, err := coinService.BlockChain.GetListOutputCoinsByKeysetV2(&keySet, shardIDSender, &tokenID, fromBlockHeightParam, toBlockHeightParam)
 		if err != nil {
 			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
 			return nil, NewRPCError(UnexpectedError, err)
 		}
 		item := make([]jsonresult.OutCoin, 0)
+
 
 		for _, outCoin := range outputCoins {
 			if outCoin.CoinDetails.GetValue() == 0 {
@@ -199,6 +186,16 @@ func (coinService CoinService) ListOutputCoinsByKeyV2(listKeyParams []interface{
 		result.Outputs[readonlyKeyStr] = item
 	}
 	return result, nil
+}
+
+func (coinService CoinService) ListOutputCoinsByKeySetV2(keySet *incognitokey.KeySet, shardID byte, fromBlockHeight int64, toBlockHeight int64) ([]*privacy.OutputCoin, error) {
+	prvCoinID := &common.Hash{}
+	err := prvCoinID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, err
+	}
+
+	return coinService.BlockChain.GetListOutputCoinsByKeysetV2(keySet, shardID, prvCoinID, fromBlockHeight, toBlockHeight)
 }
 
 

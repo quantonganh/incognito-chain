@@ -2246,20 +2246,25 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint
 					outputCoinBytesArray = append(outputCoinBytesArray, outputCoin.Bytes())
 				}
 
-				if view.blockHeight <= BlockHeightShard[shardID] {
+				if view.ephemeralPubKey[k] == nil {
 					// store v1
 					err = blockchain.config.DataBase.StoreOutputCoins(*view.tokenID, publicKeyBytes, outputCoinBytesArray, publicKeyShardID)
+					if err != nil {
+						return err
+					}
 				} else {
 					// store v2
 					err = blockchain.config.DataBase.StoreOutputCoinsV2(*view.tokenID, publicKeyShardID, view.blockHeight,
 						publicKeyBytes, outputCoinBytesArray, view.indexOutCoinInTx[k], view.ephemeralPubKey[k])
+					if err != nil {
+						return err
+					}
 
 					err1 :=  blockchain.config.DataBase.StoreEphemeralPubKey(*view.tokenID, view.ephemeralPubKey[k])
 					if err1 != nil {
 						return err1
 					}
 				}
-
 
 				// clear cached data
 				if blockchain.config.MemCache != nil {
@@ -2271,14 +2276,10 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint
 						}
 					}
 				}
-				if err != nil {
-					return err
-				}
 			}
 		} else {
 			continue
 		}
-
 	}
 
 	return nil
@@ -2294,7 +2295,7 @@ in case readonly-key: return all outputcoin tx with amount value
 in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, fromBlockHeight uint64, toBlockHeight uint64) ([]*privacy.OutputCoin, error) {
+func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, fromBlockHeightParam int64, toBlockHeightParam int64) ([]*privacy.OutputCoin, error) {
 	// lock chain
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
@@ -2304,6 +2305,26 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	if keyset == nil {
 		return nil, NewBlockChainError(UnExpectedError, errors.New("Invalid keyset"))
 	}
+
+	fromBlockHeight := uint64(0)
+	if fromBlockHeightParam <= 0 {
+		fromBlockHeight = 1
+	} else{
+		fromBlockHeight = uint64(fromBlockHeightParam)
+	}
+
+	toBlockHeight := uint64(0)
+	if toBlockHeightParam <= 0 {
+		toBlockHeight = blockchain.GetChainHeight(shardID)
+	} else{
+		toBlockHeight = uint64(toBlockHeightParam)
+	}
+
+	if fromBlockHeight > toBlockHeight && fromBlockHeight > 0 && toBlockHeight > 0 {
+		return nil, NewBlockChainError(UnExpectedError, errors.New("fromBlockHeight must be less than toBlockHeight"))
+	}
+
+
 	if blockchain.config.MemCache != nil {
 		// get from cache
 		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
@@ -2324,7 +2345,9 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 			}
 		}
 	}
+
 	if len(outCointsInBytes) == 0 {
+		// get all output coins
 		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByViewKeyV2InBlocks(*tokenID,  shardID,  toBlockHeight, fromBlockHeight, keyset.ReadonlyKey)
 		if err != nil {
 			return nil, err

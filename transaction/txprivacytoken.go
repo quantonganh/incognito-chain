@@ -679,6 +679,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 	return &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetVersionTx() int8 {
+	return txCustomTokenPrivacy.Tx.Version
+}
+
 // GetTxFee - return fee PRV of Tx which contain privacy token Tx
 func (tx TxCustomTokenPrivacy) GetTxFee() uint64 {
 	return tx.Tx.GetTxFee()
