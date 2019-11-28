@@ -31,7 +31,7 @@ func (walletService WalletService) ListAccounts() (jsonresult.ListAccounts, *RPC
 		if err != nil {
 			return jsonresult.ListAccounts{}, NewRPCError(TokenIsInvalidError, err)
 		}
-		outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
+		outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeysetV2(&account.Key.KeySet, shardIDSender, prvCoinID, 0, 0)
 		if err != nil {
 			return jsonresult.ListAccounts{}, NewRPCError(UnexpectedError, err)
 		}
@@ -216,7 +216,7 @@ func (walletService WalletService) GetReceivedByAccount(accountName string) (uin
 			if err1 != nil {
 				return uint64(0), NewRPCError(TokenIsInvalidError, err1)
 			}
-			outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeyset(&account.Key.KeySet, shardIDSender, prvCoinID)
+			outCoins, err := walletService.BlockChain.GetListOutputCoinsByKeysetV2(&account.Key.KeySet, shardIDSender, prvCoinID, 0, 0)
 			if err != nil {
 				return uint64(0), NewRPCError(UnexpectedError, err)
 			}
