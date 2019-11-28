@@ -124,3 +124,93 @@ func (httpServer *HttpServer) handleListOutputCoins(params interface{}, closeCha
 	Logger.log.Debugf("handleListOutputCoins result: %+v", result)
 	return result, nil
 }
+
+//handleListOutputCoins - use readonly key to get all tx which contains output coin of account
+// by private key, it return full tx outputcoin with amount and receiver address in txs
+//component:
+//Parameter #1—the minimum number of confirmations an output must have
+//Parameter #2—the maximum number of confirmations an output may have
+//Parameter #3—the list paymentaddress-readonlykey which be used to view list outputcoin
+//Parameter #4-from block height
+//Parameter #5-to block height
+//Parameter #6 - optional - token id - default prv coin
+func (httpServer *HttpServer) handleListOutputCoinsV2(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
+	Logger.log.Debugf("handleListOutputCoins params: %+v", params)
+
+	// get component
+	paramsArray := common.InterfaceSlice(params)
+	if paramsArray == nil || len(paramsArray) < 3 {
+		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 3 elements"))
+	}
+
+	minTemp, ok := paramsArray[0].(float64)
+	if !ok {
+		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
+	}
+	min := int(minTemp)
+
+	maxTemp, ok := paramsArray[1].(float64)
+	if !ok {
+		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
+	}
+	max := int(maxTemp)
+
+	_ = min
+	_ = max
+
+	//#3: list key component
+	listKeyParams := common.InterfaceSlice(paramsArray[2])
+	if listKeyParams == nil {
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("list key is invalid"))
+	}
+
+	// #4 from block height
+	// <= 0 : get from block height 1
+	fromBlockHeightTmp, ok := paramsArray[3].(float64)
+	if !ok {
+		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("min param is invalid"))
+	}
+
+	fromBlockHeight := int64(fromBlockHeightTmp)
+
+	// #5 from block height
+	// -1 : get to latest block height
+	toBlockHeightTmp, ok := paramsArray[4].(float64)
+	if !ok {
+		Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("max param is invalid"))
+	}
+	toBlockHeight := int64(toBlockHeightTmp)
+
+
+	//#6: optional token type - default prv coin
+	tokenID := &common.Hash{}
+	err := tokenID.SetBytes(common.PRVCoinID[:])
+	if err != nil {
+		return nil, rpcservice.NewRPCError(rpcservice.TokenIsInvalidError, err)
+	}
+	if len(paramsArray) > 5 {
+		var err1 error
+		tokenIdParam, ok := paramsArray[5].(string)
+		if !ok {
+			Logger.log.Debugf("handleListOutputCoins result: %+v", nil)
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("token id param is invalid"))
+		}
+
+		tokenID, err1 = common.Hash{}.NewHashFromStr(tokenIdParam)
+		if err1 != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err1)
+			return nil, rpcservice.NewRPCError(rpcservice.ListCustomTokenNotFoundError, err1)
+		}
+	}
+	result, err1 := httpServer.outputCoinService.ListOutputCoinsByKeyV2(listKeyParams, *tokenID, fromBlockHeight, toBlockHeight)
+	if err1 != nil {
+		return nil, err1
+	}
+	Logger.log.Debugf("handleListOutputCoins result: %+v", result)
+	return result, nil
+}

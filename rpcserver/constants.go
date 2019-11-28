@@ -177,6 +177,9 @@ const (
 	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
 	convertPDEPrices                      = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock        = "extractpdeinstsfrombeaconblock"
+
+	// transaction v2
+	listOutputCoinsV2                            = "listoutputcoinsv2"
 )
 
 const (

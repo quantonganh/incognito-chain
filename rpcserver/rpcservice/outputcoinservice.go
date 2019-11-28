@@ -124,3 +124,82 @@ func (coinService CoinService) ListOutputCoinsByKey(listKeyParams []interface{},
 	}
 	return result, nil
 }
+
+/* =================== TRANSACTION V2  =================== */
+
+func (coinService CoinService) ListOutputCoinsByKeyV2(listKeyParams []interface{}, tokenID common.Hash, fromBlockHeightParam int64, toBlockHeightParam int64) (*jsonresult.ListOutputCoins, *RPCError) {
+	result := &jsonresult.ListOutputCoins{
+		Outputs: make(map[string][]jsonresult.OutCoin),
+	}
+
+	fromBlockHeight := uint64(0)
+	if fromBlockHeightParam <= 0 {
+		fromBlockHeight = 1
+	} else {
+		fromBlockHeight = uint64(fromBlockHeightParam)
+	}
+
+	for _, keyParam := range listKeyParams {
+		keys, ok := keyParam.(map[string]interface{})
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("key param is invalid"))
+		}
+
+		// get keyset only contain readonly-key by deserializing
+		readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid readonly key"))
+		}
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+
+		// get keyset only contain pub-key by deserializing
+		pubKeyStr, ok := keys["PaymentAddress"].(string)
+		if !ok {
+			return nil, NewRPCError(RPCInvalidParamsError, errors.New("invalid payment address"))
+		}
+		pubKey, err := wallet.Base58CheckDeserialize(pubKeyStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+
+		// create a key set
+		keySet := incognitokey.KeySet{
+			ReadonlyKey:    readonlyKey.KeySet.ReadonlyKey,
+			PaymentAddress: pubKey.KeySet.PaymentAddress,
+		}
+		lastByte := keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk)-1]
+		shardIDSender := common.GetShardIDFromLastByte(lastByte)
+
+		toBlockHeight := uint64(0)
+		if toBlockHeightParam <=0 {
+			// get latest block height
+			toBlockHeight = coinService.BlockChain.GetChainHeight(shardIDSender)
+		} else{
+			toBlockHeight = uint64(toBlockHeightParam)
+		}
+
+		outputCoins, err := coinService.BlockChain.GetListOutputCoinsByKeysetV2(&keySet, shardIDSender, &tokenID, fromBlockHeight, toBlockHeight)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, NewRPCError(UnexpectedError, err)
+		}
+		item := make([]jsonresult.OutCoin, 0)
+
+		for _, outCoin := range outputCoins {
+			if outCoin.CoinDetails.GetValue() == 0 {
+				continue
+			}
+			item = append(item, jsonresult.NewOutCoin(outCoin))
+		}
+		result.Outputs[readonlyKeyStr] = item
+	}
+	return result, nil
+}
+
+
+
