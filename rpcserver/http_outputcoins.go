@@ -186,6 +186,10 @@ func (httpServer *HttpServer) handleListOutputCoinsV2(params interface{}, closeC
 	}
 	toBlockHeight := int64(toBlockHeightTmp)
 
+	if fromBlockHeight > toBlockHeight && fromBlockHeight > 0 && toBlockHeight > 0 {
+		Logger.log.Debugf("handleListOutputCoins fromBlockHeight: %+v, toBlockHeight: %v\n", fromBlockHeight, toBlockHeight)
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("fromBlockHeight must be less than toBlockHeight"))
+	}
 
 	//#6: optional token type - default prv coin
 	tokenID := &common.Hash{}
