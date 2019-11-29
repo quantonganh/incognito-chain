@@ -304,6 +304,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			OnPeerState: serverObj.OnPeerState,
 		},
 	}
+
+	metrics.SetGlobalParam("Bootnode", cfg.DiscoverPeersAddress)
+	metrics.SetGlobalParam("ExternalAddress", cfg.ExternalAddress)
+
 	serverObj.highway = peerv2.NewConnManager(
 		host,
 		cfg.DiscoverPeersAddress,
@@ -1545,7 +1549,6 @@ func (serverObj *Server) PushMessageGetBlockBeaconByHeight(from uint64, to uint6
 }
 
 func (serverObj *Server) PushMessageGetBlockBeaconBySpecificHeight(heights []uint64, getFromPool bool) error {
-	os.Exit(9)
 	msg, err := wire.MakeEmptyMessage(wire.CmdGetBlockBeacon)
 	if err != nil {
 		return err
@@ -1717,7 +1720,6 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 }
 
 func (serverObj *Server) PublishNodeState() error {
-	listener := serverObj.connManager.GetConfig().ListenerPeer
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	var userRole string
 	var shardID byte
@@ -1759,12 +1761,10 @@ func (serverObj *Server) PublishNodeState() error {
 	if err != nil {
 		return err
 	}
-	msg.SetSenderID(listener.GetPeerID())
-	fmt.Printf("PeerID send to Proxy when publish node state %v \n", listener.GetPeerID())
 	if err != nil {
 		return err
 	}
-	Logger.log.Debugf("Publish peerstate from %s", listener.GetRawAddress())
+	Logger.log.Debugf("Publish peerstate")
 	serverObj.PushMessageToAll(msg)
 	return nil
 }
