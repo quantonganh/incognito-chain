@@ -11,24 +11,25 @@ import (
 //Network fixed params
 const (
 	// SHARD_BLOCK_VERSION is the current latest supported block version.
-	VERSION                    = 1
-	RANDOM_NUMBER              = 3
-	SHARD_BLOCK_VERSION        = 1
-	BEACON_BLOCK_VERSION       = 1
-	DefaultMaxBlkReqPerPeer    = 600
-	DefaultMaxBlkReqPerTime    = 1200
-	MinCommitteeSize           = 3                // min size to run bft
-	DefaultBroadcastStateTime  = 6 * time.Second  // in second
-	DefaultStateUpdateTime     = 8 * time.Second  // in second
-	DefaultMaxBlockSyncTime    = 1 * time.Second  // in second
-	DefaultCacheCleanupTime    = 30 * time.Second // in second
-	WorkerNumber               = 5
-	MAX_S2B_BLOCK              = 30
-	MAX_BEACON_BLOCK           = 5
-	LowerBoundPercentForIncDAO = 3
-	UpperBoundPercentForIncDAO = 10
-	GetValidBlock              = 20
-	TestRandom                 = true
+	VERSION                      = 1
+	RANDOM_NUMBER                = 3
+	SHARD_BLOCK_VERSION          = 1
+	BEACON_BLOCK_VERSION         = 1
+	DefaultMaxBlkReqPerPeer      = 600
+	DefaultMaxBlkReqPerTime      = 1200
+	MinCommitteeSize             = 3                // min size to run bft
+	DefaultBroadcastStateTime    = 6 * time.Second  // in second
+	DefaultStateUpdateTime       = 8 * time.Second  // in second
+	DefaultMaxBlockSyncTime      = 1 * time.Second  // in second
+	DefaultCacheCleanupTime      = 30 * time.Second // in second
+	WorkerNumber                 = 5
+	MAX_S2B_BLOCK                = 30
+	MAX_BEACON_BLOCK             = 5
+	LowerBoundPercentForIncDAO   = 3
+	UpperBoundPercentForIncDAO   = 10
+	GetValidBlock                = 20
+	TestRandom                   = true
+	NumberOfFixedBlockValidators = 4
 )
 
 // CONSTANT for network MAINNET
@@ -77,7 +78,7 @@ const (
 	Testnet                 = 0x16
 	TestnetName             = "testnet"
 	TestnetDefaultPort      = "9444"
-	TestnetGenesisBlockTime = "2019-10-21T00:00:20.000Z"
+	TestnetGenesisBlockTime = "2019-11-29T00:00:00.000Z"
 	TestnetEpoch            = 100
 	TestnetRandomTime       = 50
 	TestnetOffset           = 1
@@ -92,13 +93,13 @@ const (
 	TestNetStakingAmountShard     = 1750000000000 // 1750 PRV = 1750 * 10^9 nano PRV
 
 	TestNetMinBeaconBlkInterval = 10 * time.Second //second
-	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second, timeout is 25
+	TestNetMaxBeaconBlkCreation = 8 * time.Second  //second
 	TestNetMinShardBlkInterval  = 10 * time.Second //second
-	TestNetMaxShardBlkCreation  = 6 * time.Second  //second, timeout is 25
+	TestNetMaxShardBlkCreation  = 6 * time.Second  //second
 
 	//board and proposal parameters
 	TestnetBasicReward                      = 400000000 //40 mili PRV
-	TestnetETHContractAddressStr            = "0x99A93076Dc2aBE9A34dddC6dAaF6608d35Ecc86c"
+	TestnetETHContractAddressStr            = "0x6e8CDB333ba1573Fffe195A545F3031Cff9Da008"
 	TestnetIncognitoDAOAddress              = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci" // community fund
 	TestnetCentralizedWebsitePaymentAddress = "12S5Lrs1XeQLbqN4ySyKtjAjd2d7sBP2tjFijzmp6avrrkQCNFMpkXm3FPzj2Wcu2ZNqJEmh9JriVuRErVwhuQnLmWSaggobEWsBEci"
 )
