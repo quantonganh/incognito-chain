@@ -542,6 +542,10 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			ConsensusEngine: serverObj.consensusEngine,
 			MemCache:        serverObj.memCache,
 		}
+
+		userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
+
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
 
@@ -1728,23 +1732,13 @@ func (serverObj *Server) PushMessageGetBlockCrossShardBySpecificHeight(fromShard
 	return nil
 }
 
-func (serverObj *Server) PublishNodeState() error {
+func (serverObj *Server) PublishNodeState(userLayer string, shardID int) error {
 	Logger.log.Infof("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
-	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
-	var (
-		userRole  string
-		shardID   int
-		userLayer string
-	)
-	if userKey != "" {
-		// userRole, shardID = serverObj.blockChain.BestState.Beacon.GetPubkeyRole(userKey, serverObj.blockChain.BestState.Beacon.BestBlock.Header.Round)
-		userLayer, userRole, shardID = serverObj.consensusEngine.GetUserRole()
-	} else {
-		return errors.New("Can not load current mining key")
-	}
-	serverObj.GetNodeRole()
+
+	// if (userRole != common.CommitteeRole) && (userRole != common.ValidatorRole) && (userRole != common.ProposerRole) {
+	// 	return errors.New("Not in committee, don't need to publish node state!")
+	// }
 	msg, err := wire.MakeEmptyMessage(wire.CmdPeerState)
 	if err != nil {
 		return err
@@ -1755,7 +1749,7 @@ func (serverObj *Server) PublishNodeState() error {
 		serverObj.blockChain.BestState.Beacon.BestBlockHash,
 		serverObj.blockChain.BestState.Beacon.Hash(),
 	}
-	Logger.log.Infof("[peerstate] %v %v", userLayer, userRole)
+
 	if userLayer != common.BeaconRole {
 		msg.(*wire.MessagePeerState).Shards[byte(shardID)] = blockchain.ChainState{
 			serverObj.blockChain.BestState.Shard[byte(shardID)].BestBlock.Header.Timestamp,
