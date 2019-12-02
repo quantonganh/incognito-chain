@@ -543,9 +543,6 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 			MemCache:        serverObj.memCache,
 		}
 
-		userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
-		metrics.SetGlobalParam("MINING_PUBKEY", userKey)
-
 		serverObj.rpcServer = &rpcserver.RpcServer{}
 		serverObj.rpcServer.Init(&rpcConfig)
 
