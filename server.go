@@ -1732,6 +1732,7 @@ func (serverObj *Server) PublishNodeState() error {
 	Logger.log.Infof("[peerstate] Start Publish SelfPeerState")
 	listener := serverObj.connManager.GetConfig().ListenerPeer
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
+	metrics.SetGlobalParam("MINING_PUBKEY", userKey)
 	var (
 		userRole  string
 		shardID   int
