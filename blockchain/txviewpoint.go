@@ -349,6 +349,7 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
+				subView.blockHeight = view.blockHeight
 				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
 				serialNumbersP, commitmentsP, outCoinsP, snDsP, indexOutInTxP, ephemeralPubKeyP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
 				if errP != nil {

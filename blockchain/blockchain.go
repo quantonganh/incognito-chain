@@ -997,8 +997,8 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 		in case readonly-key: return all outputcoin tx with amount value
 		in case payment-address: return all outputcoin tx with no amount value
 	*/
-	pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
-	if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
+	//pubkeyCompress := outCoinTemp.CoinDetails.GetPublicKey().ToBytesS()
+	//if bytes.Equal(pubkeyCompress, keySet.PaymentAddress.Pk[:]) {
 		result := &privacy.OutputCoin{
 			CoinDetails:          outCoinTemp.CoinDetails,
 			CoinDetailsEncrypted: outCoinTemp.CoinDetailsEncrypted,
@@ -1013,20 +1013,18 @@ func (blockchain *BlockChain) DecryptOutputCoinByKey(outCoinTemp *privacy.Output
 			}
 		}
 		if len(keySet.PrivateKey) > 0 {
+			err := result.CoinDetails.CalSerialNumber(new(privacy.Scalar).FromBytesS(keySet.PrivateKey))
+			if err != nil {
+				return nil
+			}
 			// check spent with private-key
-			result.CoinDetails.SetSerialNumber(
-				new(privacy.Point).Derive(
-					privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
-					new(privacy.Scalar).FromBytesS(keySet.PrivateKey),
-					result.CoinDetails.GetSNDerivatorRandom()))
 			ok, err := blockchain.config.DataBase.HasSerialNumber(*tokenID, result.CoinDetails.GetSerialNumber().ToBytesS(), shardID)
 			if ok || err != nil {
 				return nil
 			}
 		}
 		return result
-	}
-	return nil
+	//}
 }
 
 /*
@@ -2335,7 +2333,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 		}
 		if len(outCointsInBytes) == 0 {
 			// cached data is nil or fail -> get from database
-			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByPubkey(*tokenID, keyset.PaymentAddress.Pk[:], shardID)
+			outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByViewKeyV2InBlocks(*tokenID,  shardID, fromBlockHeight, toBlockHeight, keyset.ReadonlyKey)
 			if len(outCointsInBytes) > 0 {
 				// cache 1 day for result
 				cachedData, err = json.Marshal(outCointsInBytes)

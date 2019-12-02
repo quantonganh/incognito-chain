@@ -104,6 +104,11 @@ func addPrefixToKeyHash(keyType string, keyHash common.Hash) []byte {
 		dbkey = append(tokenInitPrefix, keyHash[:]...)
 	case string(privacyTokenInitPrefix):
 		dbkey = append(privacyTokenInitPrefix, keyHash[:]...)
+	case string(outcoinsPrefixV2):
+		dbkey = append(outcoinsPrefixV2, keyHash[:]...)
+	case string(ephemeralPubKeyPrefix):
+		dbkey = append(ephemeralPubKeyPrefix, keyHash[:]...)
 	}
+
 	return dbkey
 }

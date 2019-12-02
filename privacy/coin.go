@@ -135,6 +135,7 @@ func (coin *Coin) Init() *Coin {
 	coin.randomness = new(Scalar)
 
 	coin.value = 0
+	coin.shardIDLastByte = -1
 
 	return coin
 }
@@ -256,6 +257,13 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byteLengthInfo)
 		infoBytes := coin.info[0:byteLengthInfo]
 		coinBytes = append(coinBytes, infoBytes...)
+	} else {
+		coinBytes = append(coinBytes, byte(0))
+	}
+
+	if coin.privRandOTA != nil {
+		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, coin.privRandOTA.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -401,7 +409,26 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 		}
 		coin.info = make([]byte, lenField)
 		copy(coin.info, coinBytes[offset:offset+int(lenField)])
+		offset += int(lenField)
 	}
+
+	// Parse PrivRandOTA
+	if offset >= len(coinBytes) {
+		// out of range
+		return nil
+	}
+	lenField = coinBytes[offset]
+	offset++
+	if lenField != 0 {
+		if offset+int(lenField) > len(coinBytes) {
+			// out of range
+			return errors.New("out of range Parse PrivRandOTA")
+		}
+		data := coinBytes[offset : offset+int(lenField)]
+		coin.privRandOTA = new(Scalar).FromBytesS(data)
+		offset += int(lenField)
+	}
+
 	return nil
 }
 
@@ -419,7 +446,7 @@ func (coin *Coin) CalSerialNumber(privateKey *Scalar) error {
 		return  errors.New("serial number derivator is nil")
 	}
 
-	coin.serialNumber.Derive(PedCom.G[PedersenPrivateKeyIndex], snd, privateKey)
+	coin.serialNumber = new(Point).Derive(PedCom.G[PedersenPrivateKeyIndex], snd, privateKey)
 	return nil
 }
 
