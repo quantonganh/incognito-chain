@@ -43,6 +43,7 @@ type ShardView struct {
 	TotalTxnsExcludeSalary uint64                            `json:"TotalTxnsExcludeSalary"` // for testing and benchmark
 	ActiveShards           int                               `json:"ActiveShards"`
 	ConsensusAlgorithm     string                            `json:"ConsensusAlgorithm"`
+	ConsensusConfig        string                            `json:"ConsensusConfig"`
 
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
@@ -282,4 +283,8 @@ func (view *ShardView) ValidatePreSignBlock(block common.BlockInterface) error {
 
 func (view *ShardView) DeleteView() error {
 	return nil
+}
+
+func (view *ShardView) GetConsensusConfig() string {
+	return view.ConsensusConfig
 }

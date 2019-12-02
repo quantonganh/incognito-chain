@@ -26,10 +26,10 @@ type BLSBFT struct {
 	StopCh       chan struct{}
 	logger       common.Logger
 
-	currentTimeslot          uint64
-	bestProposeBlock         string
-	onGoingBlocks            map[string]viewConsensusInstance
-	lockBlocksToCollectVotes sync.RWMutex
+	currentTimeslot   uint64
+	bestProposeBlock  string
+	onGoingBlocks     map[string]viewConsensusInstance
+	lockOnGoingBlocks sync.RWMutex
 }
 
 type viewConsensusInstance struct {
@@ -72,7 +72,7 @@ func (e *BLSBFT) Start() error {
 	e.isStarted = true
 	e.StopCh = make(chan struct{})
 
-	ticker := time.Tick(500 * time.Millisecond)
+	ticker := time.Tick(1000 * time.Millisecond)
 	e.logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
 		fmt.Println("action")
@@ -82,7 +82,9 @@ func (e *BLSBFT) Start() error {
 				return
 
 			case <-ticker:
+				e.lockOnGoingBlocks.Lock()
 
+				e.lockOnGoingBlocks.Unlock()
 				// metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 
 				// pubKey := e.UserKeySet.GetPublicKey()

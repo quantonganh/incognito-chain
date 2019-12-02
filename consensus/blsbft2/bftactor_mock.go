@@ -200,3 +200,11 @@ func (Chain) GetBestView() blockchain.ChainViewInterface {
 func (Chain) GetAllViews() map[string]blockchain.ChainViewInterface {
 	return nil
 }
+
+func (Chain) GetViewByHash(hash *common.Hash) (blockchain.ChainViewInterface, error) {
+	return nil, nil
+}
+
+func (Chain) GetGenesisTime() int64 {
+	return 0
+}

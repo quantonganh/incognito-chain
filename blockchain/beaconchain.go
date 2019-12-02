@@ -19,6 +19,12 @@ type BeaconChain struct {
 
 	views    map[string]*BeaconView
 	bestView *BeaconView
+
+	genesisTime int64 //use for consensus to get timeslot
+}
+
+func (chain *BeaconChain) GetGenesisTime() int64 {
+	return chain.genesisTime
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
@@ -214,4 +220,16 @@ func (chain *BeaconChain) GetAllViews() map[string]ChainViewInterface {
 
 func (chain *BeaconChain) GetViewByHash(hash *common.Hash) (ChainViewInterface, error) {
 	return nil, nil
+}
+
+func (chain *BeaconChain) storeView() error {
+	return nil
+}
+
+func (chain *BeaconChain) deleteView(view ChainViewInterface) error {
+	return nil
+}
+
+func (chain *BeaconChain) loadView() error {
+	return nil
 }

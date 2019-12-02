@@ -53,7 +53,9 @@ type BeaconView struct {
 	MinShardCommitteeSize                  int                                        `json:"MinShardCommitteeSize"`
 	ActiveShards                           int                                        `json:"ActiveShards"`
 	ConsensusAlgorithm                     string                                     `json:"ConsensusAlgorithm"`
-	ShardConsensusAlgorithm                map[byte]string                            `json:"ShardConsensusAlgorithm"`
+	ConsensusConfig                        string                                     `json:"ConsensusConfig"`
+
+	ShardConsensusAlgorithm map[byte]string `json:"ShardConsensusAlgorithm"`
 	// key: public key of committee, value: payment address reward receiver
 	RewardReceiver map[string]string `json:"RewardReceiver"` // map incognito public key -> reward receiver (payment address)
 	// cross shard state for all the shard. from shardID -> to crossShard shardID -> last height
@@ -665,4 +667,12 @@ func (view *BeaconView) ValidatePreSignBlock(block common.BlockInterface) error 
 
 func (view *BeaconView) DeleteView() error {
 	return nil
+}
+
+func (view *BeaconView) StoreView() error {
+	return nil
+}
+
+func (view *BeaconView) GetConsensusConfig() string {
+	return view.ConsensusConfig
 }

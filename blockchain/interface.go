@@ -119,6 +119,7 @@ type ChainInterface interface {
 	GetBestView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
 	GetViewByHash(*common.Hash) (ChainViewInterface, error)
+	GetGenesisTime() int64
 	// GetBestViewConsensusType() string
 	// GetBestViewLastBlockTimeStamp() int64
 	// GetBestViewMinBlkInterval() time.Duration
@@ -148,4 +149,5 @@ type ChainViewInterface interface {
 	ValidatePreSignBlock(block common.BlockInterface) error
 
 	DeleteView() error
+	GetConsensusConfig() string
 }

@@ -145,3 +145,7 @@ func (vote *BFTVote) signVote(signFunc func(data []byte) ([]byte, error)) error 
 	vote.VoteSig, err = signFunc(data)
 	return err
 }
+
+func (e *BLSBFT) getTimeSlot() uint64 {
+	return uint64(e.Chain.GetGenesisTime())
+}

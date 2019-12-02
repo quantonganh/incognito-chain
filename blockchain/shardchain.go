@@ -19,6 +19,12 @@ type ShardChain struct {
 
 	views    map[string]*ShardView
 	bestView *ShardView
+
+	genesisTime int64 //use for consensus to get timeslot
+}
+
+func (chain *ShardChain) GetGenesisTime() int64 {
+	return chain.genesisTime
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
@@ -182,4 +188,16 @@ func (chain *ShardChain) GetAllViews() map[string]ChainViewInterface {
 
 func (chain *ShardChain) GetViewByHash(hash *common.Hash) (ChainViewInterface, error) {
 	return nil, nil
+}
+
+func (chain *ShardChain) storeView() error {
+	return nil
+}
+
+func (chain *ShardChain) deleteView(view ChainViewInterface) error {
+	return nil
+}
+
+func (chain *ShardChain) loadView() error {
+	return nil
 }

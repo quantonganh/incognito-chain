@@ -56,6 +56,7 @@ type GenesisParams struct {
 	PreSelectShardNodeSerializedPaymentAddress  []string
 	PreSelectShardNode                          []string
 	ConsensusAlgorithm                          string
+	ConsensusConfig                             string
 }
 
 var ChainTestParam = Params{}
@@ -71,7 +72,8 @@ func init() {
 		//@Notice: InitTxsForBenchmark is for testing and testparams only
 		//InitialIncognito: IntegrationTestInitPRV,
 		InitialIncognito:   TestnetInitPRV,
-		ConsensusAlgorithm: common.BlsConsensus,
+		ConsensusAlgorithm: common.BlsConsensus2,
+		ConsensusConfig:    TestnetConsensusConfig,
 	}
 	ChainTestParam = Params{
 		Name:                   TestnetName,
@@ -115,7 +117,8 @@ func init() {
 		PreSelectShardNodeSerializedPubkey:          PreSelectShardNodeMainnetSerializedPubkey,
 		PreSelectShardNodeSerializedPaymentAddress:  PreSelectShardNodeMainnetSerializedPaymentAddress,
 		InitialIncognito:                            MainnetInitPRV,
-		ConsensusAlgorithm:                          common.BlsConsensus,
+		ConsensusAlgorithm:                          common.BlsConsensus2,
+		ConsensusConfig:                             TestnetConsensusConfig,
 	}
 	ChainMainParam = Params{
 		Name:                   MainetName,
