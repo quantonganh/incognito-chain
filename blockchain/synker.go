@@ -761,44 +761,20 @@ func (synker *Synker) UpdateStatev2() {
 				//fmt.Println("SYN: s2b", peerState.ShardToBeaconPool)
 				if peerStatev2.ShardToBeaconPool != nil {
 					for shardID, blkHeights := range *peerStatev2.ShardToBeaconPool {
-						if shardID == 5 {
-							fmt.Printf("DEBUGGING 1: %v %v\n", len(blkHeights), len(synker.States.PoolsState.ShardToBeaconPool[shardID]))
-						}
 						if len(synker.States.PoolsState.ShardToBeaconPool[shardID]) > 0 {
 							if _, ok := RCSv2.ShardToBeaconBlks[shardID]; !ok {
 								RCSv2.ShardToBeaconBlks[shardID] = make(map[string][]uint64)
 							}
 							RCSv2.ShardToBeaconBlks[shardID][peerStatev2.PeerMiningPublicKey] = blkHeights
-							if shardID == 5 {
-								fmt.Printf("DEBUGGING 2: %v %v\n", blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
-							}
 							if len(blkHeights) > 0 && len(blkHeights) <= len(synker.States.PoolsState.ShardToBeaconPool[shardID]) {
 								commonHeights := arrayCommonElements(blkHeights, synker.States.PoolsState.ShardToBeaconPool[shardID])
-								if shardID == 5 {
-									fmt.Printf("DEBUGGING 3: %v\n", commonHeights)
-								}
 								if len(commonHeights) > 0 {
 									sort.Slice(commonHeights, func(i, j int) bool { return commonHeights[i] < commonHeights[j] })
 									height, _ := synker.States.ClosestState.ShardToBeaconPool.Load(shardID)
-									if shardID == 5 {
-										fmt.Printf("DEBUGGING 4: %v\n", height)
-									}
 									h := commonHeights[len(commonHeights)-1]
 									if height.(uint64) > h {
-										if shardID == 5 {
-											fmt.Printf("DEBUGGING 5: %v\n", h)
-										}
 										synker.States.ClosestState.ShardToBeaconPool.Store(shardID, h)
 									}
-									// for idx := len(commonHeights) - 1; idx >= 0; idx-- {
-									// 	if height.(uint64) > commonHeights[idx] {
-									// 		if shardID == 5 {
-									// 			fmt.Printf("DEBUGGING 5: %v\n", commonHeights[idx])
-									// 		}
-									// 		synker.States.ClosestState.ShardToBeaconPool.Store(shardID, commonHeights[idx])
-									// 		break
-									// 	}
-									// }
 								}
 							}
 						}
@@ -837,11 +813,6 @@ func (synker *Synker) UpdateStatev2() {
 								if height.(uint64) > h {
 									synker.States.ClosestState.CrossShardPool.Store(shardID, h)
 								}
-								// for idx := len(commonHeights) - 1; idx >= 0; idx-- {
-								// 	if height.(uint64) > commonHeights[idx] {
-								// 		synker.States.ClosestState.CrossShardPool.Store(shardID, commonHeights[idx])
-								// 	}
-								// }
 							}
 						}
 					}
