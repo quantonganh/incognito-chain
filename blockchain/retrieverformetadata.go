@@ -56,11 +56,11 @@ func (blockchain *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64,
 }
 
 func (blockchain *BlockChain) GetChainHeight(shardID byte) uint64 {
-	return blockchain.BestView.Shard[shardID].ShardHeight
+	return blockchain.FinalView.Shard[shardID].ShardHeight
 }
 
 func (blockchain *BlockChain) GetBeaconHeight() uint64 {
-	return blockchain.BestView.Beacon.BeaconHeight
+	return blockchain.FinalView.Beacon.BeaconHeight
 }
 
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {
@@ -167,10 +167,10 @@ func (blockchain *BlockChain) GetAllCommitteeValidatorCandidateFlattenListFromDa
 }
 
 func (blockchain *BlockChain) GetStakingTx(shardID byte) map[string]string {
-	return blockchain.BestView.Shard[shardID].GetStakingTx()
+	return blockchain.FinalView.Shard[shardID].GetStakingTx()
 }
 func (blockchain *BlockChain) GetAutoStakingList() map[string]bool {
-	return blockchain.BestView.Beacon.GetAutoStakingList()
+	return blockchain.FinalView.Beacon.GetAutoStakingList()
 }
 
 func (blockchain *BlockChain) GetCentralizedWebsitePaymentAddress() string {

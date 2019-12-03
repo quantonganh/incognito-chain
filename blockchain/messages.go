@@ -12,7 +12,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	if blockchain.IsTest {
 		return
 	}
-	if beacon.Timestamp < blockchain.BestView.Beacon.BestBlock.Header.Timestamp && beacon.Height > blockchain.BestView.Beacon.BestBlock.Header.Height {
+	if beacon.Timestamp < blockchain.FinalView.Beacon.BestBlock.Header.Timestamp && beacon.Height > blockchain.FinalView.Beacon.BestBlock.Header.Height {
 		return
 	}
 
@@ -27,7 +27,7 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 	}
 	// miningKey, _ := blockchain.config.ConsensusEngine.GetCurrentMiningPublicKey()
 	// if miningKey != "" {
-	// 	userRole, userShardID = blockchain.BestView.Beacon.GetPubkeyRole(miningKey, blockchain.BestView.Beacon.BestBlock.Header.Round)
+	// 	userRole, userShardID = blockchain.FinalView.Beacon.GetPubkeyRole(miningKey, blockchain.FinalView.Beacon.BestBlock.Header.Round)
 	// }
 	pState := &peerState{
 		Shard:  make(map[byte]*ChainState),
@@ -39,16 +39,16 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		pState.ShardToBeaconPool = shardToBeaconPool
 		for shardID := byte(0); shardID < byte(common.MaxShardNumber); shardID++ {
 			if shardState, ok := (*shard)[shardID]; ok {
-				if shardState.Height > blockchain.BestView.Beacon.GetBestHeightOfShard(shardID) {
+				if shardState.Height > blockchain.FinalView.Beacon.GetBestHeightOfShard(shardID) {
 					pState.Shard[shardID] = &shardState
 				}
 			}
 		}
 	}
 	if userRole == common.ShardRole && (nodeMode == common.NodeModeAuto || nodeMode == common.NodeModeBeacon) {
-		// userShardRole = blockchain.BestView.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.BestView.Shard[userShardID].BestBlock.Header.Round)
+		// userShardRole = blockchain.FinalView.Shard[userShardID].GetPubkeyRole(miningKey, blockchain.FinalView.Shard[userShardID].BestBlock.Header.Round)
 		// if userShardRole == common.ProposerRole || userShardRole == common.ValidatorRole {
-		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.BestView.Shard[userShardID].ShardHeight {
+		if shardState, ok := (*shard)[userShardID]; ok && shardState.Height >= blockchain.FinalView.Shard[userShardID].ShardHeight {
 			pState.Shard[userShardID] = &shardState
 			if pool, ok := (*crossShardPool)[userShardID]; ok {
 				pState.CrossShardPool = make(map[byte]*map[byte][]uint64)
@@ -58,9 +58,9 @@ func (blockchain *BlockChain) OnPeerStateReceived(beacon *ChainState, shard *map
 		// }
 	}
 	blockchain.Synker.Status.Lock()
-	for shardID := 0; shardID < blockchain.BestView.Beacon.ActiveShards; shardID++ {
+	for shardID := 0; shardID < blockchain.FinalView.Beacon.ActiveShards; shardID++ {
 		if shardState, ok := (*shard)[byte(shardID)]; ok {
-			if shardState.Height > blockchain.BestView.Shard[byte(shardID)].ShardHeight && (*shard)[byte(shardID)].Timestamp > blockchain.BestView.Shard[byte(shardID)].BestBlock.Header.Timestamp {
+			if shardState.Height > blockchain.FinalView.Shard[byte(shardID)].ShardHeight && (*shard)[byte(shardID)].Timestamp > blockchain.FinalView.Shard[byte(shardID)].BestBlock.Header.Timestamp {
 				pState.Shard[byte(shardID)] = &shardState
 			}
 		}
@@ -79,7 +79,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 		return
 	}
 	fmt.Println("Shard block received from shard", newBlk.Header.ShardID, newBlk.Header.Height)
-	if newBlk.Header.Timestamp < blockchain.BestView.Shard[newBlk.Header.ShardID].BestBlock.Header.Timestamp { // not receive block older than current latest block
+	if newBlk.Header.Timestamp < blockchain.FinalView.Shard[newBlk.Header.ShardID].BestBlock.Header.Timestamp { // not receive block older than current latest block
 		//fmt.Println("Shard block received 0")
 		//return
 	}
@@ -91,7 +91,7 @@ func (blockchain *BlockChain) OnBlockShardReceived(newBlk *ShardBlock) {
 
 		currentInsert.Shards[newBlk.Header.ShardID].Lock()
 		defer currentInsert.Shards[newBlk.Header.ShardID].Unlock()
-		currentShardBestState := blockchain.BestView.Shard[newBlk.Header.ShardID]
+		currentShardBestState := blockchain.FinalView.Shard[newBlk.Header.ShardID]
 
 		if currentShardBestState.ShardHeight <= newBlk.Header.Height {
 			//layer, role, _ := blockchain.config.ConsensusEngine.GetUserRole()
@@ -123,13 +123,13 @@ func (blockchain *BlockChain) OnBlockBeaconReceived(newBlk *BeaconBlock) {
 		return
 	}
 	if blockchain.Synker.Status.Beacon {
-		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.BestView.Beacon.BeaconHeight, newBlk.Header.Timestamp)
-		if newBlk.Header.Timestamp < blockchain.BestView.Beacon.BestBlock.Header.Timestamp { // not receive block older than current latest block
+		fmt.Println("Beacon block received", newBlk.Header.Height, blockchain.FinalView.Beacon.BeaconHeight, newBlk.Header.Timestamp)
+		if newBlk.Header.Timestamp < blockchain.FinalView.Beacon.BestBlock.Header.Timestamp { // not receive block older than current latest block
 			return
 		}
-		if blockchain.BestView.Beacon.BeaconHeight <= newBlk.Header.Height {
-			currentBeaconBestView := blockchain.BestView.Beacon
-			if currentBeaconBestView.BeaconHeight == newBlk.Header.Height && currentBeaconBestView.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconBestView.BestBlock.Header.Round < newBlk.Header.Round {
+		if blockchain.FinalView.Beacon.BeaconHeight <= newBlk.Header.Height {
+			currentBeaconFinalView := blockchain.FinalView.Beacon
+			if currentBeaconFinalView.BeaconHeight == newBlk.Header.Height && currentBeaconFinalView.BestBlock.Header.Timestamp < newBlk.Header.Timestamp && currentBeaconFinalView.BestBlock.Header.Round < newBlk.Header.Round {
 				fmt.Println("Beacon block insert", newBlk.Header.Height)
 				err := blockchain.InsertBeaconBlock(newBlk, false)
 				if err != nil {

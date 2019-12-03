@@ -225,7 +225,7 @@ func (tp *TxPool) MonitorPool() {
 // #1: tx
 // #2: default nil, contain input coins hash, which are used for creating this tx
 func (tp *TxPool) MaybeAcceptTransaction(tx metadata.Transaction, beaconHeight int64) (*common.Hash, *TxDesc, error) {
-	//tp.config.BlockChain.BestView.Beacon.BeaconHeight
+	//tp.config.BlockChain.FinalView.Beacon.BeaconHeight
 	tp.mtx.Lock()
 	defer tp.mtx.Unlock()
 	if tp.IsTest {
@@ -356,7 +356,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	// metrics.Tag:              // metrics.TxSizeTag,
 	// metrics.TagValue:         txSize})
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	bestHeight := tp.config.BlockChain.BestView.Shard[shardID].BestBlock.Header.Height
+	bestHeight := tp.config.BlockChain.FinalView.Shard[shardID].BestBlock.Header.Height
 	txFee := tx.GetTxFee()
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)

@@ -59,30 +59,30 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	// lock blockchain
 	blockGenerator.chain.chainLock.Lock()
 	defer blockGenerator.chain.chainLock.Unlock()
-	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.BestView.Beacon.BeaconHeight+1)
+	Logger.log.Infof("⛏ Creating Beacon Block %+v", blockGenerator.chain.FinalView.Beacon.BeaconHeight+1)
 	//============Init Variable============
 	var err error
 	var epoch uint64
 	beaconBlock := NewBeaconBlock()
-	beaconBestView := NewBeaconView()
+	beaconFinalView := NewBeaconView()
 	rewardByEpochInstruction := [][]string{}
-	// produce new block with current BestView
-	err = beaconBestView.cloneBeaconViewFrom(blockGenerator.chain.BestView.Beacon)
+	// produce new block with current FinalView
+	err = beaconFinalView.cloneBeaconViewFrom(blockGenerator.chain.FinalView.Beacon)
 	if err != nil {
 		return nil, err
 	}
 	//======Build Header Essential Data=======
 	// beaconBlock.Header.ProducerAddress = x*producerAddress
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
-	beaconBlock.Header.Height = beaconBestView.BeaconHeight + 1
-	if (beaconBestView.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
-		epoch = beaconBestView.Epoch + 1
+	beaconBlock.Header.Height = beaconFinalView.BeaconHeight + 1
+	if (beaconFinalView.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
+		epoch = beaconFinalView.Epoch + 1
 	} else {
-		epoch = beaconBestView.Epoch
+		epoch = beaconFinalView.Epoch
 	}
-	committee := blockGenerator.chain.BestView.Beacon.GetBeaconCommittee()
-	producerPosition := (blockGenerator.chain.BestView.Beacon.BeaconProposerIndex + round) % len(beaconBestView.BeaconCommittee)
-	beaconBlock.Header.ConsensusType = beaconBestView.ConsensusAlgorithm
+	committee := blockGenerator.chain.FinalView.Beacon.GetBeaconCommittee()
+	producerPosition := (blockGenerator.chain.FinalView.Beacon.BeaconProposerIndex + round) % len(beaconFinalView.BeaconCommittee)
+	beaconBlock.Header.ConsensusType = beaconFinalView.ConsensusAlgorithm
 
 	beaconBlock.Header.Producer, err = committee[producerPosition].ToBase58() // .GetMiningKeyBase58(common.BridgeConsensus)
 	if err != nil {
@@ -94,23 +94,23 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		return nil, NewBlockChainError(ConvertCommitteePubKeyToBase58Error, err)
 	}
 	beaconBlock.Header.Version = BEACON_BLOCK_VERSION
-	beaconBlock.Header.Height = beaconBestView.BeaconHeight + 1
+	beaconBlock.Header.Height = beaconFinalView.BeaconHeight + 1
 	beaconBlock.Header.Epoch = epoch
 	beaconBlock.Header.Round = round
-	beaconBlock.Header.PreviousBlockHash = beaconBestView.BestBlockHash
+	beaconBlock.Header.PreviousBlockHash = beaconFinalView.BestBlockHash
 	BLogger.log.Infof("Producing block: %d (epoch %d)", beaconBlock.Header.Height, beaconBlock.Header.Epoch)
 	//=====END Build Header Essential Data=====
 	//============Build body===================
-	if (beaconBestView.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
-		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconBestView.Epoch)
+	if (beaconFinalView.BeaconHeight+1)%blockGenerator.chain.config.ChainParams.Epoch == 1 {
+		rewardByEpochInstruction, err = blockGenerator.chain.BuildRewardInstructionByEpoch(beaconBlock.Header.Height, beaconFinalView.Epoch)
 		if err != nil {
 			return nil, NewBlockChainError(BuildRewardInstructionError, err)
 		}
 	}
-	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconBestView, shardsToBeaconLimit)
-	tempInstruction, err := beaconBestView.GenerateInstruction(
+	tempShardState, stakeInstructions, swapInstructions, bridgeInstructions, acceptedRewardInstructions, stopAutoStakingInstructions := blockGenerator.GetShardState(beaconFinalView, shardsToBeaconLimit)
+	tempInstruction, err := beaconFinalView.GenerateInstruction(
 		beaconBlock.Header.Height, stakeInstructions, swapInstructions, stopAutoStakingInstructions,
-		beaconBestView.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
+		beaconFinalView.CandidateShardWaitingForCurrentRandom, bridgeInstructions, acceptedRewardInstructions, blockGenerator.chain.config.ChainParams.Epoch,
 		blockGenerator.chain.config.ChainParams.RandomTime, blockGenerator.chain,
 	)
 	if err != nil {
@@ -129,21 +129,21 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	}
 	//============End Build Body================
 	//============Update Beacon Best State================
-	// Process new block with BestView
-	err = beaconBestView.updateBeaconView(beaconBlock, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.AssignOffset, blockGenerator.chain.config.ChainParams.RandomTime)
+	// Process new block with FinalView
+	err = beaconFinalView.updateBeaconView(beaconBlock, blockGenerator.chain.config.ChainParams.Epoch, blockGenerator.chain.config.ChainParams.AssignOffset, blockGenerator.chain.config.ChainParams.RandomTime)
 	if err != nil {
 		return nil, err
 	}
 	//============Build Header Hash=============
 	// calculate hash
 	// BeaconValidator root: beacon committee + beacon pending committee
-	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconBestView.BeaconCommittee)
+	beaconCommitteeStr, err := incognitokey.CommitteeKeyListToString(beaconFinalView.BeaconCommittee)
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
 	validatorArr := append([]string{}, beaconCommitteeStr...)
 
-	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconBestView.BeaconPendingValidator)
+	beaconPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(beaconFinalView.BeaconPendingValidator)
 	if err != nil {
 		return nil, NewBlockChainError(UnExpectedError, err)
 	}
@@ -153,7 +153,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		return nil, NewBlockChainError(GenerateBeaconCommitteeAndValidatorRootError, err)
 	}
 	// BeaconCandidate root: beacon current candidate + beacon next candidate
-	beaconCandidateArr := append(beaconBestView.CandidateBeaconWaitingForCurrentRandom, beaconBestView.CandidateBeaconWaitingForNextRandom...)
+	beaconCandidateArr := append(beaconFinalView.CandidateBeaconWaitingForCurrentRandom, beaconFinalView.CandidateBeaconWaitingForNextRandom...)
 
 	beaconCandidateArrStr, err := incognitokey.CommitteeKeyListToString(beaconCandidateArr)
 	if err != nil {
@@ -164,7 +164,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		return nil, NewBlockChainError(GenerateBeaconCandidateRootError, err)
 	}
 	// Shard candidate root: shard current candidate + shard next candidate
-	shardCandidateArr := append(beaconBestView.CandidateShardWaitingForCurrentRandom, beaconBestView.CandidateShardWaitingForNextRandom...)
+	shardCandidateArr := append(beaconFinalView.CandidateShardWaitingForCurrentRandom, beaconFinalView.CandidateShardWaitingForNextRandom...)
 
 	shardCandidateArrStr, err := incognitokey.CommitteeKeyListToString(shardCandidateArr)
 	if err != nil {
@@ -176,7 +176,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	}
 	// Shard Validator root
 	shardPendingValidator := make(map[byte][]string)
-	for shardID, keys := range beaconBestView.ShardPendingValidator {
+	for shardID, keys := range beaconFinalView.ShardPendingValidator {
 		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
 		if err != nil {
 			return nil, NewBlockChainError(UnExpectedError, err)
@@ -185,7 +185,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 	}
 
 	shardCommittee := make(map[byte][]string)
-	for shardID, keys := range beaconBestView.ShardCommittee {
+	for shardID, keys := range beaconFinalView.ShardCommittee {
 		keysStr, err := incognitokey.CommitteeKeyListToString(keys)
 		if err != nil {
 			return nil, NewBlockChainError(UnExpectedError, err)
@@ -198,7 +198,7 @@ func (blockGenerator *BlockGenerator) NewBlockBeacon(round int, shardsToBeaconLi
 		return nil, NewBlockChainError(GenerateShardCommitteeAndValidatorRootError, err)
 	}
 
-	tempAutoStakingRoot, err := generateHashFromMapStringBool(beaconBestView.AutoStaking)
+	tempAutoStakingRoot, err := generateHashFromMapStringBool(beaconFinalView.AutoStaking)
 	if err != nil {
 		return nil, NewBlockChainError(AutoStakingRootHashError, err)
 	}
@@ -657,7 +657,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		if len(tempStakePublicKey) != len(strings.Split(stakeInstruction[3], ",")) && len(strings.Split(stakeInstruction[3], ",")) != len(strings.Split(stakeInstruction[4], ",")) && len(strings.Split(stakeInstruction[4], ",")) != len(strings.Split(stakeInstruction[5], ",")) {
 			continue
 		}
-		tempStakePublicKey = blockchain.BestView.Beacon.GetValidStakers(tempStakePublicKey)
+		tempStakePublicKey = blockchain.FinalView.Beacon.GetValidStakers(tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeShardPublicKeys, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(stakeBeaconPublicKeys, tempStakePublicKey)
 		tempStakePublicKey = common.GetValidStaker(validStakePublicKeys, tempStakePublicKey)
@@ -694,12 +694,12 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 	for _, instruction := range stopAutoStakingInstructionsFromBlock {
 		allCommitteeValidatorCandidate := []string{}
 		// avoid dead lock
-		// if producer new block then lock BestView
+		// if producer new block then lock FinalView
 		if isProducer {
-			allCommitteeValidatorCandidate = blockchain.BestView.Beacon.getAllCommitteeValidatorCandidateFlattenList()
+			allCommitteeValidatorCandidate = blockchain.FinalView.Beacon.getAllCommitteeValidatorCandidateFlattenList()
 		} else {
-			// if process block then do not lock BestView
-			allCommitteeValidatorCandidate = blockchain.BestView.Beacon.getAllCommitteeValidatorCandidateFlattenList()
+			// if process block then do not lock FinalView
+			allCommitteeValidatorCandidate = blockchain.FinalView.Beacon.getAllCommitteeValidatorCandidateFlattenList()
 		}
 		tempStopAutoStakingPublicKeys := strings.Split(instruction[1], ",")
 		for _, tempStopAutoStakingPublicKey := range tempStopAutoStakingPublicKeys {
@@ -719,7 +719,7 @@ func (blockchain *BlockChain) GetShardStateFromBlock(newBeaconHeight uint64, sha
 		shardID,
 		shardBlock.Instructions,
 		newBeaconHeight,
-		//beaconBestView,
+		//beaconFinalView,
 		blockchain.config.DataBase,
 	)
 	if err != nil {

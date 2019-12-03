@@ -7,7 +7,7 @@ import (
 )
 
 func (httpServer *HttpServer) handleGetProducersBlackList(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	// beaconHeight := httpServer.config.BlockChain.BestView.Beacon.BeaconHeight
+	// beaconHeight := httpServer.config.BlockChain.FinalView.Beacon.BeaconHeight
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, nil
@@ -26,7 +26,7 @@ func (httpServer *HttpServer) handleGetProducersBlackList(params interface{}, cl
 }
 
 func (httpServer *HttpServer) handleGetProducersBlackListDetail(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	// beaconHeight := httpServer.config.BlockChain.BestView.Beacon.BeaconHeight
+	// beaconHeight := httpServer.config.BlockChain.FinalView.Beacon.BeaconHeight
 	arrayParams := common.InterfaceSlice(params)
 	if arrayParams == nil || len(arrayParams) < 1 {
 		return nil, nil

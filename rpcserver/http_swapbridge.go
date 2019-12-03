@@ -15,7 +15,7 @@ import (
 
 // handleGetLatestBridgeSwapProof returns the latest proof of a change in bridge's committee
 func (httpServer *HttpServer) handleGetLatestBridgeSwapProof(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBlock := httpServer.config.BlockChain.BestView.Beacon.BeaconHeight
+	latestBlock := httpServer.config.BlockChain.FinalView.Beacon.BeaconHeight
 	for i := latestBlock; i >= 1; i-- {
 		params := []interface{}{float64(i)}
 		proof, err := httpServer.handleGetBridgeSwapProof(params, closeChan)

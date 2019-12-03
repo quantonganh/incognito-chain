@@ -120,7 +120,7 @@ const (
 	AssignValidatorToShardError
 	ShuffleBeaconCandidateError
 	CleanBackUpError
-	BackUpBestViewError
+	BackUpFinalViewError
 	StoreAcceptedShardToBeaconError
 	StoreCrossShardNextHeightError
 	StoreShardCommitteeByHeightError
@@ -274,7 +274,7 @@ var ErrCodeMessage = map[int]struct {
 	AssignValidatorToShardError:                       {-1101, "Assign Validator To Shard Error"},
 	ShuffleBeaconCandidateError:                       {-1102, "Shuffle Beacon Candidate Error"},
 	CleanBackUpError:                                  {-1103, "Clean Back Up Error"},
-	BackUpBestViewError:                              {-1104, "Back Up Best State Error"},
+	BackUpFinalViewError:                              {-1104, "Back Up Best State Error"},
 	ProcessBridgeInstructionError:                     {-1105, "Process Bridge Instruction Error"},
 	UpdateDatabaseWithBlockRewardInfoError:            {-1106, "Update Database With Block Reward Info Error"},
 	CreateCrossShardBlockError:                        {-1107, "Create Cross Shard Block Error"},

@@ -271,7 +271,7 @@ func (e *BLSBFT) Start() error {
 							continue
 						}
 
-						if err := e.Chain.GetBestView().InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
+						if err := e.Chain.GetFinalView().InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
 							e.logger.Error(err)
 							if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 								if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
@@ -407,7 +407,7 @@ func (e *BLSBFT) createNewBlock() (common.BlockInterface, error) {
 	go func() {
 		time1 := time.Now()
 		var err error
-		block, err = e.Chain.GetBestView().CreateNewBlock(uint64(e.RoundData.Round))
+		block, err = e.Chain.GetFinalView().CreateNewBlock(uint64(e.RoundData.Round))
 		e.logger.Info("create block", time.Since(time1).Seconds())
 		errCh <- err
 	}()

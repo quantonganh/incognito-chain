@@ -177,7 +177,7 @@ func (e *BLSBFT) Start() error {
 				// 			continue
 				// 		}
 
-				// 		if err := e.Chain.GetBestView().InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
+				// 		if err := e.Chain.GetFinalView().InsertAndBroadcastBlock(e.RoundData.Block); err != nil {
 				// 			e.logger.Error(err)
 				// 			if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 				// 				if blockchainError.Code != blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {

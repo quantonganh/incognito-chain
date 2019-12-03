@@ -17,8 +17,9 @@ type ShardChain struct {
 	ChainName  string
 	lock       sync.RWMutex
 
-	views    map[string]*ShardView
-	bestView *ShardView
+	views     map[string]*ShardView
+	bestView  *ShardView
+	finalView *ShardView
 
 	genesisTime int64 //use for consensus to get timeslot
 }
@@ -28,37 +29,37 @@ func (chain *ShardChain) GetGenesisTime() int64 {
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
-	return chain.bestView.BestBlock.Header.Timestamp
+	return chain.finalView.BestBlock.Header.Timestamp
 }
 
 func (chain *ShardChain) GetMinBlkInterval() time.Duration {
-	return chain.bestView.BlockInterval
+	return chain.finalView.BlockInterval
 }
 
 func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
-	return chain.bestView.BlockMaxCreateTime
+	return chain.finalView.BlockMaxCreateTime
 }
 
 func (chain *ShardChain) IsReady() bool {
-	return chain.Blockchain.Synker.IsLatest(true, chain.bestView.ShardID)
+	return chain.Blockchain.Synker.IsLatest(true, chain.finalView.ShardID)
 }
 
 func (chain *ShardChain) CurrentHeight() uint64 {
-	return chain.bestView.BestBlock.Header.Height
+	return chain.finalView.BestBlock.Header.Height
 }
 
 func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.bestView.ShardCommittee...)
+	return append(result, chain.finalView.ShardCommittee...)
 }
 
 func (chain *ShardChain) GetCommitteeSize() int {
-	return len(chain.bestView.ShardCommittee)
+	return len(chain.finalView.ShardCommittee)
 }
 
 func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.bestView.ShardCommittee {
-		if key.GetMiningKeyBase58(chain.bestView.ConsensusAlgorithm) == pubkey {
+	for index, key := range chain.finalView.ShardCommittee {
+		if key.GetMiningKeyBase58(chain.finalView.ConsensusAlgorithm) == pubkey {
 			return index
 		}
 	}
@@ -66,7 +67,7 @@ func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
 }
 
 func (chain *ShardChain) GetLastProposerIndex() int {
-	return chain.bestView.ShardProposerIdx
+	return chain.finalView.ShardProposerIdx
 }
 
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
@@ -75,11 +76,11 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
-	if chain.Blockchain.BestView.Beacon.BeaconHeight < beaconHeight {
-		beaconHeight = chain.Blockchain.BestView.Beacon.BeaconHeight
+	if chain.Blockchain.FinalView.Beacon.BeaconHeight < beaconHeight {
+		beaconHeight = chain.Blockchain.FinalView.Beacon.BeaconHeight
 	} else {
-		if beaconHeight < chain.Blockchain.BestView.Shard[byte(chain.GetShardID())].BeaconHeight {
-			beaconHeight = chain.Blockchain.BestView.Shard[byte(chain.GetShardID())].BeaconHeight
+		if beaconHeight < chain.Blockchain.FinalView.Shard[byte(chain.GetShardID())].BeaconHeight {
+			beaconHeight = chain.Blockchain.FinalView.Shard[byte(chain.GetShardID())].BeaconHeight
 		}
 	}
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
@@ -127,15 +128,15 @@ func (chain *ShardChain) GetChainName() string {
 }
 
 func (chain *ShardChain) GetConsensusType() string {
-	return chain.bestView.ConsensusAlgorithm
+	return chain.finalView.ConsensusAlgorithm
 }
 
 func (chain *ShardChain) GetShardID() int {
-	return int(chain.bestView.ShardID)
+	return int(chain.finalView.ShardID)
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.bestView.GetPubkeyRole(pubkey, round), chain.bestView.ShardID
+	return chain.finalView.GetPubkeyRole(pubkey, round), chain.finalView.ShardID
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
@@ -148,34 +149,34 @@ func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterfa
 }
 
 func (chain *ShardChain) ValidatePreSignBlock(block common.BlockInterface) error {
-	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.bestView.ShardID)
+	return chain.Blockchain.VerifyPreSignShardBlock(block.(*ShardBlock), chain.finalView.ShardID)
 }
 
-func (chain *ShardChain) GetBestViewConsensusType() string {
+func (chain *ShardChain) GetFinalViewConsensusType() string {
 	return ""
 }
-func (chain *ShardChain) GetBestViewLastBlockTimeStamp() int64 {
+func (chain *ShardChain) GetFinalViewLastBlockTimeStamp() int64 {
 	return 0
 }
-func (chain *ShardChain) GetBestViewMinBlkInterval() time.Duration {
+func (chain *ShardChain) GetFinalViewMinBlkInterval() time.Duration {
 	return 0
 }
-func (chain *ShardChain) GetBestViewMaxBlkCreateTime() time.Duration {
+func (chain *ShardChain) GetFinalViewMaxBlkCreateTime() time.Duration {
 	return 0
 }
-func (chain *ShardChain) CurrentBestViewHeight() uint64 {
+func (chain *ShardChain) CurrentFinalViewHeight() uint64 {
 	return 0
 }
-func (chain *ShardChain) GetBestViewCommitteeSize() int {
+func (chain *ShardChain) GetFinalViewCommitteeSize() int {
 	return 0
 }
-func (chain *ShardChain) GetBestViewCommittee() []incognitokey.CommitteePublicKey {
+func (chain *ShardChain) GetFinalViewCommittee() []incognitokey.CommitteePublicKey {
 	return nil
 }
-func (chain *ShardChain) GetBestViewPubKeyCommitteeIndex(string) int {
+func (chain *ShardChain) GetFinalViewPubKeyCommitteeIndex(string) int {
 	return 0
 }
-func (chain *ShardChain) GetBestViewLastProposerIndex() int {
+func (chain *ShardChain) GetFinalViewLastProposerIndex() int {
 	return 0
 }
 
@@ -188,6 +189,10 @@ func (chain *ShardChain) GetAllViews() map[string]ChainViewInterface {
 
 func (chain *ShardChain) GetViewByHash(hash *common.Hash) (ChainViewInterface, error) {
 	return nil, nil
+}
+
+func (chain *ShardChain) GetFinalView() ChainViewInterface {
+	return nil
 }
 
 func (chain *ShardChain) storeView() error {

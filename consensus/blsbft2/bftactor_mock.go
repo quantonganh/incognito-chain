@@ -166,35 +166,35 @@ func (Chain) GetShardID() int {
 	return 0
 }
 
-func (Chain) GetBestViewConsensusType() string {
+func (Chain) GetFinalViewConsensusType() string {
 	return ""
 }
-func (Chain) GetBestViewLastBlockTimeStamp() int64 {
+func (Chain) GetFinalViewLastBlockTimeStamp() int64 {
 	return 0
 }
-func (Chain) GetBestViewMinBlkInterval() time.Duration {
+func (Chain) GetFinalViewMinBlkInterval() time.Duration {
 	return 0
 }
-func (Chain) GetBestViewMaxBlkCreateTime() time.Duration {
+func (Chain) GetFinalViewMaxBlkCreateTime() time.Duration {
 	return 0
 }
-func (Chain) CurrentBestViewHeight() uint64 {
+func (Chain) CurrentFinalViewHeight() uint64 {
 	return 0
 }
-func (Chain) GetBestViewCommitteeSize() int {
+func (Chain) GetFinalViewCommitteeSize() int {
 	return 0
 }
-func (Chain) GetBestViewCommittee() []incognitokey.CommitteePublicKey {
+func (Chain) GetFinalViewCommittee() []incognitokey.CommitteePublicKey {
 	return nil
 }
-func (Chain) GetBestViewPubKeyCommitteeIndex(string) int {
+func (Chain) GetFinalViewPubKeyCommitteeIndex(string) int {
 	return 0
 }
-func (Chain) GetBestViewLastProposerIndex() int {
+func (Chain) GetFinalViewLastProposerIndex() int {
 	return 0
 }
 
-func (Chain) GetBestView() blockchain.ChainViewInterface {
+func (Chain) GetFinalView() blockchain.ChainViewInterface {
 	return nil
 }
 func (Chain) GetAllViews() map[string]blockchain.ChainViewInterface {
@@ -207,4 +207,8 @@ func (Chain) GetViewByHash(hash *common.Hash) (blockchain.ChainViewInterface, er
 
 func (Chain) GetGenesisTime() int64 {
 	return 0
+}
+
+func (Chain) GetFinalView() blockchain.ChainViewInterface {
+	return nil
 }

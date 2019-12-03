@@ -69,7 +69,7 @@ func (e BLSBFT) validatePreSignBlock(block common.BlockInterface) error {
 		return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
 	}
 	e.logger.Info("ValidatePreSignBlock...")
-	if err := e.Chain.GetBestView().ValidatePreSignBlock(block); err != nil {
+	if err := e.Chain.GetFinalView().ValidatePreSignBlock(block); err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	e.logger.Info("done verify block...")

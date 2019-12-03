@@ -99,10 +99,10 @@ func (blockchain *BlockChain) revertShardState(shardID byte) error {
 	// 4. Remove incoming crossShardBlks
 	// 5. Delete txs and its related stuff (ex: txview) belong to block
 	// var currentBestState ShardBestState
-	// currentBestState.cloneShardBestStateFrom(blockchain.BestView.Shard[shardID])
+	// currentBestState.cloneShardBestStateFrom(blockchain.FinalView.Shard[shardID])
 	// currentBestStateBlk := currentBestState.BestBlock
 
-	// if currentBestState.ShardHeight == blockchain.BestView.Shard[shardID].ShardHeight {
+	// if currentBestState.ShardHeight == blockchain.FinalView.Shard[shardID].ShardHeight {
 	// 	return NewBlockChainError(RevertStateError, errors.New("can't revert same beststate"))
 	// }
 
@@ -156,7 +156,7 @@ func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconb
 	// 1. Backup beststate
 	// 2.	Backup data that will be modify by new block data
 
-	// tempMarshal, err := json.Marshal(blockchain.BestView.Shard[block.Header.ShardID])
+	// tempMarshal, err := json.Marshal(blockchain.FinalView.Shard[block.Header.ShardID])
 	// if err != nil {
 	// 	return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	// }
@@ -718,7 +718,7 @@ func (blockchain *BlockChain) revertBeaconBestState() error {
 	// SetBeaconBestState(&beaconBestState)
 
 	// blockchain.config.BeaconPool.RevertBeconPool(beaconBestState.BeaconHeight)
-	// for sid, height := range blockchain.BestView.Beacon.GetBestShardHeight() {
+	// for sid, height := range blockchain.FinalView.Beacon.GetBestShardHeight() {
 	// 	blockchain.config.ShardToBeaconPool.RevertShardToBeaconPool(sid, height)
 	// }
 
@@ -732,7 +732,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 	// 3. Delete newly inserted block
 	// 4. Delete data store by block
 	// var currentBestState BeaconBestState
-	// currentBestState.CloneBeaconBestStateFrom(blockchain.BestView.Beacon)
+	// currentBestState.CloneBeaconBestStateFrom(blockchain.FinalView.Beacon)
 	// currentBestStateBlk := currentBestState.BestBlock
 
 	// err := blockchain.revertBeaconBestState()
@@ -809,7 +809,7 @@ func (blockchain *BlockChain) revertBeaconState() error {
 func (blockchain *BlockChain) BackupCurrentBeaconState(block *BeaconBlock) error {
 	//Steps:
 	// 1. Backup beststate
-	// tempMarshal, err := json.Marshal(blockchain.BestView.Beacon)
+	// tempMarshal, err := json.Marshal(blockchain.FinalView.Beacon)
 	// if err != nil {
 	// 	return NewBlockChainError(UnmashallJsonShardBlockError, err)
 	// }

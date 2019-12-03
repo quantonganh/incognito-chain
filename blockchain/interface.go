@@ -117,18 +117,19 @@ type ChainInterface interface {
 	GetShardID() int
 
 	GetBestView() ChainViewInterface
+	GetFinalView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
 	GetViewByHash(*common.Hash) (ChainViewInterface, error)
 	GetGenesisTime() int64
-	// GetBestViewConsensusType() string
-	// GetBestViewLastBlockTimeStamp() int64
-	// GetBestViewMinBlkInterval() time.Duration
-	// GetBestViewMaxBlkCreateTime() time.Duration
-	// CurrentBestViewHeight() uint64
-	// GetBestViewCommitteeSize() int
-	// GetBestViewCommittee() []incognitokey.CommitteePublicKey
-	// GetBestViewPubKeyCommitteeIndex(string) int
-	// GetBestViewLastProposerIndex() int
+	// GetFinalViewConsensusType() string
+	// GetFinalViewLastBlockTimeStamp() int64
+	// GetFinalViewMinBlkInterval() time.Duration
+	// GetFinalViewMaxBlkCreateTime() time.Duration
+	// CurrentFinalViewHeight() uint64
+	// GetFinalViewCommitteeSize() int
+	// GetFinalViewCommittee() []incognitokey.CommitteePublicKey
+	// GetFinalViewPubKeyCommitteeIndex(string) int
+	// GetFinalViewLastProposerIndex() int
 }
 
 type ChainViewInterface interface {

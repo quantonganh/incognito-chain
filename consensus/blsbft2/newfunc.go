@@ -18,13 +18,13 @@ func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
 
 func (e BLSBFT) getProposeBlock() (common.BlockInterface, error) {
 	if e.bestProposeBlock == "" {
-		block, err := e.Chain.GetBestView().CreateNewBlock(e.currentTimeslot)
+		block, err := e.Chain.GetFinalView().CreateNewBlock(e.currentTimeslot)
 		if err != nil {
 			return nil, err
 		}
 		return block, nil
 	}
-	_ = e.Chain.GetBestView().GetTimeslot()
+	_ = e.Chain.GetFinalView().GetTimeslot()
 
 	return nil, nil
 
