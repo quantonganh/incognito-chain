@@ -193,13 +193,19 @@ func validateBLSSig(
 	return nil
 }
 
-func (e *BLSBFT) preValidateVote(blockHash []byte, Vote *BFTVote, validatorPk []byte) error {
+func validateVote(Vote *BFTVote) error {
 	data := []byte{}
-	data = append(data, blockHash...)
+	blkHash, err := common.Hash{}.NewHashFromStr(Vote.BlockHash)
+	if err != nil {
+		return err
+	}
+	data = append(data, blkHash.GetBytes()...)
 	data = append(data, Vote.BLS...)
 	data = append(data, Vote.BRI...)
 	dataHash := common.HashH(data)
-	err := validateSingleBriSig(&dataHash, Vote.VoteSig, validatorPk)
+
+	publicKeyByte := []byte(Vote.Validator)
+	err = validateSingleBriSig(&dataHash, Vote.VoteSig, publicKeyByte)
 	return err
 }
 

@@ -12,7 +12,7 @@ const (
 	votePhase     = "VOTE"
 	commitPhase   = "COMMIT"
 	newphase      = "NEWPHASE"
-	consensusName = common.BlsConsensus
+	consensusName = common.BlsConsensus2
 )
 
 //

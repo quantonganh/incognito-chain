@@ -53,7 +53,7 @@ type ShardView struct {
 	BlockMaxCreateTime time.Duration
 
 	GenesisTime int64 //use for consensus to get timeslot
-
+	IsBest      bool
 	// MetricBlockHeight uint64
 	lock sync.RWMutex
 }
@@ -325,4 +325,14 @@ func (view ShardView) GetTxsInBestBlock() []metadata.Transaction {
 	var result []metadata.Transaction
 	copy(result, view.BestBlock.Body.Transactions)
 	return result
+}
+
+func (view *ShardView) IsBestView() bool {
+	return view.IsBest
+}
+
+func (view *ShardView) SetViewIsBest(isBest bool) {
+	view.lock.Lock()
+	defer view.lock.Unlock()
+	view.IsBest = isBest
 }
