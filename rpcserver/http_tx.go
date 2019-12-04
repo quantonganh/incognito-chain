@@ -107,7 +107,27 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address"))
 	}
 
-	result, err := httpServer.txService.GetTransactionHashByReceiver(paymentAddress)
+	fromBlockHeight := int64(0)
+	if len(arrayParams) >= 2 {
+		fromBlockHeightParam, ok := arrayParams[1].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+		}
+
+		fromBlockHeight = int64(fromBlockHeightParam)
+	}
+
+	toBlockHeight := int64(0)
+	if len(arrayParams) >= 3 {
+		toBlockHeightParam, ok := arrayParams[2].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+		}
+
+		toBlockHeight = int64(toBlockHeightParam)
+	}
+
+	result, err := httpServer.txService.GetTransactionHashByReceiver(paymentAddress, fromBlockHeight, toBlockHeight)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -147,7 +167,27 @@ func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{},
 		keySet.PaymentAddress = paymentAddress.KeySet.PaymentAddress
 	}
 
-	result, err := httpServer.txService.GetTransactionByReceiver(keySet)
+	fromBlockHeight := int64(0)
+	if len(paramsArray) >= 2 {
+		fromBlockHeightParam, ok := paramsArray[1].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+		}
+
+		fromBlockHeight = int64(fromBlockHeightParam)
+	}
+
+	toBlockHeight := int64(0)
+	if len(paramsArray) >= 3 {
+		toBlockHeightParam, ok := paramsArray[2].(float64)
+		if !ok {
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+		}
+
+		toBlockHeight = int64(toBlockHeightParam)
+	}
+
+	result, err := httpServer.txService.GetTransactionByReceiver(keySet, fromBlockHeight, toBlockHeight)
 
 	return result, err
 }

@@ -735,7 +735,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	return tx, nil
 }
 
-func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam string) (map[byte][]common.Hash, error) {
+func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam string, fromBlockHeight int64, toBlockHeight int64) (map[byte][]common.Hash, error) {
 	var keySet *incognitokey.KeySet
 
 	if paymentAddressParam != "" {
@@ -748,8 +748,30 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 	} else {
 		return nil, errors.New("payment address is invalid")
 	}
+	listTxHashFromFixedPK, listTxHashFromPKOTA, _, _, err := txService.BlockChain.GetTransactionHashByReceiver(keySet, fromBlockHeight, toBlockHeight)
+	if err != nil {
+		return nil, err
+	}
 
-	return txService.BlockChain.GetTransactionHashByReceiver(keySet)
+	result := make(map[byte][]common.Hash, 0)
+
+	for key, value := range listTxHashFromFixedPK {
+		if result[key] == nil {
+			result[key] = make([]common.Hash, 0)
+		}
+
+		result[key] = append(result[key], value...)
+	}
+
+	for key, value := range listTxHashFromPKOTA {
+		if result[key] == nil {
+			result[key] = make([]common.Hash, 0)
+		}
+
+		result[key] = append(result[key], value...)
+	}
+
+	return result, nil
 }
 
 func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.TransactionDetail, *RPCError) {
@@ -1428,19 +1450,22 @@ func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate stri
 // if this keyset contain payment-addr, we can detect tx hash
 // if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
 // because this is monitoring output to get received tx -> can not know this is a returned amount tx
-func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) (*jsonresult.ListReceivedTransaction, *RPCError) {
+func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, fromBlockHeight int64, toBlockHeight int64) (*jsonresult.ListReceivedTransaction, *RPCError) {
+	//todo: need to be refactor code
 	if len(keySet.PaymentAddress.Pk) == 0 {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
 	}
-	listTxsHash, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet)
+	listTxsHashFromFixedPK, listTxsHashFromPKOTA, indexOutputTxNornal, indexOutputTxPToken,  err := txService.BlockChain.GetTransactionHashByReceiver(&keySet, fromBlockHeight, toBlockHeight)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
 	}
 
+	txHandled := make(map[common.Hash]bool, 0)
+
 	result := jsonresult.ListReceivedTransaction{
 		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
 	}
-	for shardID, txHashs := range listTxsHash {
+	for shardID, txHashs := range listTxsHashFromFixedPK {
 		for _, txHash := range txHashs {
 			item := jsonresult.ReceivedTransaction{
 				FromShardID:     shardID,
@@ -1463,11 +1488,20 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 						item.IsPrivacy = normalTx.IsPrivacy()
 						item.Fee = normalTx.Fee
 
+						isExited, _ := common.SliceExists(listTxsHashFromPKOTA[shardID], txHash)
+						indexOutputOTA := make([]byte, 0)
+						if isExited {
+							indexOutputOTA = indexOutputTxNornal[txHash]
+							txHandled[txHash] = true
+						}
+
 						proof := normalTx.GetProof()
 						if proof != nil {
+							// get output coin of fixed public key
 							outputs := proof.GetOutputCoins()
-							for _, output := range outputs {
-								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+							for index, output := range outputs {
+								isExisted, _ := common.SliceExists(indexOutputOTA, byte(index))
+								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk)  || isExisted{
 									temp := &privacy.OutputCoin{
 										CoinDetails:          output.CoinDetails,
 										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
@@ -1507,12 +1541,29 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 						item.PrivacyCustomTokenName = privacyTokenTx.TxPrivacyTokenData.PropertyName
 						item.PrivacyCustomTokenSymbol = privacyTokenTx.TxPrivacyTokenData.PropertySymbol
 
+						isExited, _ := common.SliceExists(listTxsHashFromPKOTA[shardID], txHash)
+						indexOutputNormalOTA := make([]byte, 0)
+						indexOutputPTokenOTA := make([]byte, 0)
+						if isExited {
+							if indexOutputTxNornal[txHash] != nil {
+								indexOutputNormalOTA = indexOutputTxNornal[txHash]
+							}
+
+							if indexOutputTxPToken[txHash] != nil {
+								indexOutputPTokenOTA = indexOutputTxPToken[txHash]
+							}
+
+							txHandled[txHash]  = true
+						}
+
 						// prv proof
 						proof := privacyTokenTx.GetProof()
 						if proof != nil {
 							outputs := proof.GetOutputCoins()
-							for _, output := range outputs {
-								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+
+							for index, output := range outputs {
+								isExisted, _ := common.SliceExists(indexOutputNormalOTA, byte(index))
+								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) || isExisted{
 									temp := &privacy.OutputCoin{
 										CoinDetails:          output.CoinDetails,
 										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
@@ -1544,8 +1595,9 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 						proof = privacyTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
 						if proof != nil {
 							outputs := proof.GetOutputCoins()
-							for _, output := range outputs {
-								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) {
+							for index, output := range outputs {
+								isExisted, _ := common.SliceExists(indexOutputPTokenOTA, byte(index))
+								if bytes.Equal(output.CoinDetails.GetPublicKey().ToBytesS(), keySet.PaymentAddress.Pk) || isExisted {
 									temp := &privacy.OutputCoin{
 										CoinDetails:          output.CoinDetails,
 										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
@@ -1579,6 +1631,157 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet) 
 			sort.Slice(result.ReceivedTransactions, func(i, j int) bool {
 				return result.ReceivedTransactions[i].LockTime > result.ReceivedTransactions[j].LockTime
 			})
+		}
+	}
+
+	for shardID, txHashs := range listTxsHashFromPKOTA {
+		for _, txHash := range txHashs {
+
+			if !txHandled[txHash] {
+				item := jsonresult.ReceivedTransaction{
+					FromShardID:     shardID,
+					ReceivedAmounts: make(map[common.Hash]jsonresult.ReceivedInfo),
+				}
+				if len(keySet.ReadonlyKey.Rk) != 0 {
+					_, blockHash, _, txDetail, _ := txService.BlockChain.GetTransactionByHash(txHash)
+					item.LockTime = time.Unix(txDetail.GetLockTime(), 0).Format(common.DateOutputFormat)
+					item.Info = base58.Base58Check{}.Encode(txDetail.GetInfo(), common.ZeroByte)
+					item.BlockHash = blockHash.String()
+					item.Hash = txDetail.Hash().String()
+
+					txType := txDetail.GetType()
+					item.Type = txType
+					switch item.Type {
+					case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
+						{
+							normalTx := txDetail.(*transaction.Tx)
+							item.Version = normalTx.Version
+							item.IsPrivacy = normalTx.IsPrivacy()
+							item.Fee = normalTx.Fee
+
+							proof := normalTx.GetProof()
+							if proof != nil {
+								outputs := proof.GetOutputCoins()
+								for _, index := range indexOutputTxNornal[txHash] {
+									output := outputs[index]
+
+									temp := &privacy.OutputCoin{
+										CoinDetails:          output.CoinDetails,
+										CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+									}
+									if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+										// try to decrypt to get more data
+										err := temp.Decrypt(keySet.ReadonlyKey)
+										if err != nil {
+											Logger.log.Error(err)
+											continue
+										}
+									}
+									info := jsonresult.ReceivedInfo{
+										CoinDetails: jsonresult.ReceivedCoin{
+											Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
+											PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+											Value:     temp.CoinDetails.GetValue(),
+										},
+									}
+									if temp.CoinDetailsEncrypted != nil {
+										info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+									}
+									item.ReceivedAmounts[common.PRVCoinID] = info
+								}
+							}
+						}
+					case common.TxCustomTokenPrivacyType:
+						{
+							privacyTokenTx := txDetail.(*transaction.TxCustomTokenPrivacy)
+							item.Version = privacyTokenTx.Version
+							item.IsPrivacy = privacyTokenTx.IsPrivacy()
+							item.PrivacyCustomTokenIsPrivacy = privacyTokenTx.TxPrivacyTokenData.TxNormal.IsPrivacy()
+							item.Fee = privacyTokenTx.Fee
+							item.PrivacyCustomTokenFee = privacyTokenTx.TxPrivacyTokenData.TxNormal.Fee
+							item.PrivacyCustomTokenID = privacyTokenTx.TxPrivacyTokenData.PropertyID.String()
+							item.PrivacyCustomTokenName = privacyTokenTx.TxPrivacyTokenData.PropertyName
+							item.PrivacyCustomTokenSymbol = privacyTokenTx.TxPrivacyTokenData.PropertySymbol
+
+							// prv proof
+							proof := privacyTokenTx.GetProof()
+							if proof != nil {
+								outputs := proof.GetOutputCoins()
+								if indexOutputTxNornal[txHash] != nil {
+									for _, indexNormal := range indexOutputTxNornal[txHash] {
+										output := outputs[indexNormal]
+										temp := &privacy.OutputCoin{
+											CoinDetails:          output.CoinDetails,
+											CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+										}
+										if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+											// try to decrypt to get more data
+											err := temp.Decrypt(keySet.ReadonlyKey)
+											if err != nil {
+												Logger.log.Error(err)
+												continue
+											}
+										}
+										info := jsonresult.ReceivedInfo{
+											CoinDetails: jsonresult.ReceivedCoin{
+												Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
+												PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+												Value:     temp.CoinDetails.GetValue(),
+											},
+										}
+										if temp.CoinDetailsEncrypted != nil {
+											info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+										}
+										item.ReceivedAmounts[common.PRVCoinID] = info
+									}
+								}
+
+
+							}
+
+							// token proof
+							proof = privacyTokenTx.TxPrivacyTokenData.TxNormal.GetProof()
+							if proof != nil {
+								outputs := proof.GetOutputCoins()
+								if indexOutputTxPToken[txHash] != nil {
+									for _, indexPToken := range indexOutputTxPToken[txHash] {
+										output := outputs[indexPToken]
+
+										temp := &privacy.OutputCoin{
+											CoinDetails:          output.CoinDetails,
+											CoinDetailsEncrypted: output.CoinDetailsEncrypted,
+										}
+										if temp.CoinDetailsEncrypted != nil && !temp.CoinDetailsEncrypted.IsNil() {
+											// try to decrypt to get more data
+											err := temp.Decrypt(keySet.ReadonlyKey)
+											if err != nil {
+												Logger.log.Error(err)
+												continue
+											}
+										}
+										info := jsonresult.ReceivedInfo{
+											CoinDetails: jsonresult.ReceivedCoin{
+												Info:      base58.Base58Check{}.Encode(temp.CoinDetails.GetInfo(), common.ZeroByte),
+												PublicKey: base58.Base58Check{}.Encode(temp.CoinDetails.GetPublicKey().ToBytesS(), common.ZeroByte),
+												Value:     temp.CoinDetails.GetValue(),
+											},
+										}
+										if temp.CoinDetailsEncrypted != nil {
+											info.CoinDetailsEncrypted = base58.Base58Check{}.Encode(temp.CoinDetailsEncrypted.Bytes(), common.ZeroByte)
+										}
+										item.ReceivedAmounts[privacyTokenTx.TxPrivacyTokenData.PropertyID] = info
+									}
+								}
+							}
+						}
+					}
+				}
+				result.ReceivedTransactions = append(result.ReceivedTransactions, item)
+				sort.Slice(result.ReceivedTransactions, func(i, j int) bool {
+					return result.ReceivedTransactions[i].LockTime > result.ReceivedTransactions[j].LockTime
+				})
+			}
+
 		}
 	}
 	return &result, nil

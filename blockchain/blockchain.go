@@ -602,6 +602,10 @@ func (blockchain *BlockChain) StoreSNDerivatorsFromTxViewPoint(view TxViewPoint)
 func (blockchain *BlockChain) StoreTxByPublicKey(view *TxViewPoint) error {
 	for data := range view.txByPubKey {
 		dataArr := strings.Split(data, "_")
+		if len(dataArr) < 3 {
+			return errors.New("Can not store tx by public key")
+		}
+
 		pubKey, _, err := base58.Base58Check{}.Decode(dataArr[0])
 		if err != nil {
 			return err
@@ -615,11 +619,46 @@ func (blockchain *BlockChain) StoreTxByPublicKey(view *TxViewPoint) error {
 		if err != nil {
 			return err
 		}
-		shardID, _ := strconv.Atoi(dataArr[2])
-
-		err = blockchain.config.DataBase.StoreTxByPublicKey(pubKey, txID, byte(shardID))
+		shardIDSender, err := strconv.Atoi(dataArr[2])
 		if err != nil {
 			return err
+		}
+
+		if len(dataArr) >= 6 {
+			// store tx with one time address
+			shardIDReceiver, err := strconv.Atoi(dataArr[3])
+			if err != nil {
+				return err
+			}
+			indexOutputInTx, err := strconv.Atoi(dataArr[4])
+			if err != nil {
+				return err
+			}
+			ephemeralPubKey, _, err := base58.Base58Check{}.Decode(dataArr[5])
+			if err != nil {
+				return err
+			}
+
+			isPtokenOutput := false
+
+			if len(dataArr) >= 7 {
+				pTokenTag := dataArr[6]
+				if pTokenTag == lvdb.OutputPtokenTag {
+					isPtokenOutput = true
+				}
+			}
+
+			err = blockchain.config.DataBase.StoreTxByPubKeyV2(view.blockHeight, byte(shardIDReceiver), byte(shardIDSender), pubKey, txID, byte(indexOutputInTx), ephemeralPubKey, isPtokenOutput)
+			if err != nil {
+				return err
+			}
+
+		} else{
+			// store tx with fixed public key
+			err = blockchain.config.DataBase.StoreTxByPublicKey(pubKey, txID, byte(shardIDSender))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -1155,14 +1194,70 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 
 // GetTransactionHashByReceiver - return list tx id which receiver get from any sender
 // this feature only apply on full node, because full node get all data from all shard
-func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet) (map[byte][]common.Hash, error) {
-	result := make(map[byte][]common.Hash)
+func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet, fromBlockHeightParam int64, toBlockHeightParam int64) (map[byte][]common.Hash, map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
+	txHashListFromFixedPK := make(map[byte][]common.Hash)
+	txHashListFromPKOTA := make(map[byte][]common.Hash)
+	indexOutputTxNormal := make(map[common.Hash][]byte)
+	indexOutputTxPToken := make(map[common.Hash][]byte)
 	var err error
-	result, err = blockchain.config.DataBase.GetTxByPublicKey(keySet.PaymentAddress.Pk)
-	if err != nil {
-		return nil, NewBlockChainError(UnExpectedError, err)
+
+	// return all txs with fixed public key and one time address
+	if keySet.ReadonlyKey.Rk != nil && len(keySet.ReadonlyKey.Rk) == privacy.Ed25519KeySize {
+		fromBlockHeight := uint64(0)
+		if fromBlockHeightParam < 1 {
+			fromBlockHeight = 1
+		} else {
+			fromBlockHeight = uint64(fromBlockHeightParam)
+		}
+
+		toBlockHeight := uint64(0)
+		if toBlockHeightParam < 1 {
+			shardID := common.GetShardIDFromLastByte(keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk) - 1])
+			bestStateShard, err := blockchain.BestState.GetClonedAShardBestState(shardID)
+			if err != nil {
+				return nil, nil, nil, nil, err
+			}
+
+			toBlockHeight = bestStateShard.GetShardHeight()
+		} else {
+			toBlockHeight = uint64(toBlockHeightParam)
+		}
+
+
+		txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, err = blockchain.config.DataBase.GetTxByViewKeyV2InBlocks(keySet.ReadonlyKey, fromBlockHeight, toBlockHeight)
+			if err != nil {
+			return nil, nil, nil, nil, NewBlockChainError(UnExpectedError, err)
+		}
+
+		//for key, value := range txHashListFromFixedPK {
+		//	if result[key] == nil {
+		//		result[key] = make([]common.Hash, 0)
+		//	}
+		//
+		//	result[key] = append(result[key], value...)
+		//}
+		//
+		//for key, value := range txHashListFromPKOTA {
+		//	if result[key] == nil {
+		//		result[key] = make([]common.Hash, 0)
+		//	}
+		//
+		//	result[key] = append(result[key], value...)
+		//}
+
+		return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, nil
 	}
-	return result, nil
+
+	// return only txs with fixed public key
+	if keySet.PaymentAddress.Pk != nil && len(keySet.PaymentAddress.Pk) == privacy.Ed25519KeySize {
+		txHashListFromFixedPK, err = blockchain.config.DataBase.GetTxByPublicKey(keySet.PaymentAddress.Pk)
+		if err != nil {
+			return nil, nil, nil, nil, NewBlockChainError(UnExpectedError, err)
+		}
+		return txHashListFromFixedPK, nil, nil, nil, nil
+	}
+
+	return nil, nil, nil, nil, nil
 }
 
 // Check Custom token ID is existed
@@ -2265,7 +2360,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint
 				}
 
 				// clear cached data
-				if blockchain.config.MemCache != nil {
+				if blockchain.config.MemCache != nil && false{
 					cachedKey := memcache.GetListOutputcoinCachedKey(publicKeyBytes, view.tokenID, publicKeyShardID)
 					if ok, e := blockchain.config.MemCache.Has(cachedKey); ok && e == nil {
 						er := blockchain.config.MemCache.Delete(cachedKey)
@@ -2323,7 +2418,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	}
 
 
-	if blockchain.config.MemCache != nil {
+	if blockchain.config.MemCache != nil && false {
 		// get from cache
 		cachedKey := memcache.GetListOutputcoinCachedKey(keyset.PaymentAddress.Pk[:], tokenID, shardID)
 		cachedData, _ := blockchain.config.MemCache.Get(cachedKey)
@@ -2346,7 +2441,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 
 	if len(outCointsInBytes) == 0 {
 		// get all output coins
-		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByViewKeyV2InBlocks(*tokenID,  shardID,  toBlockHeight, fromBlockHeight, keyset.ReadonlyKey)
+		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByViewKeyV2InBlocks(*tokenID,  shardID,  fromBlockHeight, toBlockHeight, keyset.ReadonlyKey)
 		if err != nil {
 			return nil, err
 		}
