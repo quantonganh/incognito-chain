@@ -152,7 +152,7 @@ out:
 					case *wire.MessageTx, *wire.MessageTxToken, *wire.MessageTxPrivacyToken:
 						{
 							beaconHeight := int64(-1)
-							beaconBestState, err := netSync.config.BlockChain.FinalView.GetClonedBeaconFinalView()
+							beaconBestState, err := netSync.config.BlockChain.GetClonedBeaconFinalView()
 							if err == nil {
 								beaconHeight = int64(beaconBestState.BeaconHeight)
 							} else {

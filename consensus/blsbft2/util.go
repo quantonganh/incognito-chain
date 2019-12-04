@@ -21,10 +21,6 @@ func (e *BLSBFT) waitForNextTimeslot() bool {
 	}
 }
 
-// func (e *BLSBFT) setState(state string) {
-// 	e.RoundData.State = state
-// }
-
 func (e *BLSBFT) getCurrentRound() int {
 	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
 	if round < 0 {

@@ -29,8 +29,8 @@ import (
 )
 
 type BlockChain struct {
-	Chains    map[string]ChainInterface
-	FinalView *FinalView
+	Chains map[string]ChainInterface
+	// FinalView *FinalView
 	config    Config
 	chainLock sync.Mutex
 
@@ -41,10 +41,10 @@ type BlockChain struct {
 	IsTest bool
 }
 
-type FinalView struct {
-	Beacon *BeaconView
-	Shard  map[byte]*ShardView
-}
+// type FinalView struct {
+// 	Beacon *BeaconView
+// 	Shard  map[byte]*ShardView
+// }
 
 // config is a descriptor which specifies the blockchain instance configuration.
 type Config struct {
@@ -106,17 +106,17 @@ func NewBlockChain(config *Config, isTest bool) *BlockChain {
 	bc.config.IsBlockGenStarted = false
 	bc.IsTest = isTest
 	bc.cQuitSync = make(chan struct{})
-	bc.FinalView = &FinalView{
-		Beacon: &BeaconView{},
-		Shard:  make(map[byte]*ShardView),
-	}
-	for i := 0; i < 255; i++ {
-		shardID := byte(i)
-		bc.FinalView.Shard[shardID] = &ShardView{}
-	}
-	bc.FinalView.Beacon.Params = make(map[string]string)
-	bc.FinalView.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
-	bc.FinalView.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
+	// bc.FinalView = &FinalView{
+	// 	Beacon: &BeaconView{},
+	// 	Shard:  make(map[byte]*ShardView),
+	// }
+	// for i := 0; i < 255; i++ {
+	// 	shardID := byte(i)
+	// 	bc.FinalView.Shard[shardID] = &ShardView{}
+	// }
+	// bc.FinalView.Beacon.Params = make(map[string]string)
+	// bc.FinalView.Beacon.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
+	// bc.FinalView.Beacon.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	bc.Synker = Synker{
 		blockchain: bc,
 		cQuit:      bc.cQuitSync,
@@ -347,9 +347,10 @@ func (blockchain *BlockChain) initBeaconState() error {
 	return nil
 }
 
-func (view FinalView) GetClonedBeaconFinalView() (*BeaconView, error) {
+func (bc BlockChain) GetClonedBeaconFinalView() (*BeaconView, error) {
 	result := NewBeaconView()
-	err := result.cloneBeaconViewFrom(view.Beacon)
+	view := bc.Chains[common.BeaconChainKey].GetFinalView()
+	err := result.cloneBeaconViewFrom(view)
 	if err != nil {
 		return nil, err
 	}
@@ -357,29 +358,29 @@ func (view FinalView) GetClonedBeaconFinalView() (*BeaconView, error) {
 }
 
 // GetReadOnlyShard - return a copy of Shard of FinalView
-func (view FinalView) GetClonedAllShardFinalView() map[byte]*ShardView {
+func (bc BlockChain) GetClonedAllShardFinalView() map[byte]*ShardView {
 	result := make(map[byte]*ShardView)
-	for k, v := range view.Shard {
-		v.lock.RLock()
-		result[k] = &ShardView{}
-		err := result[k].cloneShardViewFrom(v)
+	for k, v := range bc.Chains {
+		if k == common.BeaconChainKey {
+			continue
+		}
+		shardID := byte(v.GetShardID())
+		result[shardID] = &ShardView{}
+		err := result[shardID].cloneShardViewFrom(v.GetFinalView())
 		if err != nil {
 			Logger.log.Error(err)
 		}
-		v.lock.RUnlock()
 	}
 	return result
 }
 
 // GetReadOnlyShard - return a copy of Shard of FinalView
-func (view *FinalView) GetClonedAShardFinalView(shardID byte) (*ShardView, error) {
+func (bc BlockChain) GetClonedAShardFinalView(shardID byte) (*ShardView, error) {
 	shardFinalView := NewShardView()
-	if target, ok := view.Shard[shardID]; !ok {
+	if target, ok := bc.Chains[common.GetShardChainKey(shardID)]; !ok {
 		return shardFinalView, fmt.Errorf("Failed to get Shard FinalView of ShardID %+v", shardID)
 	} else {
-		target.lock.RLock()
-		defer target.lock.RUnlock()
-		if err := shardFinalView.cloneShardViewFrom(target); err != nil {
+		if err := shardFinalView.cloneShardViewFrom(target.GetFinalView()); err != nil {
 			return shardFinalView, fmt.Errorf("Failed to clone Shard FinalView of ShardID %+v", shardID)
 		}
 	}
@@ -488,14 +489,16 @@ func (blockchain *BlockChain) GetShardBlockByHash(hash common.Hash) (*ShardBlock
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (blockchain *BlockChain) StoreBeaconBestState(bd *[]database.BatchData) error {
-	return blockchain.config.DataBase.StoreBeaconBestState(blockchain.FinalView.Beacon, bd)
+	// return blockchain.config.DataBase.StoreBeaconBestState(blockchain.FinalView.Beacon, bd)
+	return nil
 }
 
 /*
 Store best state of block(best block, num of tx, ...) into Database
 */
 func (blockchain *BlockChain) StoreShardBestState(shardID byte, bd *[]database.BatchData) error {
-	return blockchain.config.DataBase.StoreShardBestState(blockchain.FinalView.Shard[shardID], shardID, bd)
+	// return blockchain.config.DataBase.StoreShardBestState(blockchain.FinalView.Shard[shardID], shardID, bd)
+	return nil
 }
 
 /*
@@ -1040,8 +1043,8 @@ in case payment-address: return all outputcoin tx with no amount value
 */
 func (blockchain *BlockChain) GetListOutputCoinsByKeyset(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash) ([]*privacy.OutputCoin, error) {
 	// lock chain
-	blockchain.FinalView.Shard[shardID].lock.Lock()
-	defer blockchain.FinalView.Shard[shardID].lock.Unlock()
+	// blockchain.FinalView.Shard[shardID].lock.Lock()
+	// defer blockchain.FinalView.Shard[shardID].lock.Unlock()
 
 	var outCointsInBytes [][]byte
 	var err error
@@ -1274,7 +1277,8 @@ func (blockchain *BlockChain) GetListTokenHolders(tokenID *common.Hash) (map[str
 }
 
 func (blockchain *BlockChain) GetCurrentBeaconBlockHeight(shardID byte) uint64 {
-	return blockchain.FinalView.Beacon.BestBlock.Header.Height
+	// return blockchain.FinalView.Beacon.BestBlock.Header.Height
+	return 0
 }
 
 func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privacy.InputCoin, randNum int, shardID byte, tokenID *common.Hash) (commitmentIndexs []uint64, myCommitmentIndexs []uint64, commitments [][]byte) {
@@ -1311,19 +1315,19 @@ func (blockchain BlockChain) RandomCommitmentsProcess(usableInputCoins []*privac
 //BuildInstRewardForBeacons create reward instruction for beacons
 func (blockchain *BlockChain) BuildInstRewardForBeacons(epoch uint64, totalReward map[common.Hash]uint64) ([][]string, error) {
 	resInst := [][]string{}
-	baseRewards := map[common.Hash]uint64{}
-	for key, value := range totalReward {
-		baseRewards[key] = value / uint64(len(blockchain.FinalView.Beacon.BeaconCommittee))
-	}
-	for _, beaconpublickey := range blockchain.FinalView.Beacon.BeaconCommittee {
-		// indicate reward pubkey
-		singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, beaconpublickey.GetNormalKey())
-		if err != nil {
-			Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
-			return nil, err
-		}
-		resInst = append(resInst, singleInst)
-	}
+	// baseRewards := map[common.Hash]uint64{}
+	// for key, value := range totalReward {
+	// 	baseRewards[key] = value / uint64(len(blockchain.FinalView.Beacon.BeaconCommittee))
+	// }
+	// for _, beaconpublickey := range blockchain.FinalView.Beacon.BeaconCommittee {
+	// 	// indicate reward pubkey
+	// 	singleInst, err := metadata.BuildInstForBeaconReward(baseRewards, beaconpublickey.GetNormalKey())
+	// 	if err != nil {
+	// 		Logger.log.Errorf("BuildInstForBeaconReward error %+v\n Totalreward: %+v, epoch: %+v, reward: %+v\n", err, totalReward, epoch, baseRewards)
+	// 		return nil, err
+	// 	}
+	// 	resInst = append(resInst, singleInst)
+	// }
 	return resInst, nil
 }
 
@@ -1679,7 +1683,8 @@ func (blockchain *BlockChain) DeleteIncomingCrossShard(block *ShardBlock) error 
 }
 
 func (blockchain *BlockChain) GetActiveShardNumber() int {
-	return blockchain.FinalView.Beacon.ActiveShards
+	// return blockchain.FinalView.Beacon.ActiveShards
+	return 0
 }
 
 // func (blockchain *BlockChain) BackupCurrentShardState(block *ShardBlock, beaconblks []*BeaconBlock) error {

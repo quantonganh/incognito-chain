@@ -2,6 +2,7 @@ package jsonresult
 
 import (
 	"github.com/incognitochain/incognito-chain/blockchain"
+	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/mempool"
 )
 
@@ -23,16 +24,15 @@ func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockCh
 	result.PoolSize = txMemPool.Count()
 	result.Chain = param.Name
 	result.IsEnableMining = isEnableMining
-	result.BeaconHeight = blChain.FinalView.Beacon.BeaconHeight
-
+	result.BeaconHeight = blChain.Chains[common.BeaconChainKey].GetBestView().CurrentHeight()
 	// role, shardID := httpServer.config.BlockChain.FinalView.Beacon.GetPubkeyRole(httpServer.config.MiningPubKeyB58, 0)
 	layer, role, shardID := consensus.GetUserRole()
 	result.Role = role
 	result.Layer = layer
 	result.ShardID = shardID
 	if shardID >= 0 {
-		result.ShardHeight = blChain.FinalView.Shard[byte(shardID)].ShardHeight
-		result.CurrentShardBlockTx = len(blChain.FinalView.Shard[byte(shardID)].BestBlock.Body.Transactions)
+		result.ShardHeight = blChain.Chains[common.GetShardChainKey(byte(shardID))].GetBestView().CurrentHeight()
+		result.CurrentShardBlockTx = len(blChain.Chains[common.GetShardChainKey(byte(shardID))].GetBestView().(*blockchain.ShardView).GetTxsInBestBlock())
 	}
 
 	return result

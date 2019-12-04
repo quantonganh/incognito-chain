@@ -70,6 +70,7 @@ type BeaconView struct {
 	lock               sync.RWMutex
 	BlockInterval      time.Duration
 	BlockMaxCreateTime time.Duration
+	GenesisTime        int64 //use for consensus to get timeslot
 }
 
 func NewBeaconView() *BeaconView {
@@ -532,8 +533,8 @@ func (view *BeaconView) GetBeaconPendingValidator() []incognitokey.CommitteePubl
 	defer view.lock.RUnlock()
 	return view.BeaconPendingValidator
 }
-func (view *BeaconView) cloneBeaconViewFrom(target *BeaconView) error {
-	tempMarshal, err := target.MarshalJSON()
+func (view *BeaconView) cloneBeaconViewFrom(target ChainViewInterface) error {
+	tempMarshal, err := json.Marshal(target)
 	if err != nil {
 		return NewBlockChainError(MashallJsonBeaconBestStateError, fmt.Errorf("Shard Best State %+v get %+v", view.BeaconHeight, err))
 	}
@@ -548,7 +549,7 @@ func (view *BeaconView) cloneBeaconViewFrom(target *BeaconView) error {
 	return nil
 }
 
-func (view *BeaconView) CloneBeaconViewFrom(target *BeaconView) error {
+func (view *BeaconView) CloneBeaconViewFrom(target ChainViewInterface) error {
 	return view.cloneBeaconViewFrom(target)
 }
 func (view *BeaconView) updateLastCrossShardState(shardStates map[byte][]ShardState) {
@@ -652,7 +653,7 @@ func (view *BeaconView) GetPubKeyCommitteeIndex(string) int {
 func (view *BeaconView) GetLastProposerIndex() int {
 	return 0
 }
-func (view *BeaconView) CreateNewBlock(round int) (common.BlockInterface, error) {
+func (view *BeaconView) CreateNewBlock(timeslot uint64) (common.BlockInterface, error) {
 	return nil, nil
 }
 func (view *BeaconView) InsertBlk(block common.BlockInterface) error {
@@ -675,4 +676,30 @@ func (view *BeaconView) StoreView() error {
 
 func (view *BeaconView) GetConsensusConfig() string {
 	return view.ConsensusConfig
+}
+
+func (view *BeaconView) CurrentHeight() uint64 {
+	return 0
+}
+
+func (view *BeaconView) GetBlkMaxCreateTime() time.Duration {
+	return 0
+}
+
+func (view *BeaconView) GetBlkMinInterval() time.Duration {
+	return 0
+}
+
+func (view *BeaconView) GetLastBlockTimeStamp() int64 {
+	return 0
+}
+func (view *BeaconView) GetCommittee() []string {
+	return nil
+}
+func (view *BeaconView) GetLastProposerIdx() int { return 0 }
+
+func (view *BeaconView) GetTimeslot() uint64 { return 0 }
+
+func (view *BeaconView) GetEpoch() uint64{
+	return 0
 }

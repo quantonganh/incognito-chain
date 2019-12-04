@@ -12,22 +12,20 @@ import (
 )
 
 func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
+	// blockViewHash := block.GetPreviousViewHash()
 
 	return true
 }
 
-func (e BLSBFT) getProposeBlock() (common.BlockInterface, error) {
+func (e BLSBFT) getProposeBlock(view blockchain.ChainViewInterface, timeslot uint64) (common.BlockInterface, error) {
 	if e.bestProposeBlock == "" {
-		block, err := e.Chain.GetFinalView().CreateNewBlock(e.currentTimeslot)
+		block, err := view.CreateNewBlock(timeslot)
 		if err != nil {
 			return nil, err
 		}
 		return block, nil
 	}
-	_ = e.Chain.GetFinalView().GetTimeslot()
-
 	return nil, nil
-
 }
 
 func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
@@ -64,7 +62,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 			fmt.Println(err)
 			return
 		}
-		e.processVoteMsg(&msgVote)
+		go e.processVoteMsg(&msgVote)
 	default:
 		e.logger.Critical("???")
 		return
@@ -73,11 +71,6 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 
 func (e *BLSBFT) isInTimeslot() bool {
 	return false
-}
-
-func (e *BLSBFT) enterNewTimeslot() error {
-
-	return nil
 }
 
 func (blockCss *viewConsensusInstance) addVote(vote *BFTVote) error {
@@ -116,6 +109,7 @@ func (blockCss *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
 	if err != nil {
 		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
+
 	blockCss.Votes[pubKey.GetMiningKeyBase58(consensusName)] = vote
 	blockCss.Engine.logger.Info("sending vote...")
 	go blockCss.Engine.Node.PushMessageToChain(msg, blockCss.Engine.Chain)

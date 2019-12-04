@@ -194,7 +194,7 @@ func (Chain) GetFinalViewLastProposerIndex() int {
 	return 0
 }
 
-func (Chain) GetFinalView() blockchain.ChainViewInterface {
+func (Chain) GetBestView() blockchain.ChainViewInterface {
 	return nil
 }
 func (Chain) GetAllViews() map[string]blockchain.ChainViewInterface {

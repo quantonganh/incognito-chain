@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -13,8 +12,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/pkg/errors"
-
-	"github.com/incognitochain/incognito-chain/pubsub"
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
@@ -27,45 +24,45 @@ import (
 	@Notice: this block doesn't have full information (incomplete block)
 */
 func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, shardID byte) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
-	Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
-	// fetch beacon blocks
+	// blockchain.chainLock.Lock()
+	// defer blockchain.chainLock.Unlock()
+	// Logger.log.Infof("SHARD %+v | Verify ShardBlock for signing process %d, with hash %+v", shardID, shardBlock.Header.Height, *shardBlock.Hash())
+	// // fetch beacon blocks
 
-	previousBeaconHeight := blockchain.FinalView.Shard[shardID].BeaconHeight
-	if shardBlock.Header.BeaconHeight > blockchain.FinalView.Beacon.BeaconHeight {
-		return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.FinalView.Beacon.BeaconHeight))
-	}
+	// previousBeaconHeight := blockchain.FinalView.Shard[shardID].BeaconHeight
+	// if shardBlock.Header.BeaconHeight > blockchain.FinalView.Beacon.BeaconHeight {
+	// 	return errors.New(fmt.Sprintf("Beacon %d not ready, latest is %d", shardBlock.Header.BeaconHeight, blockchain.FinalView.Beacon.BeaconHeight))
+	// }
 
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
-	if err != nil {
-		return err
-	}
-	//========Verify shardBlock only
-	if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, true); err != nil {
-		return err
-	}
-	//========Verify shardBlock with previous best state
-	// Get FinalView of previous shardBlock == previous best state
-	// Clone best state value into new variable
-	shardView := NewShardView()
-	if err := shardView.cloneShardViewFrom(blockchain.FinalView.Shard[shardID]); err != nil {
-		return err
-	}
-	// Verify shardBlock with previous best state
-	// DO NOT verify agg signature in this function
-	if err := shardView.verifyFinalViewWithShardBlock(shardBlock, false, shardID); err != nil {
-		return err
-	}
-	//========updateShardView best state with new shardBlock
-	if err := shardView.updateShardView(blockchain, shardBlock, beaconBlocks); err != nil {
-		return err
-	}
-	//========Post verififcation: verify new beaconstate with corresponding shardBlock
-	if err := shardView.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
-		return err
-	}
-	Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing", shardID, shardBlock.Header.Height, *shardBlock.Hash())
+	// beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
+	// if err != nil {
+	// 	return err
+	// }
+	// //========Verify shardBlock only
+	// if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, true); err != nil {
+	// 	return err
+	// }
+	// //========Verify shardBlock with previous best state
+	// // Get FinalView of previous shardBlock == previous best state
+	// // Clone best state value into new variable
+	// shardView := NewShardView()
+	// if err := shardView.cloneShardViewFrom(blockchain.FinalView.Shard[shardID]); err != nil {
+	// 	return err
+	// }
+	// // Verify shardBlock with previous best state
+	// // DO NOT verify agg signature in this function
+	// if err := shardView.verifyFinalViewWithShardBlock(shardBlock, false, shardID); err != nil {
+	// 	return err
+	// }
+	// //========updateShardView best state with new shardBlock
+	// if err := shardView.updateShardView(blockchain, shardBlock, beaconBlocks); err != nil {
+	// 	return err
+	// }
+	// //========Post verififcation: verify new beaconstate with corresponding shardBlock
+	// if err := shardView.verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+	// 	return err
+	// }
+	// Logger.log.Infof("SHARD %+v | Block %d, with hash %+v is VALID for 🖋 signing", shardID, shardBlock.Header.Height, *shardBlock.Hash())
 	return nil
 }
 
@@ -74,165 +71,165 @@ func (blockchain *BlockChain) VerifyPreSignShardBlock(shardBlock *ShardBlock, sh
 	@Notice: this block must have full information (complete block)
 */
 func (blockchain *BlockChain) InsertShardBlock(shardBlock *ShardBlock, isValidated bool) error {
-	blockchain.chainLock.Lock()
-	defer blockchain.chainLock.Unlock()
-	shardID := shardBlock.Header.ShardID
-	blockHash := shardBlock.Header.Hash()
+	// blockchain.chainLock.Lock()
+	// defer blockchain.chainLock.Unlock()
+	// shardID := shardBlock.Header.ShardID
+	// blockHash := shardBlock.Header.Hash()
 
-	shardLock := &blockchain.FinalView.Shard[shardID].lock
-	shardLock.Lock()
-	defer shardLock.Unlock()
+	// shardLock := &blockchain.FinalView.Shard[shardID].lock
+	// shardLock.Lock()
+	// defer shardLock.Unlock()
 
-	if shardBlock.Header.Height != blockchain.FinalView.Shard[shardID].ShardHeight+1 {
-		return errors.New("Not expected height")
-	}
+	// if shardBlock.Header.Height != blockchain.FinalView.Shard[shardID].ShardHeight+1 {
+	// 	return errors.New("Not expected height")
+	// }
 
-	Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
-	Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
-	// currentShardView := blockchain.FinalView.Shard[shardBlock.Header.ShardID]
+	// Logger.log.Criticalf("SHARD %+v | Begin insert new block height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
+	// Logger.log.Infof("SHARD %+v | Check block existence for insert height %+v with hash %+v", shardID, shardBlock.Header.Height, blockHash)
+	// // currentShardView := blockchain.FinalView.Shard[shardBlock.Header.ShardID]
 
-	// if currentShardView.ShardHeight == shardBlock.Header.Height && currentShardView.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardView.BestBlock.Header.Round < shardBlock.Header.Round {
-	// 	currentShardHeight := currentShardView.ShardHeight
-	// 	currentShardHash := currentShardView.BestBlockHash
-	// 	Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardView.ShardHeight, currentShardView.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
-	// 	if err := blockchain.ValidateBlockWithPrevShardView(shardBlock); err != nil {
-	// 		Logger.log.Error(err)
+	// // if currentShardView.ShardHeight == shardBlock.Header.Height && currentShardView.BestBlock.Header.Timestamp < shardBlock.Header.Timestamp && currentShardView.BestBlock.Header.Round < shardBlock.Header.Round {
+	// // 	currentShardHeight := currentShardView.ShardHeight
+	// // 	currentShardHash := currentShardView.BestBlockHash
+	// // 	Logger.log.Infof("FORK SHARDID %+v, Current Block Height %+v, Block Hash %+v | Try To Insert New Shard Block Height %+v, Hash %+v", shardBlock.Header.ShardID, currentShardView.ShardHeight, currentShardView.BestBlockHash, shardBlock.Header.Height, shardBlock.Header.Hash())
+	// // 	if err := blockchain.ValidateBlockWithPrevShardView(shardBlock); err != nil {
+	// // 		Logger.log.Error(err)
+	// // 		return err
+	// // 	}
+	// // 	if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
+	// // 		panic(err)
+	// // 	}
+	// // 	Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
+	// // }
+
+	// if shardBlock.Header.Height != blockchain.FinalView.Shard[shardID].ShardHeight+1 {
+	// 	return errors.New("Not expected height")
+	// }
+	// // force non-committee member not to validate blk
+	// // if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
+	// // 	userRole := blockchain.FinalView.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
+	// // 	fmt.Println("Shard block received 1", userRole)
+
+	// // 	if userRole != common.PROPOSER_ROLE && userRole != common.VALIDATOR_ROLE && userRole != common.PENDING_ROLE {
+	// // 		isValidated = true
+	// // 	}
+	// // } else {
+	// // 	isValidated = true
+	// // }
+	// isExist, _ := blockchain.config.DataBase.HasBlock(blockHash)
+	// if isExist {
+	// 	return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash))
+	// }
+	// // fetch beacon blocks
+	// previousBeaconHeight := blockchain.FinalView.Shard[shardID].BeaconHeight
+	// beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
+	// if err != nil {
+	// 	return NewBlockChainError(FetchBeaconBlocksError, err)
+	// }
+	// if !isValidated {
+	// 	Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// 	if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, false); err != nil {
 	// 		return err
 	// 	}
-	// 	if err := blockchain.RevertShardState(shardBlock.Header.ShardID); err != nil {
-	// 		panic(err)
-	// 	}
-	// 	Logger.log.Infof("REVERTED SHARDID %+v, Revert Current Block Height %+v, Block Hash %+v", shardBlock.Header.ShardID, currentShardHeight, currentShardHash)
+	// } else {
+	// 	Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// }
+	// // Verify block with previous best state
+	// Logger.log.Infof("SHARD %+v | Verify FinalView With Shard Block, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// if err := blockchain.FinalView.Shard[shardID].verifyFinalViewWithShardBlock(shardBlock, true, shardID); err != nil {
+	// 	return err
+	// }
+	// Logger.log.Infof("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// // Backup beststate
+	// err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
+	// if err != nil {
+	// 	return NewBlockChainError(CleanBackUpError, err)
+	// }
+	// err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
+	// if err != nil {
+	// 	return NewBlockChainError(BackUpFinalViewError, err)
 	// }
 
-	if shardBlock.Header.Height != blockchain.FinalView.Shard[shardID].ShardHeight+1 {
-		return errors.New("Not expected height")
-	}
-	// force non-committee member not to validate blk
-	// if blockchain.config.UserKeySet != nil && (blockchain.config.NodeMode == common.NODEMODE_AUTO || blockchain.config.NodeMode == common.NODEMODE_SHARD) {
-	// 	userRole := blockchain.FinalView.Shard[block.Header.ShardID].GetPubkeyRole(blockchain.config.UserKeySet.GetPublicKeyInBase58CheckEncode(), 0)
-	// 	fmt.Println("Shard block received 1", userRole)
+	// oldCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.FinalView.Shard[shardID].ShardCommittee)
+	// if err != nil {
+	// 	return err
+	// }
 
-	// 	if userRole != common.PROPOSER_ROLE && userRole != common.VALIDATOR_ROLE && userRole != common.PENDING_ROLE {
-	// 		isValidated = true
+	// Logger.log.Infof("SHARD %+v | Update ShardView, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// if err := blockchain.FinalView.Shard[shardID].updateShardView(blockchain, shardBlock, beaconBlocks); err != nil {
+	// 	// errRevert := blockchain.revertShardView(shardID)
+	// 	// if errRevert != nil {
+	// 	// 	return errors.WithStack(errRevert)
+	// 	// }
+	// 	return err
+	// }
+
+	// Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// // update number of blocks produced by producers to shard best state
+	// blockchain.FinalView.Shard[shardID].updateNumOfBlocksByProducers(shardBlock)
+
+	// newCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.FinalView.Shard[shardID].ShardCommittee)
+	// if err != nil {
+	// 	return err
+	// }
+	// if !common.CompareStringArray(oldCommittee, newCommittee) {
+	// 	go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
+	// }
+
+	// //========Post verififcation: verify new beaconstate with corresponding block
+	// if !isValidated {
+	// 	Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// 	if err := blockchain.FinalView.Shard[shardID].verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
+	// 		return err
 	// 	}
 	// } else {
-	// 	isValidated = true
+	// 	Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	// }
-	isExist, _ := blockchain.config.DataBase.HasBlock(blockHash)
-	if isExist {
-		return NewBlockChainError(DuplicateShardBlockError, fmt.Errorf("SHARD %+v, block height %+v wit hash %+v has been stored already", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash))
-	}
-	// fetch beacon blocks
-	previousBeaconHeight := blockchain.FinalView.Shard[shardID].BeaconHeight
-	beaconBlocks, err := FetchBeaconBlockFromHeight(blockchain.config.DataBase, previousBeaconHeight+1, shardBlock.Header.BeaconHeight)
-	if err != nil {
-		return NewBlockChainError(FetchBeaconBlocksError, err)
-	}
-	if !isValidated {
-		Logger.log.Infof("SHARD %+v | Verify Pre Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := blockchain.verifyPreProcessingShardBlock(shardBlock, beaconBlocks, shardID, false); err != nil {
-			return err
-		}
-	} else {
-		Logger.log.Infof("SHARD %+v | SKIP Verify Pre Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	}
-	// Verify block with previous best state
-	Logger.log.Infof("SHARD %+v | Verify FinalView With Shard Block, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	if err := blockchain.FinalView.Shard[shardID].verifyFinalViewWithShardBlock(shardBlock, true, shardID); err != nil {
-		return err
-	}
-	Logger.log.Infof("SHARD %+v | BackupCurrentShardState, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	// Backup beststate
-	err = blockchain.config.DataBase.CleanBackup(false, shardBlock.Header.ShardID)
-	if err != nil {
-		return NewBlockChainError(CleanBackUpError, err)
-	}
-	err = blockchain.BackupCurrentShardState(shardBlock, beaconBlocks)
-	if err != nil {
-		return NewBlockChainError(BackUpFinalViewError, err)
-	}
-
-	oldCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.FinalView.Shard[shardID].ShardCommittee)
-	if err != nil {
-		return err
-	}
-
-	Logger.log.Infof("SHARD %+v | Update ShardView, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	if err := blockchain.FinalView.Shard[shardID].updateShardView(blockchain, shardBlock, beaconBlocks); err != nil {
-		// errRevert := blockchain.revertShardView(shardID)
-		// if errRevert != nil {
-		// 	return errors.WithStack(errRevert)
-		// }
-		return err
-	}
-
-	Logger.log.Infof("SHARD %+v | Update NumOfBlocksByProducers, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	// update number of blocks produced by producers to shard best state
-	blockchain.FinalView.Shard[shardID].updateNumOfBlocksByProducers(shardBlock)
-
-	newCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.FinalView.Shard[shardID].ShardCommittee)
-	if err != nil {
-		return err
-	}
-	if !common.CompareStringArray(oldCommittee, newCommittee) {
-		go blockchain.config.ConsensusEngine.CommitteeChange(common.GetShardChainKey(shardID))
-	}
-
-	//========Post verififcation: verify new beaconstate with corresponding block
-	if !isValidated {
-		Logger.log.Infof("SHARD %+v | Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-		if err := blockchain.FinalView.Shard[shardID].verifyPostProcessingShardBlock(shardBlock, shardID); err != nil {
-			return err
-		}
-	} else {
-		Logger.log.Infof("SHARD %+v | SKIP Verify Post Processing, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	}
-	Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
-	Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
-	if err != nil {
-		return err
-	}
-	Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
-	//========Store new  Shard block and new shard bestState
-	err = blockchain.processStoreShardBlockAndUpdateDatabase(shardBlock)
-	if err != nil {
-		revertErr := blockchain.revertShardState(shardID)
-		if revertErr != nil {
-			return errors.WithStack(revertErr)
-		}
-		return err
-	}
-	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
-	go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.FinalView.Shard[shardID]))
-	//shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
-	//go // metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-	//	// metrics.Measurement:      // metrics.NumOfBlockInsertToChain,
-	//	// metrics.MeasurementValue: float64(1),
-	//	// metrics.Tag:              // metrics.ShardIDTag,
-	//	// metrics.TagValue:         // metrics.Shard + shardIDForMetric,
-	//	// metrics.Time:             shardBlock.Header.Timestamp,
-	//})
-	//if shardBlock.Header.Height > 2 {
-	//	go // metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
-	//		// metrics.Measurement:      // metrics.NumOfRoundPerBlock,
-	//		// metrics.MeasurementValue: float64(shardBlock.Header.Round),
-	//		// metrics.Tag:              // metrics.ShardIDTag,
-	//		// metrics.TagValue:         // metrics.Shard + shardIDForMetric,
-	//		// metrics.Time:             shardBlock.Header.Timestamp,
-	//	})
-	//}
-	//if shardBlock.Header.Height != 1 {
-	//	go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
-	//		// metrics.Measurement:      // metrics.TxInOneBlock,
-	//		// metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
-	//		// metrics.Tag:              // metrics.BlockHeightTag,
-	//		// metrics.TagValue:         fmt.Sprintf("%d-%d", shardBlock.Header.ShardID, shardBlock.Header.Height),
-	//	})
-	//}
-	Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// Logger.log.Infof("SHARD %+v | Remove Data After Processed, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// blockchain.removeOldDataAfterProcessingShardBlock(shardBlock, shardID)
+	// Logger.log.Infof("SHARD %+v | Update Beacon Instruction, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// err = blockchain.updateDatabaseFromBeaconInstructions(beaconBlocks, shardID)
+	// if err != nil {
+	// 	return err
+	// }
+	// Logger.log.Infof("SHARD %+v | Store New Shard Block And Update Data, block height %+v with hash %+v \n", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
+	// //========Store new  Shard block and new shard bestState
+	// err = blockchain.processStoreShardBlockAndUpdateDatabase(shardBlock)
+	// if err != nil {
+	// 	revertErr := blockchain.revertShardState(shardID)
+	// 	if revertErr != nil {
+	// 		return errors.WithStack(revertErr)
+	// 	}
+	// 	return err
+	// }
+	// go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewShardblockTopic, shardBlock))
+	// go blockchain.config.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.ShardBeststateTopic, blockchain.FinalView.Shard[shardID]))
+	// //shardIDForMetric := strconv.Itoa(int(shardBlock.Header.ShardID))
+	// //go // metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+	// //	// metrics.Measurement:      // metrics.NumOfBlockInsertToChain,
+	// //	// metrics.MeasurementValue: float64(1),
+	// //	// metrics.Tag:              // metrics.ShardIDTag,
+	// //	// metrics.TagValue:         // metrics.Shard + shardIDForMetric,
+	// //	// metrics.Time:             shardBlock.Header.Timestamp,
+	// //})
+	// //if shardBlock.Header.Height > 2 {
+	// //	go // metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
+	// //		// metrics.Measurement:      // metrics.NumOfRoundPerBlock,
+	// //		// metrics.MeasurementValue: float64(shardBlock.Header.Round),
+	// //		// metrics.Tag:              // metrics.ShardIDTag,
+	// //		// metrics.TagValue:         // metrics.Shard + shardIDForMetric,
+	// //		// metrics.Time:             shardBlock.Header.Timestamp,
+	// //	})
+	// //}
+	// //if shardBlock.Header.Height != 1 {
+	// //	go // metrics.AnalyzeTimeSeriesMetricData(map[string]interface{}{
+	// //		// metrics.Measurement:      // metrics.TxInOneBlock,
+	// //		// metrics.MeasurementValue: float64(len(shardBlock.Body.Transactions)),
+	// //		// metrics.Tag:              // metrics.BlockHeightTag,
+	// //		// metrics.TagValue:         fmt.Sprintf("%d-%d", shardBlock.Header.ShardID, shardBlock.Header.Height),
+	// //	})
+	// //}
+	// Logger.log.Infof("SHARD %+v | 🔗 Finish Insert new block %d, with hash %+v", shardBlock.Header.ShardID, shardBlock.Header.Height, blockHash)
 	return nil
 }
 
@@ -302,9 +299,9 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 		return NewBlockChainError(WrongVersionError, fmt.Errorf("Expect shardBlock version %+v but get %+v", SHARD_BLOCK_VERSION, shardBlock.Header.Version))
 	}
 
-	if shardBlock.Header.Height > blockchain.FinalView.Shard[shardID].ShardHeight+1 {
-		return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect shardBlock height %+v but get %+v", blockchain.FinalView.Shard[shardID].ShardHeight+1, shardBlock.Header.Height))
-	}
+	// if shardBlock.Header.Height > blockchain.FinalView.Shard[shardID].ShardHeight+1 {
+	// 	return NewBlockChainError(WrongBlockHeightError, fmt.Errorf("Expect shardBlock height %+v but get %+v", blockchain.FinalView.Shard[shardID].ShardHeight+1, shardBlock.Header.Height))
+	// }
 	// Verify parent hash exist or not
 	previousBlockHash := shardBlock.Header.PreviousBlockHash
 	previousShardBlockData, err := blockchain.config.DataBase.FetchBlock(previousBlockHash)
@@ -495,119 +492,119 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlock(shardBlock *ShardBlo
 	- Get Cross Tx Custom Token from cross shard block (shard pool) then verify
 */
 func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock *ShardBlock, beaconBlocks []*BeaconBlock, txInstructions [][]string, shardID byte) error {
-	var err error
-	var isOldBeaconHeight = false
-	// Verify Transaction
-	//get beacon height from shard block
-	beaconHeight := shardBlock.Header.BeaconHeight
-	if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
-		return NewBlockChainError(TransactionFromNewBlockError, err)
-	}
-	// Verify Instruction
-	instructions := [][]string{}
-	shardCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.FinalView.Shard[shardID].ShardCommittee)
-	if err != nil {
-		return err
-	}
-	shardPendingValidator, _ := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
-	if blockchain.FinalView.Shard[shardID].BeaconHeight == shardBlock.Header.BeaconHeight {
-		isOldBeaconHeight = true
-	}
-	instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
-	if err != nil {
-		return NewBlockChainError(GenerateInstructionError, err)
-	}
-	totalInstructions := []string{}
-	for _, value := range txInstructions {
-		totalInstructions = append(totalInstructions, value...)
-	}
-	for _, value := range instructions {
-		totalInstructions = append(totalInstructions, value...)
-	}
-	if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
-		return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but %+v", shardBlock.Header.InstructionsRoot, hash))
-	}
-	// Verify Cross Shard Output Coin and Custom Token Transaction
-	crossTxTokenData := make(map[byte][]CrossTxTokenData)
-	toShard := shardID
-	crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
-	toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
-	for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
-		toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
-		if !ok {
-			heights := []uint64{}
-			for _, crossTransaction := range crossTransactions {
-				heights = append(heights, crossTransaction.BlockHeight)
-			}
-			blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
-			return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Cross Shard Block From Shard %+v Not Found in Pool", fromShard))
-		}
-		sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
-			return toShardCrossShardBlocks[i].Header.Height < toShardCrossShardBlocks[j].Header.Height
-		})
-		startHeight := blockchain.FinalView.Shard[toShard].BestCrossShard[fromShard]
-		isValids := 0
-		for _, crossTransaction := range crossTransactions {
-			for index, toShardCrossShardBlock := range toShardCrossShardBlocks {
-				//Compare block height and block hash
-				if crossTransaction.BlockHeight == toShardCrossShardBlock.Header.Height {
-					nextHeight, err := blockchain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
-					if err != nil {
-						return NewBlockChainError(NextCrossShardBlockError, err)
-					}
-					if nextHeight != crossTransaction.BlockHeight {
-						return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
-					}
-					startHeight = nextHeight
-					beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlock(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
-					if err != nil {
-						break
-					}
-					temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
-					if err != nil {
-						return NewBlockChainError(FetchShardCommitteeError, err)
-					}
-					shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
-					err = json.Unmarshal(temp, &shardCommittee)
-					if err != nil {
-						return NewBlockChainError(UnmashallJsonShardCommitteesError, err)
-					}
-					err = toShardCrossShardBlock.VerifyCrossShardBlock(blockchain, shardCommittee[toShardCrossShardBlock.Header.ShardID])
-					if err != nil {
-						return NewBlockChainError(VerifyCrossShardBlockError, err)
-					}
-					compareCrossTransaction := CrossTransaction{
-						TokenPrivacyData: toShardCrossShardBlock.CrossTxTokenPrivacyData,
-						OutputCoin:       toShardCrossShardBlock.CrossOutputCoin,
-						BlockHash:        *toShardCrossShardBlock.Hash(),
-						BlockHeight:      toShardCrossShardBlock.Header.Height,
-					}
-					targetHash := crossTransaction.Hash()
-					hash := compareCrossTransaction.Hash()
-					if !hash.IsEqual(&targetHash) {
-						return NewBlockChainError(CrossTransactionHashError, fmt.Errorf("Cross Output Coin From New Block %+v not compatible with cross shard block in pool %+v", targetHash, hash))
-					}
-					txTokenData := CrossTxTokenData{
-						TxTokenData: toShardCrossShardBlock.CrossTxTokenData,
-						BlockHash:   *toShardCrossShardBlock.Hash(),
-						BlockHeight: toShardCrossShardBlock.Header.Height,
-					}
-					crossTxTokenData[toShardCrossShardBlock.Header.ShardID] = append(crossTxTokenData[toShardCrossShardBlock.Header.ShardID], txTokenData)
-					if true {
-						toShardCrossShardBlocks = toShardCrossShardBlocks[index:]
-						isValids++
-						break
-					}
-				}
-			}
-		}
-		if len(crossTransactions) != isValids {
-			return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Can't not verify all cross shard block from shard %+v", fromShard))
-		}
-	}
-	if err := blockchain.verifyCrossShardCustomToken(crossTxTokenData, shardID, shardBlock.Body.Transactions); err != nil {
-		return NewBlockChainError(VerifyCrossShardCustomTokenError, err)
-	}
+	// var err error
+	// var isOldBeaconHeight = false
+	// // Verify Transaction
+	// //get beacon height from shard block
+	// beaconHeight := shardBlock.Header.BeaconHeight
+	// if err := blockchain.verifyTransactionFromNewBlock(shardBlock.Body.Transactions, int64(beaconHeight)); err != nil {
+	// 	return NewBlockChainError(TransactionFromNewBlockError, err)
+	// }
+	// // Verify Instruction
+	// instructions := [][]string{}
+	// shardCommittee, err := incognitokey.CommitteeKeyListToString(blockchain.FinalView.Shard[shardID].ShardCommittee)
+	// if err != nil {
+	// 	return err
+	// }
+	// shardPendingValidator, _ := blockchain.processInstructionFromBeacon(beaconBlocks, shardID)
+	// if blockchain.FinalView.Shard[shardID].BeaconHeight == shardBlock.Header.BeaconHeight {
+	// 	isOldBeaconHeight = true
+	// }
+	// instructions, shardPendingValidator, shardCommittee, err = blockchain.generateInstruction(shardID, shardBlock.Header.BeaconHeight, isOldBeaconHeight, beaconBlocks, shardPendingValidator, shardCommittee)
+	// if err != nil {
+	// 	return NewBlockChainError(GenerateInstructionError, err)
+	// }
+	// totalInstructions := []string{}
+	// for _, value := range txInstructions {
+	// 	totalInstructions = append(totalInstructions, value...)
+	// }
+	// for _, value := range instructions {
+	// 	totalInstructions = append(totalInstructions, value...)
+	// }
+	// if hash, ok := verifyHashFromStringArray(totalInstructions, shardBlock.Header.InstructionsRoot); !ok {
+	// 	return NewBlockChainError(InstructionsHashError, fmt.Errorf("Expect instruction hash to be %+v but %+v", shardBlock.Header.InstructionsRoot, hash))
+	// }
+	// // Verify Cross Shard Output Coin and Custom Token Transaction
+	// crossTxTokenData := make(map[byte][]CrossTxTokenData)
+	// toShard := shardID
+	// crossShardLimit := blockchain.config.CrossShardPool[toShard].GetLatestValidBlockHeight()
+	// toShardAllCrossShardBlock := blockchain.config.CrossShardPool[toShard].GetValidBlock(crossShardLimit)
+	// for fromShard, crossTransactions := range shardBlock.Body.CrossTransactions {
+	// 	toShardCrossShardBlocks, ok := toShardAllCrossShardBlock[fromShard]
+	// 	if !ok {
+	// 		heights := []uint64{}
+	// 		for _, crossTransaction := range crossTransactions {
+	// 			heights = append(heights, crossTransaction.BlockHeight)
+	// 		}
+	// 		blockchain.Synker.SyncBlkCrossShard(false, false, []common.Hash{}, heights, fromShard, shardID, "")
+	// 		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Cross Shard Block From Shard %+v Not Found in Pool", fromShard))
+	// 	}
+	// 	sort.SliceStable(toShardCrossShardBlocks[:], func(i, j int) bool {
+	// 		return toShardCrossShardBlocks[i].Header.Height < toShardCrossShardBlocks[j].Header.Height
+	// 	})
+	// 	startHeight := blockchain.FinalView.Shard[toShard].BestCrossShard[fromShard]
+	// 	isValids := 0
+	// 	for _, crossTransaction := range crossTransactions {
+	// 		for index, toShardCrossShardBlock := range toShardCrossShardBlocks {
+	// 			//Compare block height and block hash
+	// 			if crossTransaction.BlockHeight == toShardCrossShardBlock.Header.Height {
+	// 				nextHeight, err := blockchain.config.DataBase.FetchCrossShardNextHeight(fromShard, toShard, startHeight)
+	// 				if err != nil {
+	// 					return NewBlockChainError(NextCrossShardBlockError, err)
+	// 				}
+	// 				if nextHeight != crossTransaction.BlockHeight {
+	// 					return NewBlockChainError(NextCrossShardBlockError, fmt.Errorf("Next Cross Shard Block Height %+v is Not Expected, Expect Next block Height %+v from shard %+v ", toShardCrossShardBlock.Header.Height, nextHeight, fromShard))
+	// 				}
+	// 				startHeight = nextHeight
+	// 				beaconHeight, err := blockchain.FindBeaconHeightForCrossShardBlock(toShardCrossShardBlock.Header.BeaconHeight, toShardCrossShardBlock.Header.ShardID, toShardCrossShardBlock.Header.Height)
+	// 				if err != nil {
+	// 					break
+	// 				}
+	// 				temp, err := blockchain.config.DataBase.FetchShardCommitteeByHeight(beaconHeight)
+	// 				if err != nil {
+	// 					return NewBlockChainError(FetchShardCommitteeError, err)
+	// 				}
+	// 				shardCommittee := make(map[byte][]incognitokey.CommitteePublicKey)
+	// 				err = json.Unmarshal(temp, &shardCommittee)
+	// 				if err != nil {
+	// 					return NewBlockChainError(UnmashallJsonShardCommitteesError, err)
+	// 				}
+	// 				err = toShardCrossShardBlock.VerifyCrossShardBlock(blockchain, shardCommittee[toShardCrossShardBlock.Header.ShardID])
+	// 				if err != nil {
+	// 					return NewBlockChainError(VerifyCrossShardBlockError, err)
+	// 				}
+	// 				compareCrossTransaction := CrossTransaction{
+	// 					TokenPrivacyData: toShardCrossShardBlock.CrossTxTokenPrivacyData,
+	// 					OutputCoin:       toShardCrossShardBlock.CrossOutputCoin,
+	// 					BlockHash:        *toShardCrossShardBlock.Hash(),
+	// 					BlockHeight:      toShardCrossShardBlock.Header.Height,
+	// 				}
+	// 				targetHash := crossTransaction.Hash()
+	// 				hash := compareCrossTransaction.Hash()
+	// 				if !hash.IsEqual(&targetHash) {
+	// 					return NewBlockChainError(CrossTransactionHashError, fmt.Errorf("Cross Output Coin From New Block %+v not compatible with cross shard block in pool %+v", targetHash, hash))
+	// 				}
+	// 				txTokenData := CrossTxTokenData{
+	// 					TxTokenData: toShardCrossShardBlock.CrossTxTokenData,
+	// 					BlockHash:   *toShardCrossShardBlock.Hash(),
+	// 					BlockHeight: toShardCrossShardBlock.Header.Height,
+	// 				}
+	// 				crossTxTokenData[toShardCrossShardBlock.Header.ShardID] = append(crossTxTokenData[toShardCrossShardBlock.Header.ShardID], txTokenData)
+	// 				if true {
+	// 					toShardCrossShardBlocks = toShardCrossShardBlocks[index:]
+	// 					isValids++
+	// 					break
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// 	if len(crossTransactions) != isValids {
+	// 		return NewBlockChainError(CrossShardBlockError, fmt.Errorf("Can't not verify all cross shard block from shard %+v", fromShard))
+	// 	}
+	// }
+	// if err := blockchain.verifyCrossShardCustomToken(crossTxTokenData, shardID, shardBlock.Body.Transactions); err != nil {
+	// 	return NewBlockChainError(VerifyCrossShardCustomTokenError, err)
+	// }
 	return nil
 }
 
@@ -758,71 +755,71 @@ func (shardView *ShardView) initShardView(blockchain *BlockChain, genesisShardBl
 }
 
 func (shardView *ShardView) processShardBlockInstruction(blockchain *BlockChain, shardBlock *ShardBlock) error {
-	var err error
-	shardPendingValidator, err := incognitokey.CommitteeKeyListToString(shardView.ShardPendingValidator)
-	if err != nil {
-		return err
-	}
-	shardID := shardView.ShardID
-	shardCommittee, err := incognitokey.CommitteeKeyListToString(shardView.ShardCommittee)
-	if err != nil {
-		return err
-	}
-	shardSwappedCommittees := []string{}
-	shardNewCommittees := []string{}
-	if len(shardBlock.Body.Instructions) != 0 {
-		Logger.log.Info("Shard Process/updateShardView: Shard Instruction", shardBlock.Body.Instructions)
-	}
+	// var err error
+	// shardPendingValidator, err := incognitokey.CommitteeKeyListToString(shardView.ShardPendingValidator)
+	// if err != nil {
+	// 	return err
+	// }
+	// shardID := shardView.ShardID
+	// shardCommittee, err := incognitokey.CommitteeKeyListToString(shardView.ShardCommittee)
+	// if err != nil {
+	// 	return err
+	// }
+	// shardSwappedCommittees := []string{}
+	// shardNewCommittees := []string{}
+	// if len(shardBlock.Body.Instructions) != 0 {
+	// 	Logger.log.Info("Shard Process/updateShardView: Shard Instruction", shardBlock.Body.Instructions)
+	// }
 
-	producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
-	if err != nil {
-		Logger.log.Error(err)
-		return err
-	}
-	// Swap committee
-	for _, l := range shardBlock.Body.Instructions {
-		if l[0] == SwapAction {
-			// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
-			shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardView.MaxShardCommitteeSize, shardView.MinShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
-			if err != nil {
-				Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
-				return NewBlockChainError(SwapValidatorError, err)
-			}
-			swapedCommittees := []string{}
-			if len(l[2]) != 0 && l[2] != "" {
-				swapedCommittees = strings.Split(l[2], ",")
-			}
+	// producersBlackList, err := blockchain.getUpdatedProducersBlackList(false, int(shardID), shardCommittee, shardBlock.Header.BeaconHeight)
+	// if err != nil {
+	// 	Logger.log.Error(err)
+	// 	return err
+	// }
+	// // Swap committee
+	// for _, l := range shardBlock.Body.Instructions {
+	// 	if l[0] == SwapAction {
+	// 		// #1 remaining pendingValidators, #2 new currentValidators #3 swapped out validator, #4 incoming validator
+	// 		shardPendingValidator, shardCommittee, shardSwappedCommittees, shardNewCommittees, err = SwapValidator(shardPendingValidator, shardCommittee, shardView.MaxShardCommitteeSize, shardView.MinShardCommitteeSize, blockchain.config.ChainParams.Offset, producersBlackList, blockchain.config.ChainParams.SwapOffset)
+	// 		if err != nil {
+	// 			Logger.log.Errorf("SHARD %+v | Blockchain Error %+v", err)
+	// 			return NewBlockChainError(SwapValidatorError, err)
+	// 		}
+	// 		swapedCommittees := []string{}
+	// 		if len(l[2]) != 0 && l[2] != "" {
+	// 			swapedCommittees = strings.Split(l[2], ",")
+	// 		}
 
-			for _, v := range swapedCommittees {
-				if txId, ok := shardView.StakingTx[v]; ok {
-					if checkReturnStakingTxExistence(txId, shardBlock) {
-						delete(blockchain.FinalView.Shard[shardView.ShardID].StakingTx, v)
-					}
-				}
-			}
-			if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
-				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
-			}
+	// 		for _, v := range swapedCommittees {
+	// 			if txId, ok := shardView.StakingTx[v]; ok {
+	// 				if checkReturnStakingTxExistence(txId, shardBlock) {
+	// 					delete(blockchain.FinalView.Shard[shardView.ShardID].StakingTx, v)
+	// 				}
+	// 			}
+	// 		}
+	// 		if !reflect.DeepEqual(swapedCommittees, shardSwappedCommittees) {
+	// 			return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect swapped committees to be %+v but get %+v", swapedCommittees, shardSwappedCommittees))
+	// 		}
 
-			newCommittees := []string{}
-			if len(l[1]) > 0 {
-				newCommittees = strings.Split(l[1], ",")
-			}
-			if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
-				return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))
-			}
-			Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", shardBlock.Header.ShardID, shardSwappedCommittees)
-			Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardBlock.Header.ShardID, shardNewCommittees)
-		}
-	}
-	shardView.ShardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
-	if err != nil {
-		return err
-	}
-	shardView.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
-	if err != nil {
-		return err
-	}
+	// 		newCommittees := []string{}
+	// 		if len(l[1]) > 0 {
+	// 			newCommittees = strings.Split(l[1], ",")
+	// 		}
+	// 		if !reflect.DeepEqual(newCommittees, shardNewCommittees) {
+	// 			return NewBlockChainError(SwapValidatorError, fmt.Errorf("Expect new committees to be %+v but get %+v", newCommittees, shardNewCommittees))
+	// 		}
+	// 		Logger.log.Infof("SHARD %+v | Swap: Out committee %+v", shardBlock.Header.ShardID, shardSwappedCommittees)
+	// 		Logger.log.Infof("SHARD %+v | Swap: In committee %+v", shardBlock.Header.ShardID, shardNewCommittees)
+	// 	}
+	// }
+	// shardView.ShardPendingValidator, err = incognitokey.CommitteeBase58KeyListToStruct(shardPendingValidator)
+	// if err != nil {
+	// 	return err
+	// }
+	// shardView.ShardCommittee, err = incognitokey.CommitteeBase58KeyListToStruct(shardCommittee)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -1027,11 +1024,11 @@ func (blockchain *BlockChain) removeOldDataAfterProcessingShardBlock(shardBlock 
 	//	}
 	//}()
 	//=========Remove invalid shard block in pool
-	go blockchain.config.ShardPool[shardID].SetShardState(blockchain.FinalView.Shard[shardID].ShardHeight)
-	//updateShardView Cross shard pool: remove invalid block
-	go func() {
-		blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.FinalView.Shard[shardID].BestCrossShard)
-	}()
+	// go blockchain.config.ShardPool[shardID].SetShardState(blockchain.FinalView.Shard[shardID].ShardHeight)
+	// //updateShardView Cross shard pool: remove invalid block
+	// go func() {
+	// 	blockchain.config.CrossShardPool[shardID].RemoveBlockByHeight(blockchain.FinalView.Shard[shardID].BestCrossShard)
+	// }()
 	go func() {
 		//Remove Candidate In pool
 		candidates := []string{}

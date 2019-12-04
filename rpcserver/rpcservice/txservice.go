@@ -152,7 +152,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 
 	// check real fee(nano PRV) per tx
 
-	beaconState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	beaconHeight := beaconState.BeaconHeight
 	realFee, _, _, err := txService.EstimateFee(unitFeeNativeToken, false, candidateOutputCoins,
 		paymentInfos, shardIDSender, numBlock, hasPrivacy,
@@ -364,7 +364,7 @@ func (txService TxService) SendRawTransaction(txB58Check string) (wire.Message, 
 	}
 
 	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconBestState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}
@@ -799,7 +799,7 @@ func (txService TxService) SendRawCustomTokenTransaction(base58CheckData string)
 	}
 
 	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconBestState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}
@@ -1211,7 +1211,7 @@ func (txService TxService) SendRawPrivacyCustomTokenTransaction(base58CheckData 
 	}
 
 	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconBestState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}
@@ -1296,7 +1296,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	// check real fee(nano PRV) per tx
 	isGetPTokenFee := false
 
-	beaconState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	beaconHeight := beaconState.BeaconHeight
 	realFee, _, _, _ := txService.EstimateFee(
 		estimateFeeCoinPerKb, isGetPTokenFee, outCoins, paymentInfos, shardIDSender, 8, hasPrivacyCoin,
@@ -1361,7 +1361,7 @@ func (txService TxService) SendRawTxWithMetadata(base58CheckDate string) (wire.M
 	}
 
 	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconBestState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}
@@ -1397,7 +1397,7 @@ func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate stri
 	}
 
 	beaconHeigh := int64(-1)
-	beaconBestState, err := txService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconBestState, err := txService.BlockChain.GetClonedBeaconFinalView()
 	if err == nil {
 		beaconHeigh = int64(beaconBestState.BeaconHeight)
 	}

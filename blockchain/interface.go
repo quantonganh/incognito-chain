@@ -133,13 +133,14 @@ type ChainInterface interface {
 }
 
 type ChainViewInterface interface {
-	GetLastBlockTimeStamp() uint64
+	GetLastBlockTimeStamp() int64
 	GetBlkMinInterval() time.Duration
 	GetBlkMaxCreateTime() time.Duration
 	CurrentHeight() uint64
 	GetCommittee() []string
 	GetLastProposerIdx() int
 
+	GetEpoch() uint64
 	GetTimeslot() uint64
 	GetConsensusType() string
 	GetPubKeyCommitteeIndex(string) int

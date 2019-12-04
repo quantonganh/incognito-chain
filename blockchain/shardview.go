@@ -11,6 +11,7 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"github.com/incognitochain/incognito-chain/metadata"
 )
 
 // BestState houses information about the current best block and other info
@@ -50,6 +51,8 @@ type ShardView struct {
 
 	BlockInterval      time.Duration
 	BlockMaxCreateTime time.Duration
+
+	GenesisTime int64 //use for consensus to get timeslot
 
 	// MetricBlockHeight uint64
 	lock sync.RWMutex
@@ -214,7 +217,8 @@ func (view *ShardView) GetPubkeyRole(pubkey string, round int) string {
 }
 
 func (view *ShardView) MarshalJSON() ([]byte, error) {
-	//TODO: Add Mutex Lock Later
+	view.lock.RLock()
+	defer view.lock.RUnlock()
 	type Alias ShardView
 	b, err := json.Marshal(&struct {
 		*Alias
@@ -235,17 +239,17 @@ func (view ShardView) GetBeaconHeight() uint64 {
 	return view.BeaconHeight
 }
 
-func (view *ShardView) cloneShardViewFrom(target *ShardView) error {
+func (view *ShardView) cloneShardViewFrom(target ChainViewInterface) error {
 	tempMarshal, err := json.Marshal(target)
 	if err != nil {
-		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.ShardHeight, err))
+		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.CurrentHeight(), err))
 	}
 	err = json.Unmarshal(tempMarshal, view)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.ShardHeight, err))
+		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.CurrentHeight(), err))
 	}
 	if reflect.DeepEqual(*view, ShardView{}) {
-		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.ShardHeight))
+		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.CurrentHeight()))
 	}
 	return nil
 }
@@ -268,7 +272,7 @@ func (view *ShardView) GetPubKeyCommitteeIndex(string) int {
 func (view *ShardView) GetLastProposerIndex() int {
 	return 0
 }
-func (view *ShardView) CreateNewBlock(round int) (common.BlockInterface, error) {
+func (view *ShardView) CreateNewBlock(timeslot uint64) (common.BlockInterface, error) {
 	return nil, nil
 }
 func (view *ShardView) InsertBlk(block common.BlockInterface) error {
@@ -287,4 +291,38 @@ func (view *ShardView) DeleteView() error {
 
 func (view *ShardView) GetConsensusConfig() string {
 	return view.ConsensusConfig
+}
+
+func (view *ShardView) CurrentHeight() uint64 {
+	return 0
+}
+
+func (view *ShardView) GetBlkMaxCreateTime() time.Duration {
+	return 0
+}
+
+func (view *ShardView) GetBlkMinInterval() time.Duration {
+	return 0
+}
+
+func (view *ShardView) GetLastBlockTimeStamp() int64 {
+	return 0
+}
+func (view *ShardView) GetCommittee() []string {
+	return nil
+}
+func (view *ShardView) GetLastProposerIdx() int { return 0 }
+
+func (view *ShardView) GetTimeslot() uint64 { return 0 }
+
+func (view *ShardView) GetEpoch() uint64 {
+	return 0
+}
+
+func (view ShardView) GetTxsInBestBlock() []metadata.Transaction {
+	view.lock.RLock()
+	defer view.lock.RUnlock()
+	var result []metadata.Transaction
+	copy(result, view.BestBlock.Body.Transactions)
+	return result
 }

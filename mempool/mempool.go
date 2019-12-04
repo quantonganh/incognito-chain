@@ -356,7 +356,7 @@ func (tp *TxPool) maybeAcceptTransaction(tx metadata.Transaction, isStore bool, 
 	// metrics.Tag:              // metrics.TxSizeTag,
 	// metrics.TagValue:         txSize})
 	shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-	bestHeight := tp.config.BlockChain.FinalView.Shard[shardID].BestBlock.Header.Height
+	bestHeight := tp.config.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().CurrentHeight()
 	txFee := tx.GetTxFee()
 	txFeeToken := tx.GetTxFeeToken()
 	txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)

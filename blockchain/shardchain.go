@@ -20,12 +20,10 @@ type ShardChain struct {
 	views     map[string]*ShardView
 	bestView  *ShardView
 	finalView *ShardView
-
-	genesisTime int64 //use for consensus to get timeslot
 }
 
 func (chain *ShardChain) GetGenesisTime() int64 {
-	return chain.genesisTime
+	return chain.bestView.GenesisTime
 }
 
 func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
@@ -76,13 +74,13 @@ func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error
 	start := time.Now()
 	Logger.log.Infof("Begin Create New Block %+v", start)
 	beaconHeight := chain.Blockchain.Synker.States.ClosestState.ClosestBeaconState
-	if chain.Blockchain.FinalView.Beacon.BeaconHeight < beaconHeight {
-		beaconHeight = chain.Blockchain.FinalView.Beacon.BeaconHeight
-	} else {
-		if beaconHeight < chain.Blockchain.FinalView.Shard[byte(chain.GetShardID())].BeaconHeight {
-			beaconHeight = chain.Blockchain.FinalView.Shard[byte(chain.GetShardID())].BeaconHeight
-		}
-	}
+	// if chain.Blockchain.FinalView.Beacon.BeaconHeight < beaconHeight {
+	// 	beaconHeight = chain.Blockchain.FinalView.Beacon.BeaconHeight
+	// } else {
+	// 	if beaconHeight < chain.Blockchain.FinalView.Shard[byte(chain.GetShardID())].BeaconHeight {
+	// 		beaconHeight = chain.Blockchain.FinalView.Shard[byte(chain.GetShardID())].BeaconHeight
+	// 	}
+	// }
 	Logger.log.Infof("Begin Enter New Block Shard %+v", time.Now())
 	newBlock, err := chain.BlockGen.NewBlockShard(byte(chain.GetShardID()), round, chain.Blockchain.Synker.GetClosestCrossShardPoolState(), beaconHeight, start)
 	Logger.log.Infof("Begin Finish New Block Shard %+v", time.Now())

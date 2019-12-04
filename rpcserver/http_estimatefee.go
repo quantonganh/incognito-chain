@@ -88,7 +88,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 			}
 		}
 
-		beaconState, err := httpServer.blockService.BlockChain.FinalView.GetClonedBeaconFinalView()
+		beaconState, err := httpServer.blockService.BlockChain.GetClonedBeaconFinalView()
 		beaconHeight := beaconState.BeaconHeight
 
 		var err2 error
@@ -154,7 +154,7 @@ func (httpServer *HttpServer) handleEstimateFeeWithEstimator(params interface{},
 		}
 	}
 
-	beaconState, err := httpServer.blockService.BlockChain.FinalView.GetClonedBeaconFinalView()
+	beaconState, err := httpServer.blockService.BlockChain.GetClonedBeaconFinalView()
 	beaconHeight := beaconState.BeaconHeight
 
 	estimateFeeCoinPerKb, err := httpServer.txService.EstimateFeeWithEstimator(defaultFeeCoinPerKb, shardIDSender, numblock, tokenId, int64(beaconHeight), *httpServer.config.Database)

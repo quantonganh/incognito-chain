@@ -23,49 +23,50 @@ func (blockchain *BlockChain) buildBadProducersWithPunishment(
 	shardID int,
 	committee []string,
 ) map[string]uint8 {
-	slashLevels := blockchain.config.ChainParams.SlashLevels
-	numOfBlocksByProducers := map[string]uint64{}
-	if isBeacon {
-		numOfBlocksByProducers = blockchain.FinalView.Beacon.NumOfBlocksByProducers
-	} else {
-		numOfBlocksByProducers = blockchain.FinalView.Shard[byte(shardID)].NumOfBlocksByProducers
-	}
-	// numBlkPerEpoch := blockchain.config.ChainParams.Epoch
-	numBlkPerEpoch := uint64(0)
-	for _, numBlk := range numOfBlocksByProducers {
-		numBlkPerEpoch += numBlk
-	}
-	badProducersWithPunishment := make(map[string]uint8)
-	committeeLen := len(committee)
-	if committeeLen == 0 {
-		return badProducersWithPunishment
-	}
-	expectedNumBlkByEachProducer := numBlkPerEpoch / uint64(committeeLen)
+	// slashLevels := blockchain.config.ChainParams.SlashLevels
+	// numOfBlocksByProducers := map[string]uint64{}
+	// if isBeacon {
+	// 	numOfBlocksByProducers = blockchain.FinalView.Beacon.NumOfBlocksByProducers
+	// } else {
+	// 	numOfBlocksByProducers = blockchain.FinalView.Shard[byte(shardID)].NumOfBlocksByProducers
+	// }
+	// // numBlkPerEpoch := blockchain.config.ChainParams.Epoch
+	// numBlkPerEpoch := uint64(0)
+	// for _, numBlk := range numOfBlocksByProducers {
+	// 	numBlkPerEpoch += numBlk
+	// }
+	// badProducersWithPunishment := make(map[string]uint8)
+	// committeeLen := len(committee)
+	// if committeeLen == 0 {
+	// 	return badProducersWithPunishment
+	// }
+	// expectedNumBlkByEachProducer := numBlkPerEpoch / uint64(committeeLen)
 
-	if expectedNumBlkByEachProducer == 0 {
-		return badProducersWithPunishment
-	}
-	// for producer, numBlk := range numOfBlocksByProducers {
-	for _, producer := range committee {
-		numBlk, found := numOfBlocksByProducers[producer]
-		if !found {
-			numBlk = 0
-		}
-		if numBlk >= expectedNumBlkByEachProducer {
-			continue
-		}
-		missingPercent := uint8((-(numBlk - expectedNumBlkByEachProducer) * 100) / expectedNumBlkByEachProducer)
-		var selectedSlLev *SlashLevel
-		for _, slLev := range slashLevels {
-			if missingPercent >= slLev.MinRange {
-				selectedSlLev = &slLev
-			}
-		}
-		if selectedSlLev != nil {
-			badProducersWithPunishment[producer] = selectedSlLev.PunishedEpoches
-		}
-	}
-	return sortMapStringUint8Keys(badProducersWithPunishment)
+	// if expectedNumBlkByEachProducer == 0 {
+	// 	return badProducersWithPunishment
+	// }
+	// // for producer, numBlk := range numOfBlocksByProducers {
+	// for _, producer := range committee {
+	// 	numBlk, found := numOfBlocksByProducers[producer]
+	// 	if !found {
+	// 		numBlk = 0
+	// 	}
+	// 	if numBlk >= expectedNumBlkByEachProducer {
+	// 		continue
+	// 	}
+	// 	missingPercent := uint8((-(numBlk - expectedNumBlkByEachProducer) * 100) / expectedNumBlkByEachProducer)
+	// 	var selectedSlLev *SlashLevel
+	// 	for _, slLev := range slashLevels {
+	// 		if missingPercent >= slLev.MinRange {
+	// 			selectedSlLev = &slLev
+	// 		}
+	// 	}
+	// 	if selectedSlLev != nil {
+	// 		badProducersWithPunishment[producer] = selectedSlLev.PunishedEpoches
+	// 	}
+	// }
+	// return sortMapStringUint8Keys(badProducersWithPunishment)
+	return nil
 }
 
 func (blockchain *BlockChain) getUpdatedProducersBlackList(

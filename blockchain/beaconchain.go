@@ -17,14 +17,13 @@ type BeaconChain struct {
 	ChainName  string
 	lock       sync.RWMutex
 
-	views       map[string]*BeaconView
-	bestView    *BeaconView
-	finalView   *BeaconView
-	genesisTime int64 //use for consensus to get timeslot
+	views     map[string]*BeaconView
+	bestView  *BeaconView
+	finalView *BeaconView
 }
 
 func (chain *BeaconChain) GetGenesisTime() int64 {
-	return chain.genesisTime
+	return chain.bestView.GenesisTime
 }
 
 func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
