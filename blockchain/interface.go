@@ -152,4 +152,6 @@ type ChainViewInterface interface {
 
 	DeleteView() error
 	GetConsensusConfig() string
+	IsBestView() bool
+	SetViewIsBest(isBest bool)
 }

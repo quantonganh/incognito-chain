@@ -2,6 +2,7 @@ package blsbftv2
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
@@ -33,15 +34,38 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 	if err != nil {
 		return err
 	}
+	if _, ok := e.onGoingBlocks[block.Hash().String()]; ok {
+		return errors.New("already received this propose block")
+	}
 	view, err := e.Chain.GetViewByHash(block.GetPreviousViewHash())
 	if err != nil {
 		return err
 	}
-	_ = view
+	if view.IsBestView() {
+		view.ValidatePreSignBlock(block)
+	}
 	return nil
 }
 
-func (e *BLSBFT) processVoteMsg(voteMsg *BFTVote) error {
+func (e *BLSBFT) processVoteMsg(vote *BFTVote) error {
+	onGoingBlock, ok := e.onGoingBlocks[vote.BlockHash]
+	if ok {
+		return errors.New("already received this propose block")
+	}
+	e.lockOnGoingBlocks.RLock()
+	defer e.lockOnGoingBlocks.RUnlock()
+	if err := onGoingBlock.addVote(vote); err != nil {
+		return err
+	}
+	voteMsg, err := MakeBFTVoteMsg(vote, e.ChainKey)
+	if err != nil {
+		return err
+	}
+	e.Node.PushMessageToChain(voteMsg, e.Chain)
+	return nil
+}
+
+func (e *BLSBFT) processRequestBlkMsg(requestMsg *BFTRequestBlock) error {
 	return nil
 }
 
@@ -63,24 +87,42 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 			return
 		}
 		go e.processVoteMsg(&msgVote)
+	case MSG_REQUESTBLK:
+		var msgRequest BFTRequestBlock
+		err := json.Unmarshal(msg.Content, &msgRequest)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		go e.processRequestBlkMsg(&msgRequest)
 	default:
-		e.logger.Critical("???")
+		e.logger.Critical("Unknown BFT message type")
 		return
 	}
 }
 
-func (e *BLSBFT) isInTimeslot() bool {
+func (e *BLSBFT) isInTimeslot(view blockchain.ChainViewInterface) bool {
 	return false
 }
 
 func (blockCss *viewConsensusInstance) addVote(vote *BFTVote) error {
 	blockCss.lockVote.Lock()
 	defer blockCss.lockVote.Unlock()
+	err := validateVote(vote)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (blockCss *viewConsensusInstance) confirmVote(vote *BFTVote) error {
-	return nil
+func (blockCss *viewConsensusInstance) confirmVote(blockHash *common.Hash, vote *BFTVote) error {
+	data := blockHash.GetBytes()
+	data = append(data, vote.BLS...)
+	data = append(data, vote.BRI...)
+	data = common.HashB(data)
+	var err error
+	vote.VoteSig, err = blockCss.Engine.UserKeySet.BriSignData(data)
+	return err
 }
 
 func (blockCss *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
@@ -105,7 +147,7 @@ func (blockCss *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
 	vote.BRI = bridgeSig
 	vote.Validator = pubKey.GetMiningKeyBase58(consensusName)
 
-	msg, err := MakeBFTVoteMsg(vote, blockCss.Engine.ChainKey)
+	msg, err := MakeBFTVoteMsg(&vote, blockCss.Engine.ChainKey)
 	if err != nil {
 		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}

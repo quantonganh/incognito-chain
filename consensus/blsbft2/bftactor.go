@@ -33,14 +33,13 @@ type BLSBFT struct {
 }
 
 type viewConsensusInstance struct {
-	Engine         *BLSBFT
-	View           blockchain.ChainViewInterface
-	Block          common.BlockInterface
-	Votes          map[string]BFTVote
-	UnconfirmVotes []BFTVote
-	lockVote       sync.RWMutex
-	Timeslot       uint64
-
+	Engine       *BLSBFT
+	View         blockchain.ChainViewInterface
+	Block        common.BlockInterface
+	Votes        map[string]BFTVote
+	lockVote     sync.RWMutex
+	Timeslot     uint64
+	Phase        string
 	Committee    []incognitokey.CommitteePublicKey
 	CommitteeBLS struct {
 		StringList []string
@@ -72,7 +71,7 @@ func (e *BLSBFT) Start() error {
 	e.isStarted = true
 	e.StopCh = make(chan struct{})
 
-	ticker := time.Tick(1000 * time.Millisecond)
+	ticker := time.Tick(1 * time.Second)
 	e.logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
 		fmt.Println("action")

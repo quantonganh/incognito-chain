@@ -71,6 +71,7 @@ type BeaconView struct {
 	BlockInterval      time.Duration
 	BlockMaxCreateTime time.Duration
 	GenesisTime        int64 //use for consensus to get timeslot
+	IsBest             bool
 }
 
 func NewBeaconView() *BeaconView {
@@ -700,6 +701,16 @@ func (view *BeaconView) GetLastProposerIdx() int { return 0 }
 
 func (view *BeaconView) GetTimeslot() uint64 { return 0 }
 
-func (view *BeaconView) GetEpoch() uint64{
+func (view *BeaconView) GetEpoch() uint64 {
 	return 0
+}
+
+func (view *BeaconView) IsBestView() bool {
+	return view.IsBest
+}
+
+func (view *BeaconView) SetViewIsBest(isBest bool) {
+	view.lock.Lock()
+	defer view.lock.Unlock()
+	view.IsBest = isBest
 }
