@@ -22,12 +22,19 @@ func (s *ChainManager) GetChainData() []byte {
 	return nil
 }
 
-//loading at boot
-func NewChainData(data []byte) *ChainManager {
+//create new chain with root view
+func InitNewChain(name string, rootView blockchain.ChainViewInterface) *ChainManager {
+	return nil
+}
+
+func LoadChain(data []byte) *ChainManager {
 	//decode chain view data
 	//assign current chain view data to this data structure
-
 	return nil
+}
+
+func (s *ChainManager) AddChainView() {
+	return
 }
 
 func (ChainManager) GetChainName() string {

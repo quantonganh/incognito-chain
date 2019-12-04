@@ -152,4 +152,8 @@ type ChainViewInterface interface {
 
 	DeleteView() error
 	GetConsensusConfig() string
+
+	//TODO: @0xbahamoot
+	//GetBestBlock() common.BlockInterface
+
 }
