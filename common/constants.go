@@ -117,4 +117,6 @@ const (
 
 	PDEWithdrawalAcceptedStatus = 1
 	PDEWithdrawalRejectedStatus = 2
+
+	MinInitialAddingLiquidity = 10000000000000 // 10000 prv
 )
