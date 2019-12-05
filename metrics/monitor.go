@@ -5,10 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/incognitochain/incognito-chain/blockchain"
 	"os"
 	"syscall"
+
+	"github.com/google/uuid"
+	"github.com/incognitochain/incognito-chain/blockchain"
 
 	"io/ioutil"
 	"net/http"
