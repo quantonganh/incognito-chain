@@ -2309,15 +2309,7 @@ func (blockchain *BlockChain) StoreCommitmentsFromTxViewPointV2(view TxViewPoint
 		outputCoins := view.mapOutputCoins[k]
 
 		if len(outputCoins) > 0 {
-			shardIDLastByte := outputCoins[0].CoinDetails.GetShardIDLastByte()
-			lastByte := byte(0)
-
-			if shardIDLastByte == -1 {
-				lastByte = byte(outputCoins[0].CoinDetails.GetPubKeyLastByte())
-			} else{
-				lastByte = byte(shardIDLastByte)
-			}
-
+			lastByte := outputCoins[0].CoinDetails.GetPubKeyLastByte()
 			publicKeyShardID := common.GetShardIDFromLastByte(lastByte)
 
 			if publicKeyShardID == shardID {
