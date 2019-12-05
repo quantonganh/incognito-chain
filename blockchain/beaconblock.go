@@ -95,3 +95,7 @@ func (beaconBlock BeaconBlock) GetConsensusType() string {
 func (beaconBlock BeaconBlock) GetPreviousViewHash() *common.Hash {
 	return nil
 }
+
+func (beaconBlock BeaconBlock) GetTimeslot() uint64 {
+	return beaconBlock.Header.Timeslot
+}

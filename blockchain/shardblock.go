@@ -508,3 +508,15 @@ func (block CrossShardBlock) GetPreviousViewHash() *common.Hash {
 func (block ShardToBeaconBlock) GetPreviousViewHash() *common.Hash {
 	return nil
 }
+
+func (block ShardBlock) GetTimeslot() uint64 {
+	return block.Header.Timeslot
+}
+
+func (block CrossShardBlock) GetTimeslot() uint64 {
+	return block.Header.Timeslot
+}
+
+func (block ShardToBeaconBlock) GetTimeslot() uint64 {
+	return block.Header.Timeslot
+}

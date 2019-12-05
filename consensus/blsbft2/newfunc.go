@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
 )
@@ -34,7 +35,8 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 	if err != nil {
 		return err
 	}
-	if _, ok := e.onGoingBlocks[block.Hash().String()]; ok {
+	blockHash := block.Hash().String()
+	if _, ok := e.onGoingBlocks[blockHash]; ok {
 		return errors.New("already received this propose block")
 	}
 	view, err := e.Chain.GetViewByHash(block.GetPreviousViewHash())
@@ -42,6 +44,11 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 		return err
 	}
 	if view.IsBestView() {
+		if len(e.onGoingBlocks) > 0 {
+			if e.onGoingBlocks[e.bestProposeBlock].Timeslot == block.GetTimeslot() {
+
+			}
+		}
 		view.ValidatePreSignBlock(block)
 	}
 	return nil
@@ -188,4 +195,17 @@ func (vote *BFTVote) signVote(signFunc func(data []byte) ([]byte, error)) error 
 
 func (e *BLSBFT) getTimeSlot() uint64 {
 	return uint64(e.Chain.GetGenesisTime())
+}
+
+func validateProducerPosition(block common.BlockInterface, genesisTime int64, slotTime uint64, committee []incognitokey.CommitteePublicKey) error {
+	// producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
+	// tempProducer, err := committee[producerPosition].ToBase58()
+	// if err != nil {
+	// 	return err
+	// }
+	// if tempProducer == block.GetProducer() {
+	// 	return nil
+	// }
+	// return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
+	return nil
 }

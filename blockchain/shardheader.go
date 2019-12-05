@@ -36,6 +36,7 @@ type ShardHeader struct {
 	StakingTxRoot         common.Hash            `json:"StakingTxRoot"`         // hash from staking transaction map in shard best state
 	InstructionMerkleRoot common.Hash            `json:"InstructionMerkleRoot"` // Merkle root of all instructions (using Keccak256 hash func) to relay to Ethreum
 	// This obsoletes InstructionMerkleRoot but for simplicity, we keep it for now
+	Timeslot uint64 `json:"Timeslot"`
 }
 
 func (shardHeader *ShardHeader) String() string {

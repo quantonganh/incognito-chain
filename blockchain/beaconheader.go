@@ -26,6 +26,7 @@ type BeaconHeader struct {
 	ConsensusType                   string      `json:"ConsensusType"`
 	Producer                        string      `json:"Producer"`
 	ProducerPubKeyStr               string      `json:"ProducerPubKeyStr"`
+	Timeslot                        uint64      `json:"Timeslot"`
 }
 
 func (beaconHeader *BeaconHeader) toString() string {

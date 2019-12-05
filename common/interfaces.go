@@ -12,4 +12,5 @@ type BlockInterface interface {
 	GetConsensusType() string
 	GetCurrentEpoch() uint64
 	GetPreviousViewHash() *Hash
+	GetTimeslot() uint64
 }
