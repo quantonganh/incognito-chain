@@ -140,8 +140,11 @@ func (coin *Coin) Init() *Coin {
 	return coin
 }
 
-// GetPubKeyLastByte returns the last byte of public key
+// GetPubKeyLastByte returns the last byte of fixed public key
 func (coin *Coin) GetPubKeyLastByte() byte {
+	if coin.shardIDLastByte > 0 {
+		return byte(coin.shardIDLastByte)
+	}
 	pubKeyBytes := coin.publicKey.ToBytes()
 	return pubKeyBytes[Ed25519KeySize-1]
 }

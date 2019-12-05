@@ -43,7 +43,6 @@ type TxViewPoint struct {
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
 
 	blockHeight      uint64
-	txVersion        int8
 	indexOutCoinInTx map[string][]byte
 	ephemeralPubKey  map[string][]byte
 }
