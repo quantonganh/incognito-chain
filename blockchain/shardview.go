@@ -336,3 +336,7 @@ func (view *ShardView) SetViewIsBest(isBest bool) {
 	defer view.lock.Unlock()
 	view.IsBest = isBest
 }
+
+func (view *ShardView) GetTipBlock() common.BlockInterface {
+	return view.BestBlock
+}

@@ -714,3 +714,7 @@ func (view *BeaconView) SetViewIsBest(isBest bool) {
 	defer view.lock.Unlock()
 	view.IsBest = isBest
 }
+
+func (view *BeaconView) GetTipBlock() common.BlockInterface {
+	return view.BestBlock
+}

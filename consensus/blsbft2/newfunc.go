@@ -105,39 +105,43 @@ func (e *BLSBFT) isInTimeslot(view blockchain.ChainViewInterface) bool {
 	return false
 }
 
-func (blockCss *viewConsensusInstance) addVote(vote *BFTVote) error {
-	blockCss.lockVote.Lock()
-	defer blockCss.lockVote.Unlock()
+func (blockCI *viewConsensusInstance) addVote(vote *BFTVote) error {
+	blockCI.lockVote.Lock()
+	defer blockCI.lockVote.Unlock()
+	if _, ok := blockCI.Votes[vote.Validator]; !ok {
+		return errors.New("already received this vote")
+	}
 	err := validateVote(vote)
 	if err != nil {
 		return err
 	}
+	blockCI.Votes[vote.Validator] = vote
 	return nil
 }
 
-func (blockCss *viewConsensusInstance) confirmVote(blockHash *common.Hash, vote *BFTVote) error {
+func (blockCI *viewConsensusInstance) confirmVote(blockHash *common.Hash, vote *BFTVote) error {
 	data := blockHash.GetBytes()
 	data = append(data, vote.BLS...)
 	data = append(data, vote.BRI...)
 	data = common.HashB(data)
 	var err error
-	vote.VoteSig, err = blockCss.Engine.UserKeySet.BriSignData(data)
+	vote.VoteSig, err = blockCI.Engine.UserKeySet.BriSignData(data)
 	return err
 }
 
-func (blockCss *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
+func (blockCI *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
 	var vote BFTVote
 
-	pubKey := blockCss.Engine.UserKeySet.GetPublicKey()
-	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), blockCss.CommitteeBLS.StringList)
+	pubKey := blockCI.Engine.UserKeySet.GetPublicKey()
+	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), blockCI.CommitteeBLS.StringList)
 
-	blsSig, err := blockCss.Engine.UserKeySet.BLSSignData(blockCss.Block.Hash().GetBytes(), selfIdx, blockCss.CommitteeBLS.ByteList)
+	blsSig, err := blockCI.Engine.UserKeySet.BLSSignData(blockCI.Block.Hash().GetBytes(), selfIdx, blockCI.CommitteeBLS.ByteList)
 	if err != nil {
 		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
-	if metadata.HasBridgeInstructions(blockCss.Block.GetInstructions()) {
-		bridgeSig, err = blockCss.Engine.UserKeySet.BriSignData(blockCss.Block.Hash().GetBytes())
+	if metadata.HasBridgeInstructions(blockCI.Block.GetInstructions()) {
+		bridgeSig, err = blockCI.Engine.UserKeySet.BriSignData(blockCI.Block.Hash().GetBytes())
 		if err != nil {
 			return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
 		}
@@ -147,14 +151,14 @@ func (blockCss *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
 	vote.BRI = bridgeSig
 	vote.Validator = pubKey.GetMiningKeyBase58(consensusName)
 
-	msg, err := MakeBFTVoteMsg(&vote, blockCss.Engine.ChainKey)
+	msg, err := MakeBFTVoteMsg(&vote, blockCI.Engine.ChainKey)
 	if err != nil {
 		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 
-	blockCss.Votes[pubKey.GetMiningKeyBase58(consensusName)] = vote
-	blockCss.Engine.logger.Info("sending vote...")
-	go blockCss.Engine.Node.PushMessageToChain(msg, blockCss.Engine.Chain)
+	blockCI.Votes[pubKey.GetMiningKeyBase58(consensusName)] = &vote
+	blockCI.Engine.logger.Info("sending vote...")
+	go blockCI.Engine.Node.PushMessageToChain(msg, blockCI.Engine.Chain)
 	return vote, nil
 }
 
@@ -168,7 +172,7 @@ func validateProposeBlock(block common.BlockInterface, view blockchain.ChainView
 	return v, nil
 }
 
-func (blockCss *viewConsensusInstance) initInstance(view blockchain.ChainViewInterface) error {
+func (blockCI *viewConsensusInstance) initInstance(view blockchain.ChainViewInterface) error {
 	return nil
 }
 

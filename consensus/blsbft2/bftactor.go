@@ -36,7 +36,7 @@ type viewConsensusInstance struct {
 	Engine       *BLSBFT
 	View         blockchain.ChainViewInterface
 	Block        common.BlockInterface
-	Votes        map[string]BFTVote
+	Votes        map[string]*BFTVote
 	lockVote     sync.RWMutex
 	Timeslot     uint64
 	Phase        string

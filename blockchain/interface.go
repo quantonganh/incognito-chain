@@ -154,4 +154,5 @@ type ChainViewInterface interface {
 	GetConsensusConfig() string
 	IsBestView() bool
 	SetViewIsBest(isBest bool)
+	GetTipBlock() common.BlockInterface
 }
