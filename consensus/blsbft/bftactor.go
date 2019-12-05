@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/incognitochain/incognito-chain/metrics"
 	"sync"
 	"time"
+
+	"github.com/incognitochain/incognito-chain/metrics"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -183,6 +184,7 @@ func (e *BLSBFT) Start() error {
 
 			case <-ticker:
 
+				e.logger.Info("DEBUGGING SetGlobalParam:", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 				metrics.SetGlobalParam("RoundKey", getRoundKey(e.RoundData.NextHeight, e.RoundData.Round), "Phase", e.RoundData.State)
 
 				pubKey := e.UserKeySet.GetPublicKey()
@@ -192,12 +194,14 @@ func (e *BLSBFT) Start() error {
 				}
 
 				if !e.Chain.IsReady() {
+					e.logger.Info("DEBUGGING Not is ready")
 					e.isOngoing = false
 					//fmt.Println("CONSENSUS: ticker 1")
 					continue
 				}
 
 				if !e.isInTimeFrame() || e.RoundData.State == "" {
+					e.logger.Info("DEBUGGING Entering new round")
 					e.enterNewRound()
 				}
 
@@ -205,6 +209,7 @@ func (e *BLSBFT) Start() error {
 				case listenPhase:
 					// timeout or vote nil?
 					//fmt.Println("CONSENSUS: listen phase 1")
+					e.logger.Info("DEBUGGING listen phase 1", e.Chain.CurrentHeight(), e.RoundData.NextHeight)
 					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
 						e.enterNewRound()
 						continue
@@ -213,6 +218,7 @@ func (e *BLSBFT) Start() error {
 					if e.Blocks[roundKey] != nil {
 						metrics.SetGlobalParam("ReceiveBlockTime", time.Since(e.RoundData.TimeStart).Seconds())
 						//fmt.Println("CONSENSUS: listen phase 2")
+						e.logger.Info("DEBUGGING listen phase 2")
 						if err := e.validatePreSignBlock(e.Blocks[roundKey]); err != nil {
 							delete(e.Blocks, roundKey)
 							e.logger.Error(err)
@@ -238,6 +244,7 @@ func (e *BLSBFT) Start() error {
 				case votePhase:
 					e.logger.Info("Case: In vote phase")
 					if e.RoundData.NotYetSendVote {
+						e.logger.Info("DEBUGGING Sending vote")
 						err := e.sendVote()
 						if err != nil {
 							e.logger.Error(err)
@@ -245,9 +252,11 @@ func (e *BLSBFT) Start() error {
 						}
 					}
 					if !(new(common.Hash).IsEqual(&e.RoundData.BlockHash)) && e.isHasMajorityVotes() {
+						e.logger.Info("DEBUGGING had majority votes")
 						e.RoundData.lockVotes.Lock()
 						aggSig, brigSigs, validatorIdx, err := combineVotes(e.RoundData.Votes, e.RoundData.CommitteeBLS.StringList)
 						e.RoundData.lockVotes.Unlock()
+						e.logger.Info("DEBUGGING combined votes")
 						if err != nil {
 							e.logger.Error(err)
 							continue
@@ -263,6 +272,7 @@ func (e *BLSBFT) Start() error {
 						//TODO: check issue invalid sig when swap
 						//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
 						err = e.ValidateCommitteeSig(e.RoundData.Block, e.RoundData.Committee)
+						e.logger.Info("DEBUGGING validated committee sig")
 						if err != nil {
 							e.logger.Error(err)
 							e.logger.Errorf("e.RoundData.Block.GetValidationField()=%+v\n", e.RoundData.Block.GetValidationField())
@@ -282,9 +292,9 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
+						e.logger.Infof("Commit block %+v hash=%+v \n Wait for next round", e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
 						metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
-						e.logger.Infof("Commit block %+v hash=%+v \n Wait for next round", e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
 						e.enterNewRound()
 					}
 				}
