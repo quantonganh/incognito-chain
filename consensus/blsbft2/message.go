@@ -18,6 +18,7 @@ type BFTPropose struct {
 }
 
 type BFTVote struct {
+	ViewHash  string
 	BlockHash string
 	Validator string
 	BLS       []byte

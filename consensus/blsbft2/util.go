@@ -21,14 +21,14 @@ func (e *BLSBFT) waitForNextTimeslot() bool {
 	}
 }
 
-func (e *BLSBFT) getCurrentRound() int {
-	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
-	if round < 0 {
-		return 1
-	}
+// func (e *BLSBFT) getCurrentRound() int {
+// 	round := int((e.getTimeSinceLastBlock().Seconds() - float64(e.Chain.GetMinBlkInterval().Seconds())) / timeout.Seconds())
+// 	if round < 0 {
+// 		return 1
+// 	}
 
-	return round + 1
-}
+// 	return round + 1
+// }
 
 // func (e *BLSBFT) isInTimeFrame() bool {
 // 	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {

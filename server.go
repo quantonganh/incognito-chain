@@ -2049,3 +2049,7 @@ func (serverObj *Server) GetMinerIncognitoPublickey(publicKey string, keyType st
 
 	return nil
 }
+
+func (serverObj *Server) RequestSyncBlockByHash(blockHash *common.Hash, isUnknownView bool, tipBlocksHash []common.Hash, peerID libp2p.ID) error {
+	return nil
+}

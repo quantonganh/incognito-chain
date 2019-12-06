@@ -31,36 +31,88 @@ func (e BLSBFT) getProposeBlock(view blockchain.ChainViewInterface, timeslot uin
 }
 
 func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
+	// proposer only propose once
+	// voter can vote on multi-views
+
 	block, err := e.Chain.UnmarshalBlock(proposeMsg.Block)
 	if err != nil {
 		return err
 	}
-	blockHash := block.Hash().String()
-	if _, ok := e.onGoingBlocks[blockHash]; ok {
-		return errors.New("already received this propose block")
+	if block.GetTimeslot() > e.currentTimeslot {
+		return fmt.Errorf("this propose block has timeslot higher than current timeslot. BLOCK:%v CURRENT:%v", block.GetTimeslot(), e.currentTimeslot)
 	}
+	blockHash := block.Hash().String()
+	e.lockOnGoingBlocks.RLock()
+	if _, ok := e.onGoingBlocks[blockHash]; ok {
+		if e.onGoingBlocks[blockHash].Block != nil {
+			e.lockOnGoingBlocks.RUnlock()
+			return errors.New("already received this propose block")
+		}
+	}
+	e.lockOnGoingBlocks.RUnlock()
+
 	view, err := e.Chain.GetViewByHash(block.GetPreviousViewHash())
 	if err != nil {
 		return err
 	}
-	if view.IsBestView() {
-		if len(e.onGoingBlocks) > 0 {
-			if e.onGoingBlocks[e.bestProposeBlock].Timeslot == block.GetTimeslot() {
 
+	if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() && block.GetTimeslot() > view.GetTimeslot() {
+		if len(e.onGoingBlocks) > 0 {
+			e.lockOnGoingBlocks.RLock()
+			if block.GetTimeslot() < e.onGoingBlocks[e.bestProposeBlock].Timeslot {
+				e.lockOnGoingBlocks.RUnlock()
+				err := view.ValidatePreSignBlock(block)
+				if err != nil {
+					return err
+				}
+
+				if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
+					return err
+				}
+				e.bestProposeBlock = blockHash
+			} else {
+				defer e.lockOnGoingBlocks.RUnlock()
+				instance := e.onGoingBlocks[blockHash]
+				err := instance.addBlock(block)
+				if err != nil {
+					return err
+				}
 			}
+		} else {
+			err := view.ValidatePreSignBlock(block)
+			if err != nil {
+				return err
+			}
+			if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
+				return err
+			}
+			e.bestProposeBlock = blockHash
 		}
-		view.ValidatePreSignBlock(block)
 	}
 	return nil
 }
 
 func (e *BLSBFT) processVoteMsg(vote *BFTVote) error {
-	onGoingBlock, ok := e.onGoingBlocks[vote.BlockHash]
-	if ok {
-		return errors.New("already received this propose block")
-	}
 	e.lockOnGoingBlocks.RLock()
+	viewHash, err := common.Hash{}.NewHashFromStr(vote.ViewHash)
+	if err != nil {
+		return err
+	}
+	view, err := e.Chain.GetViewByHash(viewHash)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := e.onGoingBlocks[vote.BlockHash]; !ok {
+		e.lockOnGoingBlocks.RUnlock()
+		if err := e.createBlockConsensusInstance(view, vote.BlockHash); err != nil {
+			return err
+		}
+		e.lockOnGoingBlocks.RLock()
+	}
 	defer e.lockOnGoingBlocks.RUnlock()
+
+	onGoingBlock := e.onGoingBlocks[vote.BlockHash]
 	if err := onGoingBlock.addVote(vote); err != nil {
 		return err
 	}
@@ -112,7 +164,7 @@ func (e *BLSBFT) isInTimeslot(view blockchain.ChainViewInterface) bool {
 	return false
 }
 
-func (blockCI *viewConsensusInstance) addVote(vote *BFTVote) error {
+func (blockCI *blockConsensusInstance) addVote(vote *BFTVote) error {
 	blockCI.lockVote.Lock()
 	defer blockCI.lockVote.Unlock()
 	if _, ok := blockCI.Votes[vote.Validator]; !ok {
@@ -126,7 +178,7 @@ func (blockCI *viewConsensusInstance) addVote(vote *BFTVote) error {
 	return nil
 }
 
-func (blockCI *viewConsensusInstance) confirmVote(blockHash *common.Hash, vote *BFTVote) error {
+func (blockCI *blockConsensusInstance) confirmVote(blockHash *common.Hash, vote *BFTVote) error {
 	data := blockHash.GetBytes()
 	data = append(data, vote.BLS...)
 	data = append(data, vote.BRI...)
@@ -136,13 +188,13 @@ func (blockCI *viewConsensusInstance) confirmVote(blockHash *common.Hash, vote *
 	return err
 }
 
-func (blockCI *viewConsensusInstance) createAndSendVote() (BFTVote, error) {
+func (blockCI *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
 	var vote BFTVote
 
 	pubKey := blockCI.Engine.UserKeySet.GetPublicKey()
-	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), blockCI.CommitteeBLS.StringList)
+	selfIdx := common.IndexOfStr(pubKey.GetMiningKeyBase58(consensusName), blockCI.Committee.StringList)
 
-	blsSig, err := blockCI.Engine.UserKeySet.BLSSignData(blockCI.Block.Hash().GetBytes(), selfIdx, blockCI.CommitteeBLS.ByteList)
+	blsSig, err := blockCI.Engine.UserKeySet.BLSSignData(blockCI.Block.Hash().GetBytes(), selfIdx, blockCI.Committee.ByteList)
 	if err != nil {
 		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
@@ -179,7 +231,7 @@ func validateProposeBlock(block common.BlockInterface, view blockchain.ChainView
 	return v, nil
 }
 
-func (blockCI *viewConsensusInstance) initInstance(view blockchain.ChainViewInterface) error {
+func (blockCI *blockConsensusInstance) initInstance(view blockchain.ChainViewInterface) error {
 	return nil
 }
 
@@ -207,5 +259,30 @@ func validateProducerPosition(block common.BlockInterface, genesisTime int64, sl
 	// 	return nil
 	// }
 	// return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
+	return nil
+}
+
+func (blockCI *blockConsensusInstance) addBlock(block common.BlockInterface) error {
+	blockCI.Block = block
+	blockCI.Timeslot = block.GetTimeslot()
+	blockCI.Phase = votePhase
+	return nil
+}
+
+func (e *BLSBFT) createBlockConsensusInstance(view blockchain.ChainViewInterface, blockHash string) error {
+	e.lockOnGoingBlocks.Lock()
+	defer e.lockOnGoingBlocks.Unlock()
+	var blockCI blockConsensusInstance
+	blockCI.View = view
+	blockCI.Phase = listenPhase
+
+	var cfg consensusConfig
+	err := json.Unmarshal([]byte(view.GetConsensusConfig()), &cfg)
+	if err != nil {
+		return err
+	}
+	blockCI.ConsensusCfg = cfg
+
+	e.onGoingBlocks[blockHash] = &blockCI
 	return nil
 }

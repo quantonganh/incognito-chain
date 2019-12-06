@@ -35,6 +35,7 @@ type ShardView struct {
 	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
 	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
 	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
+	ShardCommitteeHash     string                            `json:"CommitteeHash"`
 	ShardCommittee         []incognitokey.CommitteePublicKey `json:"ShardCommittee"`
 	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh

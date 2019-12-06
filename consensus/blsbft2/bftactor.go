@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
+	"github.com/patrickmn/go-cache"
 )
 
 type BLSBFT struct {
@@ -28,23 +29,33 @@ type BLSBFT struct {
 
 	currentTimeslot   uint64
 	bestProposeBlock  string
-	onGoingBlocks     map[string]viewConsensusInstance
+	onGoingBlocks     map[string]*blockConsensusInstance
 	lockOnGoingBlocks sync.RWMutex
+
+	isAlreadyProposeBlock bool
+
+	viewCommitteesCache *cache.Cache // [committeeHash]:committeeDecodeStruct
 }
 
-type viewConsensusInstance struct {
+type blockConsensusInstance struct {
 	Engine       *BLSBFT
 	View         blockchain.ChainViewInterface
+	ConsensusCfg consensusConfig
 	Block        common.BlockInterface
 	Votes        map[string]*BFTVote
 	lockVote     sync.RWMutex
 	Timeslot     uint64
 	Phase        string
-	Committee    []incognitokey.CommitteePublicKey
-	CommitteeBLS struct {
-		StringList []string
-		ByteList   []blsmultisig.PublicKey
-	}
+	Committee    committeeDecode
+}
+
+type consensusConfig struct {
+	Slottime string
+}
+type committeeDecode struct {
+	Committee  []incognitokey.CommitteePublicKey
+	StringList []string
+	ByteList   []blsmultisig.PublicKey
 }
 
 func (e *BLSBFT) GetConsensusName() string {
