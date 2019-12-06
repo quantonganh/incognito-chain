@@ -121,15 +121,7 @@ type ChainInterface interface {
 	GetAllViews() map[string]ChainViewInterface
 	GetViewByHash(*common.Hash) (ChainViewInterface, error)
 	GetGenesisTime() int64
-	// GetFinalViewConsensusType() string
-	// GetFinalViewLastBlockTimeStamp() int64
-	// GetFinalViewMinBlkInterval() time.Duration
-	// GetFinalViewMaxBlkCreateTime() time.Duration
-	// CurrentFinalViewHeight() uint64
-	// GetFinalViewCommitteeSize() int
-	// GetFinalViewCommittee() []incognitokey.CommitteePublicKey
-	// GetFinalViewPubKeyCommitteeIndex(string) int
-	// GetFinalViewLastProposerIndex() int
+	GetAllTipBlocksHash() []*common.Hash
 }
 
 type ChainViewInterface interface {

@@ -236,3 +236,14 @@ func (chain *BeaconChain) deleteView(view ChainViewInterface) error {
 func (chain *BeaconChain) loadView() error {
 	return nil
 }
+
+func (chain *BeaconChain) GetAllTipBlocksHash() []*common.Hash {
+	result := []*common.Hash{}
+	chain.lock.RLock()
+	defer chain.lock.RUnlock()
+
+	for _, view := range chain.views {
+		result = append(result, view.GetTipBlock().Hash())
+	}
+	return result
+}

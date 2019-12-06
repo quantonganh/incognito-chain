@@ -43,6 +43,9 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 		return fmt.Errorf("this propose block has timeslot higher than current timeslot. BLOCK:%v CURRENT:%v", block.GetTimeslot(), e.currentTimeslot)
 	}
 	blockHash := block.Hash().String()
+	if blockHash == e.Chain.GetBestView().GetTipBlock().Hash().String() {
+		//send this block
+	}
 	e.lockOnGoingBlocks.RLock()
 	if _, ok := e.onGoingBlocks[blockHash]; ok {
 		if e.onGoingBlocks[blockHash].Block != nil {
@@ -54,10 +57,14 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 
 	view, err := e.Chain.GetViewByHash(block.GetPreviousViewHash())
 	if err != nil {
+		if block.GetHeight() > e.Chain.GetBestView().CurrentHeight() {
+			//request block
+			return nil
+		}
 		return err
 	}
 
-	if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() && block.GetTimeslot() > view.GetTimeslot() {
+	if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() {
 		if len(e.onGoingBlocks) > 0 {
 			e.lockOnGoingBlocks.RLock()
 			if block.GetTimeslot() < e.onGoingBlocks[e.bestProposeBlock].Timeslot {
