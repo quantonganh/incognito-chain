@@ -309,8 +309,10 @@ func (view *ShardView) GetBlkMinInterval() time.Duration {
 func (view *ShardView) GetLastBlockTimeStamp() int64 {
 	return 0
 }
-func (view *ShardView) GetCommittee() []string {
-	return nil
+func (view *ShardView) GetCommittee() []incognitokey.CommitteePublicKey {
+	result := []incognitokey.CommitteePublicKey{}
+	result = append([]incognitokey.CommitteePublicKey{}, view.ShardCommittee...)
+	return result
 }
 func (view *ShardView) GetLastProposerIdx() int { return 0 }
 
@@ -340,4 +342,14 @@ func (view *ShardView) SetViewIsBest(isBest bool) {
 
 func (view *ShardView) GetTipBlock() common.BlockInterface {
 	return view.BestBlock
+}
+
+func (view *ShardView) GetCommitteeHash() *common.Hash {
+	view.lock.RLock()
+	defer view.lock.RUnlock()
+	result, err := common.Hash{}.NewHashFromStr(view.ShardCommitteeHash)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }

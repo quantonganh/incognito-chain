@@ -8,6 +8,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/consensus"
+	"github.com/incognitochain/incognito-chain/consensus/signatureschemes/blsmultisig"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
@@ -282,6 +283,27 @@ func (e *BLSBFT) createBlockConsensusInstance(view blockchain.ChainViewInterface
 		return err
 	}
 	blockCI.ConsensusCfg = cfg
+	cmHash := view.GetCommitteeHash()
+	cmCache, ok := e.viewCommitteesCache.Get(cmHash.String())
+	if !ok {
+		committee := view.GetCommittee()
+		var cmDecode committeeDecode
+		cmDecode.Committee = committee
+		cmDecode.ByteList = []blsmultisig.PublicKey{}
+		cmDecode.StringList = []string{}
+		for _, member := range cmDecode.Committee {
+			cmDecode.ByteList = append(cmDecode.ByteList, member.MiningPubKey[consensusName])
+		}
+		committeeBLSString, err := incognitokey.ExtractPublickeysFromCommitteeKeyList(cmDecode.Committee, consensusName)
+		if err != nil {
+			return err
+		}
+		cmDecode.StringList = committeeBLSString
+		e.viewCommitteesCache.Add(view.GetCommitteeHash().String(), cmDecode, committeeCacheCleanupTime)
+		blockCI.Committee = cmDecode
+	} else {
+		blockCI.Committee = cmCache.(committeeDecode)
+	}
 
 	e.onGoingBlocks[blockHash] = &blockCI
 	return nil

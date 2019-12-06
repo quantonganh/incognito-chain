@@ -119,7 +119,7 @@ type ChainInterface interface {
 	GetBestView() ChainViewInterface
 	GetFinalView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
-	GetViewByHash(*common.Hash) ChainViewInterface
+	GetViewByHash(*common.Hash) (ChainViewInterface, error)
 	GetGenesisTime() int64
 	// GetFinalViewConsensusType() string
 	// GetFinalViewLastBlockTimeStamp() int64
@@ -137,7 +137,8 @@ type ChainViewInterface interface {
 	GetBlkMinInterval() time.Duration
 	GetBlkMaxCreateTime() time.Duration
 	CurrentHeight() uint64
-	GetCommittee() []string
+	GetCommittee() []incognitokey.CommitteePublicKey
+	GetCommitteeHash() *common.Hash
 	GetLastProposerIdx() int
 
 	GetEpoch() uint64

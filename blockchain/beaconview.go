@@ -34,6 +34,7 @@ type BeaconView struct {
 	Epoch                                  uint64                                     `json:"Epoch"`
 	BeaconHeight                           uint64                                     `json:"BeaconHeight"`
 	BeaconProposerIndex                    int                                        `json:"BeaconProposerIndex"`
+	BeaconCommitteeHash                    string                                     `json:"BeaconCommitteeHash"`
 	BeaconCommittee                        []incognitokey.CommitteePublicKey          `json:"BeaconCommittee"`
 	BeaconPendingValidator                 []incognitokey.CommitteePublicKey          `json:"BeaconPendingValidator"`
 	CandidateShardWaitingForCurrentRandom  []incognitokey.CommitteePublicKey          `json:"CandidateShardWaitingForCurrentRandom"` // snapshot shard candidate list, waiting to be shuffled in this current epoch
@@ -694,8 +695,10 @@ func (view *BeaconView) GetBlkMinInterval() time.Duration {
 func (view *BeaconView) GetLastBlockTimeStamp() int64 {
 	return 0
 }
-func (view *BeaconView) GetCommittee() []string {
-	return nil
+func (view *BeaconView) GetCommittee() []incognitokey.CommitteePublicKey {
+	result := []incognitokey.CommitteePublicKey{}
+	result = append([]incognitokey.CommitteePublicKey{}, view.BeaconCommittee...)
+	return result
 }
 func (view *BeaconView) GetLastProposerIdx() int { return 0 }
 
@@ -717,4 +720,14 @@ func (view *BeaconView) SetViewIsBest(isBest bool) {
 
 func (view *BeaconView) GetTipBlock() common.BlockInterface {
 	return view.BestBlock
+}
+
+func (view *BeaconView) GetCommitteeHash() *common.Hash {
+	view.lock.RLock()
+	defer view.lock.RUnlock()
+	result, err := common.Hash{}.NewHashFromStr(view.BeaconCommitteeHash)
+	if err != nil {
+		panic(err)
+	}
+	return result
 }
