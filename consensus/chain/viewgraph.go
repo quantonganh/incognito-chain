@@ -5,6 +5,7 @@ import (
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"os"
+	"sync"
 )
 
 type ViewNode struct {
@@ -12,7 +13,7 @@ type ViewNode struct {
 	next map[common.Hash]*ViewNode
 	prev *ViewNode
 }
-type BlockGraph struct {
+type ViewGraph struct {
 	name        string
 	root        *ViewNode
 	node        map[common.Hash]*ViewNode
@@ -20,10 +21,11 @@ type BlockGraph struct {
 	edgeStr     string
 	bestView    *ViewNode
 	confirmView *ViewNode
+	lock        *sync.RWMutex
 }
 
-func NewBlockGraph(name string, rootView blockchain.ChainViewInterface) *BlockGraph {
-	s := &BlockGraph{name: name}
+func NewViewGraph(name string, rootView blockchain.ChainViewInterface, lock *sync.RWMutex) *ViewGraph {
+	s := &ViewGraph{name: name, lock: lock}
 	s.leaf = make(map[common.Hash]*ViewNode)
 	s.node = make(map[common.Hash]*ViewNode)
 	s.root = &ViewNode{
@@ -37,7 +39,7 @@ func NewBlockGraph(name string, rootView blockchain.ChainViewInterface) *BlockGr
 	return s
 }
 
-func (s *BlockGraph) AddView(b blockchain.ChainViewInterface) {
+func (s *ViewGraph) AddView(b blockchain.ChainViewInterface) {
 	newBlockHash := *b.GetTipBlock().Hash()
 	for h, v := range s.node {
 		if h == *b.GetTipBlock().GetPreviousViewHash() {
@@ -53,13 +55,13 @@ func (s *BlockGraph) AddView(b blockchain.ChainViewInterface) {
 	}
 }
 
-func (s *BlockGraph) GetBestView() blockchain.ChainViewInterface {
+func (s *ViewGraph) GetBestView() blockchain.ChainViewInterface {
 	s.traverse(s.root)
 	//s.updateConfirmBlock(s.bestView)
 	return s.bestView.view
 }
 
-func (s *BlockGraph) Print() {
+func (s *ViewGraph) Print() {
 	s.edgeStr = ""
 	s.traverse(s.root)
 
@@ -92,7 +94,7 @@ newrank=true;
 
 }
 
-func (s *BlockGraph) traverse(n *ViewNode) {
+func (s *ViewGraph) traverse(n *ViewNode) {
 	if n.next != nil && len(n.next) != 0 {
 		for h, v := range n.next {
 			s.edgeStr += fmt.Sprintf("%s_%d_%s -> %s_%d_%s;\n", s.name, n.view.GetTipBlock().GetHeight(), string(n.view.GetTipBlock().Hash().String()[0:5]), s.name, v.view.GetTipBlock().GetHeight(), string(h.String()[0:5]))
@@ -112,7 +114,7 @@ func (s *BlockGraph) traverse(n *ViewNode) {
 	}
 }
 
-func (s *BlockGraph) updateConfirmBlock(node *ViewNode) {
+func (s *ViewGraph) updateConfirmBlock(node *ViewNode) {
 	_1block := node.prev
 	if _1block == nil {
 		s.confirmView = node

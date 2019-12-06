@@ -1,9 +1,12 @@
 package chain
 
 import (
+	"bytes"
+	"encoding/gob"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"sync"
 	"time"
 )
 
@@ -14,22 +17,42 @@ import (
 */
 
 type ChainManager struct {
+	view *ViewGraph
+	name string
+	lock *sync.RWMutex
 }
 
 //to get byte array of this chain data, for loading later
-func (s *ChainManager) GetChainData() []byte {
-	return nil
+func (s *ChainManager) GetChainData() (res []byte) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(s)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 //create new chain with root view
 func InitNewChain(name string, rootView blockchain.ChainViewInterface) *ChainManager {
-	return nil
+	cm := &ChainManager{
+		name: name,
+		lock: new(sync.RWMutex),
+	}
+	cm.view = NewViewGraph(name, rootView, cm.lock)
+	return cm
 }
 
-func LoadChain(data []byte) *ChainManager {
-	//decode chain view data
-	//assign current chain view data to this data structure
-	return nil
+func LoadChain(data []byte) (res *ChainManager) {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(res)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
 func (s *ChainManager) AddChainView() {
