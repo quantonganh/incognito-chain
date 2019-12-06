@@ -96,6 +96,10 @@ func (beaconBlock BeaconBlock) GetPreviousViewHash() *common.Hash {
 	return nil
 }
 
+func (beaconBlock BeaconBlock) GetPreviousBlockHash() *common.Hash {
+	return beaconBlock.GetPreviousBlockHash()
+}
+
 func (beaconBlock BeaconBlock) GetTimeslot() uint64 {
 	return beaconBlock.Header.Timeslot
 }

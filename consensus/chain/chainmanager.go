@@ -1,9 +1,12 @@
 package chain
 
 import (
+	"bytes"
+	"encoding/gob"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
+	"sync"
 	"time"
 )
 
@@ -11,112 +14,136 @@ import (
 	How to load Chain Manager when bootup
 	Logic to store chainview
 	How to manage Chain View
-
 */
 
-type ChainManager struct {
+type ViewManager struct {
+	manager *ViewGraph
+	name    string
+	lock    *sync.RWMutex
 }
 
 //to get byte array of this chain data, for loading later
-func (s *ChainManager) GetChainData() []byte {
-	return nil
+func (s *ViewManager) GetChainData() (res []byte) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(s)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
-//create new chain with root view
-func InitNewChain(name string, rootView blockchain.ChainViewInterface) *ChainManager {
-	return nil
+//create new chain with root manager
+func InitNewChain(name string, rootView blockchain.ChainViewInterface) *ViewManager {
+	cm := &ViewManager{
+		name: name,
+		lock: new(sync.RWMutex),
+	}
+	cm.manager = NewViewGraph(name, rootView, cm.lock)
+	return cm
 }
 
-func LoadChain(data []byte) *ChainManager {
-	//decode chain view data
-	//assign current chain view data to this data structure
-	return nil
+func LoadChain(data []byte) (res *ViewManager) {
+	dec := gob.NewDecoder(bytes.NewReader(data))
+	err := dec.Decode(res)
+	if err != nil {
+		panic(err)
+	}
+	return res
 }
 
-func (s *ChainManager) AddChainView() {
-	return
+func (s *ViewManager) AddChainView(view blockchain.ChainViewInterface) {
+	s.manager.AddView(view)
 }
 
-func (ChainManager) GetChainName() string {
+func (ViewManager) GetChainName() string {
 	panic("implement me")
 }
 
-func (ChainManager) IsReady() bool {
+func (ViewManager) IsReady() bool {
 	panic("implement me")
 }
 
-func (ChainManager) GetActiveShardNumber() int {
+func (ViewManager) GetActiveShardNumber() int {
 	panic("implement me")
 }
 
-func (ChainManager) GetPubkeyRole(pubkey string, round int) (string, byte) {
+func (ViewManager) GetPubkeyRole(pubkey string, round int) (string, byte) {
 	panic("implement me")
 }
 
-func (ChainManager) GetConsensusType() string {
+func (ViewManager) GetConsensusType() string {
 	panic("implement me")
 }
 
-func (ChainManager) GetLastBlockTimeStamp() int64 {
+func (ViewManager) GetLastBlockTimeStamp() int64 {
 	panic("implement me")
 }
 
-func (ChainManager) GetMinBlkInterval() time.Duration {
+func (ViewManager) GetMinBlkInterval() time.Duration {
 	panic("implement me")
 }
 
-func (ChainManager) GetMaxBlkCreateTime() time.Duration {
+func (ViewManager) GetMaxBlkCreateTime() time.Duration {
 	panic("implement me")
 }
 
-func (ChainManager) CurrentHeight() uint64 {
+func (ViewManager) CurrentHeight() uint64 {
 	panic("implement me")
 }
 
-func (ChainManager) GetCommitteeSize() int {
+func (ViewManager) GetCommitteeSize() int {
 	panic("implement me")
 }
 
-func (ChainManager) GetCommittee() []incognitokey.CommitteePublicKey {
+func (ViewManager) GetCommittee() []incognitokey.CommitteePublicKey {
 	panic("implement me")
 }
 
-func (ChainManager) GetPubKeyCommitteeIndex(string) int {
+func (ViewManager) GetPubKeyCommitteeIndex(string) int {
 	panic("implement me")
 }
 
-func (ChainManager) GetLastProposerIndex() int {
+func (ViewManager) GetLastProposerIndex() int {
 	panic("implement me")
 }
 
-func (ChainManager) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
+func (ViewManager) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
 	panic("implement me")
 }
 
-func (ChainManager) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func (ViewManager) ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	panic("implement me")
 }
 
-func (ChainManager) GetShardID() int {
+func (s *ViewManager) GetShardID() int {
 	panic("implement me")
 }
 
-func (ChainManager) GetBestView() blockchain.ChainViewInterface {
+func (s *ViewManager) GetBestView() blockchain.ChainViewInterface {
+	return s.manager.GetBestView()
+}
+
+func (s *ViewManager) GetFinalView() blockchain.ChainViewInterface {
+	return s.manager.GetBestView()
+}
+
+func (ViewManager) GetAllViews() map[string]blockchain.ChainViewInterface {
 	panic("implement me")
 }
 
-func (ChainManager) GetFinalView() blockchain.ChainViewInterface {
-	panic("implement me")
+func (s *ViewManager) GetViewByHash(h *common.Hash) blockchain.ChainViewInterface {
+	viewnode, ok := s.manager.node[*h]
+	if !ok {
+		return nil
+	} else {
+		return viewnode.view
+	}
 }
 
-func (ChainManager) GetAllViews() map[string]blockchain.ChainViewInterface {
-	panic("implement me")
-}
-
-func (ChainManager) GetViewByHash(*common.Hash) (blockchain.ChainViewInterface, error) {
-	panic("implement me")
-}
-
-func (ChainManager) GetGenesisTime() int64 {
+func (ViewManager) GetGenesisTime() int64 {
 	panic("implement me")
 }

@@ -155,7 +155,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		}
 		go e.processRequestBlkMsg(&msgRequest)
 	default:
-		e.logger.Critical("Unknown BFT message type")
+		e.Logger.Critical("Unknown BFT message type")
 		return
 	}
 }
@@ -216,7 +216,7 @@ func (blockCI *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
 	}
 
 	blockCI.Votes[pubKey.GetMiningKeyBase58(consensusName)] = &vote
-	blockCI.Engine.logger.Info("sending vote...")
+	blockCI.Engine.Logger.Info("sending vote...")
 	go blockCI.Engine.Node.PushMessageToChain(msg, blockCI.Engine.Chain)
 	return vote, nil
 }
