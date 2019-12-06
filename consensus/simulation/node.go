@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	blsbft "github.com/incognitochain/incognito-chain/consensus/blsbft2"
+	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
 	"os"
@@ -13,7 +14,7 @@ import (
 type Node struct {
 	id              string
 	consensusEngine *blsbft.BLSBFT
-	chain           *Chain
+	chain           *chain.ChainManager
 	nodeList        []*Node
 }
 
@@ -32,9 +33,11 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []string, index int) *Node {
 	name := fmt.Sprintf("node_%d", index)
 	node := Node{id: fmt.Sprintf("%d", index)}
+	//TODO: create new ChainManager with ShardView as ViewInterface
 
-	node.chain = NewChain(name, committeePkStruct)
-	node.chain.UserPubKey = committeePkStruct[index]
+	node.chain = chain.InitNewChain("shard0", &blockchain.ShardView{})
+	//node.chain.UserPubKey = committeePkStruct[index]
+
 	fd, err := os.OpenFile(fmt.Sprintf("%s.log", name), os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)

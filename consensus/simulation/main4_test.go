@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/incognitochain/incognito-chain/consensus/blsbft"
+	blsbft "github.com/incognitochain/incognito-chain/consensus/blsbft2"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"testing"
 )

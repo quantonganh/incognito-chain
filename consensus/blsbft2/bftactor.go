@@ -24,7 +24,7 @@ type BLSBFT struct {
 	BFTMessageCh chan wire.MessageBFT
 	isStarted    bool
 	StopCh       chan struct{}
-	logger       common.Logger
+	Logger       common.Logger
 
 	currentTimeslot   uint64
 	bestProposeBlock  string
@@ -72,7 +72,7 @@ func (e *BLSBFT) Start() error {
 	e.StopCh = make(chan struct{})
 
 	ticker := time.Tick(1 * time.Second)
-	e.logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
+	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
 		fmt.Println("action")
 		for { //actor loop
@@ -95,7 +95,7 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 	newInstance.ChainKey = chainKey
 	newInstance.Node = node
 	newInstance.UserKeySet = e.UserKeySet
-	newInstance.logger = logger
+	newInstance.Logger = logger
 	return &newInstance
 }
 
