@@ -14,7 +14,7 @@ import (
 type Node struct {
 	id              string
 	consensusEngine *blsbft.BLSBFT
-	chain           *chain.ChainManager
+	chain           *chain.ChainViewManager
 	nodeList        []*Node
 }
 
@@ -33,7 +33,7 @@ func (s logWriter) Write(p []byte) (n int, err error) {
 func NewNode(committeePkStruct []incognitokey.CommitteePublicKey, committee []string, index int) *Node {
 	name := fmt.Sprintf("node_%d", index)
 	node := Node{id: fmt.Sprintf("%d", index)}
-	//TODO: create new ChainManager with ShardView as ViewInterface
+	//TODO: create new ChainViewManager with ShardView as ViewInterface
 
 	node.chain = chain.InitNewChain("shard0", &blockchain.ShardView{})
 	//node.chain.UserPubKey = committeePkStruct[index]
