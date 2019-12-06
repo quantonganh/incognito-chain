@@ -11,7 +11,6 @@ import (
 	How to load Chain Manager when bootup
 	Logic to store chainview
 	How to manage Chain View
-
 */
 
 type ChainManager struct {

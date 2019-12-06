@@ -1,49 +1,51 @@
 package chain
 
 import (
+	"fmt"
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"os"
 )
 
-//TODO: this should be ChainViewInterface
-
+type ViewNode struct {
+	view blockchain.ChainViewInterface
+	next map[common.Hash]*ViewNode
+	prev *ViewNode
+}
 type BlockGraph struct {
-	name         string
-	root         *blockchain.ChainViewInterface
-	node         map[common.Hash]*blockchain.ChainViewInterface
-	leaf         map[common.Hash]*blockchain.ChainViewInterface
-	edgeStr      string
-	bestView     *blockchain.ChainViewInterface
-	confirmBlock *blockchain.ChainViewInterface
+	name        string
+	root        *ViewNode
+	node        map[common.Hash]*ViewNode
+	leaf        map[common.Hash]*ViewNode
+	edgeStr     string
+	bestView    *ViewNode
+	confirmView *ViewNode
 }
 
-func NewBlockGraph(name string, rootBlock common.BlockInterface) *BlockGraph {
+func NewBlockGraph(name string, rootView blockchain.ChainViewInterface) *BlockGraph {
 	s := &BlockGraph{name: name}
-	s.leaf = make(map[common.Hash]*blockchain.ChainViewInterface)
-	s.node = make(map[common.Hash]*blockchain.ChainViewInterface)
-	s.root = &blockchain.ChainViewInterface{
-		rootBlock,
-		*rootBlock.Hash(),
-		nil,
-		make(map[common.Hash]*blockchain.ChainViewInterface),
+	s.leaf = make(map[common.Hash]*ViewNode)
+	s.node = make(map[common.Hash]*ViewNode)
+	s.root = &ViewNode{
+		view: rootView,
+		next: make(map[common.Hash]*ViewNode),
+		prev: nil,
 	}
-	s.leaf[*rootBlock.Hash()] = s.root
-	s.node[*rootBlock.Hash()] = s.root
-	s.confirmBlock = s.root
+	s.leaf[*rootView.GetTipBlock().Hash()] = s.root
+	s.node[*rootView.GetTipBlock().Hash()] = s.root
+	s.confirmView = s.root
 	return s
 }
 
-func (s *BlockGraph) AddBlock(b common.BlockInterface) {
-	newBlockHash := *b.Hash()
+func (s *BlockGraph) AddView(b blockchain.ChainViewInterface) {
+	newBlockHash := *b.GetTipBlock().Hash()
 	for h, v := range s.node {
-		if h == b.GetPrevBlockHash() {
+		if h == *b.GetTipBlock().GetPreviousViewHash() {
 			delete(s.leaf, h)
-			s.leaf[newBlockHash] = &blockchain.ChainViewInterface{
-				b,
-				newBlockHash,
-				v,
-				make(map[common.Hash]*blockchain.ChainViewInterface),
+			s.leaf[newBlockHash] = &ViewNode{
+				view: b,
+				next: make(map[common.Hash]*ViewNode),
+				prev: v,
 			}
 			v.next[newBlockHash] = s.leaf[newBlockHash]
 			s.node[newBlockHash] = s.leaf[newBlockHash]
@@ -51,10 +53,10 @@ func (s *BlockGraph) AddBlock(b common.BlockInterface) {
 	}
 }
 
-func (s *BlockGraph) GetBestViewBlock() common.BlockInterface {
+func (s *BlockGraph) GetBestView() blockchain.ChainViewInterface {
 	s.traverse(s.root)
-	s.updateConfirmBlock(s.bestView)
-	return s.bestView.block
+	//s.updateConfirmBlock(s.bestView)
+	return s.bestView.view
 }
 
 func (s *BlockGraph) Print() {
@@ -66,17 +68,17 @@ node [shape=record];
 //    rankdir="LR";
 newrank=true;
 `
-	maxTimeSlot := int64(0)
+	maxTimeSlot := uint64(0)
 	for k, v := range s.node {
 		shortK := k.String()[0:5]
-		dotContent += fmt.Sprintf(`%s_%d_%s [label = "%d:%s"]`, s.name, v.block.GetHeight(), string(shortK), v.block.GetHeight(), string(shortK)) + "\n"
-		dotContent += fmt.Sprintf(`{rank=same; %s_%d_%s; slot_%d;}`, s.name, v.block.GetHeight(), string(shortK), GetTimeSlot(v.block.GetTimeStamp())) + "\n"
-		if GetTimeSlot(v.block.GetTimeStamp()) > maxTimeSlot {
-			maxTimeSlot = GetTimeSlot(v.block.GetTimeStamp())
+		dotContent += fmt.Sprintf(`%s_%d_%s [label = "%d:%s"]`, s.name, v.view.GetTipBlock().GetHeight(), string(shortK), v.view.GetTipBlock().GetHeight(), string(shortK)) + "\n"
+		dotContent += fmt.Sprintf(`{rank=same; %s_%d_%s; slot_%d;}`, s.name, v.view.GetTipBlock().GetHeight(), string(shortK), v.view.GetTipBlock()) + "\n"
+		if v.view.GetTimeslot() > maxTimeSlot {
+			maxTimeSlot = v.view.GetTimeslot()
 		}
 	}
 
-	for i := int64(0); i < maxTimeSlot; i++ {
+	for i := uint64(0); i < maxTimeSlot; i++ {
 		dotContent += fmt.Sprintf("slot_%d -> slot_%d;", i, i+1) + "\n"
 	}
 
@@ -90,39 +92,39 @@ newrank=true;
 
 }
 
-func (s *BlockGraph) traverse(n *GraphNode) {
+func (s *BlockGraph) traverse(n *ViewNode) {
 	if n.next != nil && len(n.next) != 0 {
 		for h, v := range n.next {
-			s.edgeStr += fmt.Sprintf("%s_%d_%s -> %s_%d_%s;\n", s.name, n.block.GetHeight(), string(n.block.Hash().String()[0:5]), s.name, v.block.GetHeight(), string(h.String()[0:5]))
+			s.edgeStr += fmt.Sprintf("%s_%d_%s -> %s_%d_%s;\n", s.name, n.view.GetTipBlock().GetHeight(), string(n.view.GetTipBlock().Hash().String()[0:5]), s.name, v.view.GetTipBlock().GetHeight(), string(h.String()[0:5]))
 			s.traverse(v)
 		}
 	} else {
 		if s.bestView == nil {
 			s.bestView = n
 		} else {
-			if n.block.GetHeight() > s.bestView.block.GetHeight() {
+			if n.view.GetTipBlock().GetHeight() > s.bestView.view.GetTipBlock().GetHeight() {
 				s.bestView = n
 			}
-			if n.block.GetHeight() == s.bestView.block.GetHeight() && GetTimeSlot(n.block.GetTimeStamp()) < GetTimeSlot(s.bestView.block.GetTimeStamp()) {
+			if (n.view.GetTipBlock().GetHeight() == s.bestView.view.GetTipBlock().GetHeight()) && n.view.GetTipBlock().GetTimeslot() < s.bestView.view.GetTipBlock().GetTimeslot() {
 				s.bestView = n
 			}
 		}
 	}
 }
 
-func (s *BlockGraph) updateConfirmBlock(node *GraphNode) {
+func (s *BlockGraph) updateConfirmBlock(node *ViewNode) {
 	_1block := node.prev
 	if _1block == nil {
-		s.confirmBlock = node
+		s.confirmView = node
 		return
 	}
 	_2block := _1block.prev
 	if _2block == nil {
-		s.confirmBlock = _1block
+		s.confirmView = _1block
 		return
 	}
-	if GetTimeSlot(_2block.block.GetTimeStamp()) == GetTimeSlot(_1block.block.GetTimeStamp())-1 && GetTimeSlot(_2block.block.GetTimeStamp()) == GetTimeSlot(node.block.GetTimeStamp())-2 {
-		s.confirmBlock = _2block
+	if _2block.view.GetTimeslot() == _1block.view.GetTimeslot()-1 && _2block.view.GetTimeslot() == node.view.GetTimeslot()-2 {
+		s.confirmView = _2block
 		return
 	}
 	s.updateConfirmBlock(_1block)
