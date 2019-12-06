@@ -14,7 +14,7 @@ import (
 type Node struct {
 	id              string
 	consensusEngine *blsbft.BLSBFT
-	chain           *chain.ChainViewManager
+	chain           *chain.ViewManager
 	nodeList        []*Node
 }
 

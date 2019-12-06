@@ -119,7 +119,7 @@ type ChainInterface interface {
 	GetBestView() ChainViewInterface
 	GetFinalView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
-	GetViewByHash(*common.Hash) (ChainViewInterface, error)
+	GetViewByHash(*common.Hash) ChainViewInterface
 	GetGenesisTime() int64
 	// GetFinalViewConsensusType() string
 	// GetFinalViewLastBlockTimeStamp() int64

@@ -53,11 +53,15 @@ func (s *ViewGraph) AddView(b blockchain.ChainViewInterface) {
 			s.node[newBlockHash] = s.leaf[newBlockHash]
 		}
 	}
+	s.update()
+}
+
+func (s *ViewGraph) update() {
+	s.traverse(s.root)
+	s.updateConfirmBlock(s.bestView)
 }
 
 func (s *ViewGraph) GetBestView() blockchain.ChainViewInterface {
-	s.traverse(s.root)
-	s.updateConfirmBlock(s.bestView)
 	return s.bestView.view
 }
 
