@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
@@ -64,15 +65,22 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 		return err
 	}
 
+	consensusCfg, err := parseConsensusConfig(view.GetConsensusConfig())
+	if err != nil {
+		return err
+	}
+	consensusSlottime, err := time.ParseDuration(consensusCfg.Slottime)
+	if err != nil {
+		return err
+	}
 	if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() {
+		if err := e.validateProducer(block, view, int64(consensusSlottime.Seconds()), view.GetCommittee(), e.Logger); err != nil {
+			return err
+		}
 		if len(e.onGoingBlocks) > 0 {
 			e.lockOnGoingBlocks.RLock()
 			if block.GetTimeslot() < e.onGoingBlocks[e.bestProposeBlock].Timeslot {
 				e.lockOnGoingBlocks.RUnlock()
-				err := view.ValidatePreSignBlock(block)
-				if err != nil {
-					return err
-				}
 
 				if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
 					return err
@@ -257,17 +265,24 @@ func (e *BLSBFT) getTimeSlot() uint64 {
 	return uint64(e.Chain.GetGenesisTime())
 }
 
-func validateProducerPosition(block common.BlockInterface, genesisTime int64, slotTime uint64, committee []incognitokey.CommitteePublicKey) error {
-	// producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
-	// tempProducer, err := committee[producerPosition].ToBase58()
-	// if err != nil {
-	// 	return err
-	// }
-	// if tempProducer == block.GetProducer() {
-	// 	return nil
-	// }
-	// return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
-	return nil
+func validateProducerPosition(block common.BlockInterface, genesisTime int64, slotTime int64, committee []incognitokey.CommitteePublicKey) error {
+	slotTimeDur := time.Duration(slotTime)
+	blockTime := time.Unix(block.GetBlockTimestamp(), 0)
+	timePassed := blockTime.Sub(time.Unix(genesisTime, 0)).Round(slotTimeDur)
+	timeSlot := uint64(int64(timePassed.Seconds()) / slotTime)
+	if block.GetTimeslot() != timeSlot {
+		return consensus.NewConsensusError(consensus.InvalidTimeslotError, fmt.Errorf("Timeslot should be %v instead of %v", timeSlot, block.GetTimeslot()))
+	}
+	producerPosition := timeSlot % uint64(len(committee))
+	tempProducer, err := committee[producerPosition].ToBase58()
+	if err != nil {
+		return err
+	}
+	if tempProducer == block.GetProducer() {
+		return nil
+	}
+
+	return consensus.NewConsensusError(consensus.UnExpectedError, fmt.Errorf("Producer should be should be %v instead of %v", tempProducer, block.GetProducer()))
 }
 
 func (blockCI *blockConsensusInstance) addBlock(block common.BlockInterface) error {

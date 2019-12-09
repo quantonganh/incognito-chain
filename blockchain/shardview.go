@@ -353,3 +353,7 @@ func (view *ShardView) GetCommitteeHash() *common.Hash {
 	}
 	return result
 }
+
+func (view *ShardView) GetGenesisTime() int64 {
+	return view.GenesisTime
+}

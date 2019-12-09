@@ -731,3 +731,7 @@ func (view *BeaconView) GetCommitteeHash() *common.Hash {
 	}
 	return result
 }
+
+func (view *BeaconView) GetGenesisTime() int64 {
+	return view.GenesisTime
+}

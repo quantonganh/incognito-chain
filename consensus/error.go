@@ -19,6 +19,7 @@ const (
 	DecodeValidationDataError
 	EncodeValidationDataError
 	BlockCreationError
+	InvalidTimeslotError
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -37,6 +38,7 @@ var ErrCodeMessage = map[int]struct {
 	DecodeValidationDataError:    {-1009, "Decode Validation Data error"},
 	EncodeValidationDataError:    {-1010, "Encode Validation Data Error"},
 	BlockCreationError:           {-1011, "Block Creation Error"},
+	InvalidTimeslotError:         {-1012, "Invalid Timeslot"},
 }
 
 type ConsensusError struct {

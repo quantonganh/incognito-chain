@@ -46,40 +46,21 @@ func EncodeValidationData(validationData ValidationData) (string, error) {
 
 func (e BLSBFT) CreateValidationData(block common.BlockInterface) ValidationData {
 	var valData ValidationData
-	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes()) //, 0, []blsmultisig.PublicKey{keyByte})
+	valData.ProducerBLSSig, _ = e.UserKeySet.BriSignData(block.Hash().GetBytes())
 	return valData
 }
 
-func validatePreSignBlock(block common.BlockInterface, view blockchain.ChainViewInterface, log common.Logger) error {
-	log.Info("verifying block...")
-
-	// log.Info("ValidateProducerPosition...")
-	// if err := validateProducerPosition(block, view.GetLastProposerIndex(), view.get); err != nil {
-	// 	return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	// }
+func (e BLSBFT) validateProducer(block common.BlockInterface, view blockchain.ChainViewInterface, slotTime int64, committee []incognitokey.CommitteePublicKey, log common.Logger) error {
+	log.Info("ValidateProducerPosition...")
+	if err := validateProducerPosition(block, view.GetGenesisTime(), slotTime, committee); err != nil {
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
+	}
 	log.Info("ValidateProducerSig...")
 	if err := validateProducerSig(block); err != nil {
 		return consensus.NewConsensusError(consensus.ProducerSignatureError, err)
 	}
-	log.Info("ValidatePreSignBlock...")
-	if err := view.ValidatePreSignBlock(block); err != nil {
-		return consensus.NewConsensusError(consensus.UnExpectedError, err)
-	}
-	log.Info("done verify block...")
 	return nil
 }
-
-// func validateProducerPosition(block common.BlockInterface, lastProposerIndex int, committee []incognitokey.CommitteePublicKey) error {
-// 	producerPosition := (lastProposerIndex + block.GetRound()) % len(committee)
-// 	tempProducer, err := committee[producerPosition].ToBase58()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	if tempProducer == block.GetProducer() {
-// 		return nil
-// 	}
-// 	return consensus.NewConsensusError(consensus.UnExpectedError, errors.New("Producer should be should be :"+tempProducer))
-// }
 
 func validateProducerSig(block common.BlockInterface) error {
 	valData, err := DecodeValidationData(block.GetValidationField())

@@ -14,4 +14,5 @@ type BlockInterface interface {
 	GetPreviousViewHash() *Hash
 	GetPreviousBlockHash() *Hash
 	GetTimeslot() uint64
+	GetBlockTimestamp() int64
 }

@@ -103,3 +103,7 @@ func (beaconBlock BeaconBlock) GetPreviousBlockHash() *common.Hash {
 func (beaconBlock BeaconBlock) GetTimeslot() uint64 {
 	return beaconBlock.Header.Timeslot
 }
+
+func (beaconBlock BeaconBlock) GetBlockTimestamp() int64 {
+	return beaconBlock.Header.Timestamp
+}

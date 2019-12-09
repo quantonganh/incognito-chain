@@ -148,4 +148,5 @@ type ChainViewInterface interface {
 	IsBestView() bool
 	SetViewIsBest(isBest bool)
 	GetTipBlock() common.BlockInterface
+	GetGenesisTime() int64
 }

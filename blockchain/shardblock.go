@@ -532,3 +532,15 @@ func (block CrossShardBlock) GetTimeslot() uint64 {
 func (block ShardToBeaconBlock) GetTimeslot() uint64 {
 	return block.Header.Timeslot
 }
+
+func (block ShardBlock) GetBlockTimestamp() int64 {
+	return block.Header.Timestamp
+}
+
+func (block CrossShardBlock) GetBlockTimestamp() int64 {
+	return block.Header.Timestamp
+}
+
+func (block ShardToBeaconBlock) GetBlockTimestamp() int64 {
+	return block.Header.Timestamp
+}

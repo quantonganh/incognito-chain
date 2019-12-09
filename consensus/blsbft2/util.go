@@ -1,6 +1,7 @@
 package blsbftv2
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/incognitochain/incognito-chain/common"
@@ -27,4 +28,13 @@ func (e *BLSBFT) ExtractBridgeValidationData(block common.BlockInterface) ([][]b
 		return nil, nil, consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	return valData.BridgeSig, valData.ValidatiorsIdx, nil
+}
+
+func parseConsensusConfig(config string) (*consensusConfig, error) {
+	var result consensusConfig
+	err := json.Unmarshal([]byte(config), &result)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
