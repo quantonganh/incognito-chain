@@ -7,7 +7,6 @@ import (
 
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/metadata"
-	"github.com/incognitochain/incognito-chain/privacy"
 	"github.com/incognitochain/incognito-chain/transaction"
 )
 
@@ -45,7 +44,7 @@ type CrossShardBlock struct {
 	ToShardID       byte
 	MerklePathShard []common.Hash
 	// Cross Shard data for PRV
-	CrossOutputCoin []privacy.OutputCoin
+	CrossOutputCoin []CrossOutputCoinWithIndex
 	// Cross Shard Data for Custom Token Tx
 	CrossTxTokenData []transaction.TxNormalTokenData
 	// Cross Shard For Custom token privacy

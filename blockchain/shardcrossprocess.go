@@ -11,9 +11,9 @@ import (
 )
 
 type CrossOutputCoin struct {
-	BlockHeight uint64
-	BlockHash   common.Hash
-	OutputCoin  []privacy.OutputCoin
+	BlockHeight         uint64
+	BlockHash           common.Hash
+	OutputCoinWithIndex []CrossOutputCoinWithIndex
 }
 type CrossTxTokenData struct {
 	BlockHeight uint64
@@ -26,19 +26,19 @@ type CrossTokenPrivacyData struct {
 	TokenPrivacyData []ContentCrossShardTokenPrivacyData
 }
 type CrossTransaction struct {
-	BlockHeight      uint64
-	BlockHash        common.Hash
-	TokenPrivacyData []ContentCrossShardTokenPrivacyData
-	OutputCoin       []privacy.OutputCoin
+	BlockHeight         uint64
+	BlockHash           common.Hash
+	TokenPrivacyData    []ContentCrossShardTokenPrivacyData
+	OutputCoinWithIndex []CrossOutputCoinWithIndex
 }
 type ContentCrossShardTokenPrivacyData struct {
-	OutputCoin     []privacy.OutputCoin
-	PropertyID     common.Hash // = hash of TxCustomTokenprivacy data
-	PropertyName   string
-	PropertySymbol string
-	Type           int    // action type
-	Mintable       bool   // default false
-	Amount         uint64 // init amount
+	OutputCoinWithIndex []CrossOutputCoinWithIndex
+	PropertyID          common.Hash // = hash of TxCustomTokenprivacy data
+	PropertyName        string
+	PropertySymbol      string
+	Type                int    // action type
+	Mintable            bool   // default false
+	Amount              uint64 // init amount
 }
 type CrossShardTokenPrivacyMetaData struct {
 	TokenID        common.Hash
@@ -49,9 +49,15 @@ type CrossShardTokenPrivacyMetaData struct {
 	Amount         uint64 // init amount
 }
 
+type CrossOutputCoinWithIndex struct {
+	OutputCoin privacy.OutputCoin
+	IndexInTx byte
+	EphemeralPubKey []byte
+}
+
 func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Bytes() []byte {
 	res := []byte{}
-	for _, item := range contentCrossShardTokenPrivacyData.OutputCoin {
+	for _, item := range contentCrossShardTokenPrivacyData.OutputCoinWithIndex {
 		res = append(res, item.Bytes()...)
 	}
 	res = append(res, contentCrossShardTokenPrivacyData.PropertyID.GetBytes()...)
@@ -76,7 +82,7 @@ func (contentCrossShardTokenPrivacyData ContentCrossShardTokenPrivacyData) Hash(
 func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
 	res := []byte{}
 	res = append(res, crossOutputCoin.BlockHash.GetBytes()...)
-	for _, coins := range crossOutputCoin.OutputCoin {
+	for _, coins := range crossOutputCoin.OutputCoinWithIndex {
 		res = append(res, coins.Bytes()...)
 	}
 	return common.HashH(res)
@@ -84,7 +90,7 @@ func (crossOutputCoin CrossOutputCoin) Hash() common.Hash {
 func (crossTransaction CrossTransaction) Bytes() []byte {
 	res := []byte{}
 	res = append(res, crossTransaction.BlockHash.GetBytes()...)
-	for _, coins := range crossTransaction.OutputCoin {
+	for _, coins := range crossTransaction.OutputCoinWithIndex {
 		res = append(res, coins.Bytes()...)
 	}
 	for _, coins := range crossTransaction.TokenPrivacyData {
@@ -109,4 +115,16 @@ func (crossShardBlock *CrossShardBlock) VerifyCrossShardBlock(blockchain *BlockC
 		return NewBlockChainError(HashError, errors.New("Fail to verify Merkle Path Shard"))
 	}
 	return nil
+}
+
+func (outCoinWithIndex CrossOutputCoinWithIndex) Bytes() []byte {
+	res := []byte{}
+	res = append(outCoinWithIndex.OutputCoin.Bytes())
+
+	if len(outCoinWithIndex.EphemeralPubKey) > 0 {
+		res = append(res, outCoinWithIndex.EphemeralPubKey...)
+		res = append(res, outCoinWithIndex.IndexInTx)
+	}
+
+	return res
 }

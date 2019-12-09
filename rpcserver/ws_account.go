@@ -62,8 +62,8 @@ func (wsServer *WsServer) handleSubcribeCrossOutputCoinByPrivateKey(params inter
 				m := make(map[byte]uint64)
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
-						for _, crossOutputCoin := range crossTransaction.OutputCoin {
-							processedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
+						for _, crossOutputCoin := range crossTransaction.OutputCoinWithIndex {
+							processedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin.OutputCoin, &keyWallet.KeySet, senderShardID, &common.PRVCoinID)
 							if value, ok := m[senderShardID]; ok {
 								value += processedOutputCoin.CoinDetails.GetValue()
 								m[senderShardID] = value
@@ -227,8 +227,8 @@ func (wsServer *WsServer) handleSubcribeCrossCustomTokenPrivacyByPrivateKey(para
 				for senderShardID, crossTransactions := range shardBlock.Body.CrossTransactions {
 					for _, crossTransaction := range crossTransactions {
 						for _, crossTokenPrivacyData := range crossTransaction.TokenPrivacyData {
-							for _, crossOutputCoin := range crossTokenPrivacyData.OutputCoin {
-								proccessedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin, &keyWallet.KeySet, senderShardID, &crossTokenPrivacyData.PropertyID)
+							for _, crossOutputCoin := range crossTokenPrivacyData.OutputCoinWithIndex {
+								proccessedOutputCoin := wsServer.config.BlockChain.DecryptOutputCoinByKey(&crossOutputCoin.OutputCoin, &keyWallet.KeySet, senderShardID, &crossTokenPrivacyData.PropertyID)
 								if proccessedOutputCoin != nil {
 									if m[senderShardID] == nil {
 										m[senderShardID] = make(map[common.Hash]uint64)

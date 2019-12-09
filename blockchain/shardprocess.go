@@ -577,10 +577,10 @@ func (blockchain *BlockChain) verifyPreProcessingShardBlockForSigning(shardBlock
 						return NewBlockChainError(VerifyCrossShardBlockError, err)
 					}
 					compareCrossTransaction := CrossTransaction{
-						TokenPrivacyData: toShardCrossShardBlock.CrossTxTokenPrivacyData,
-						OutputCoin:       toShardCrossShardBlock.CrossOutputCoin,
-						BlockHash:        *toShardCrossShardBlock.Hash(),
-						BlockHeight:      toShardCrossShardBlock.Header.Height,
+						TokenPrivacyData:    toShardCrossShardBlock.CrossTxTokenPrivacyData,
+						OutputCoinWithIndex: toShardCrossShardBlock.CrossOutputCoin,
+						BlockHash:           *toShardCrossShardBlock.Hash(),
+						BlockHeight:         toShardCrossShardBlock.Header.Height,
 					}
 					targetHash := crossTransaction.Hash()
 					hash := compareCrossTransaction.Hash()

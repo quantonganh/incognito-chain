@@ -98,6 +98,7 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
+				//todo:
 				lenCommitment, _ = param.db.GetCommitmentLength(*param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
 				ok, err := param.db.HasCommitmentIndex(*param.tokenID, index.Uint64(), param.shardID)

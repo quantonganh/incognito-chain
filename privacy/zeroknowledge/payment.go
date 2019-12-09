@@ -435,7 +435,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 		offset += lenInputCoin
 	}
 
-	//OutputCoins []*privacy.OutputCoin
+	//OutputCoins []*privacy.OutputCoinWithIndex
 	if offset >= len(proofbytes) {
 		return privacy.NewPrivacyErr(privacy.SetBytesProofErr, errors.New("Out of range output coins"))
 	}
