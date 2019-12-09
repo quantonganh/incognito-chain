@@ -68,9 +68,6 @@ func validateProducerSig(block common.BlockInterface) error {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 
-	// producerBase58 := block.GetProducer()
-	// producerBytes, _, err := base58.Base58Check{}.Decode(producerBase58)
-
 	producerKey := incognitokey.CommitteePublicKey{}
 	err = producerKey.FromBase58(block.GetProducer())
 	if err != nil {

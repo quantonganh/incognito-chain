@@ -32,21 +32,12 @@ type BLSBFT struct {
 	onGoingBlocks     map[string]*blockConsensusInstance
 	lockOnGoingBlocks sync.RWMutex
 
-	isAlreadyProposeBlock bool
+	proposedBlockOnView struct {
+		ViewHash  string
+		BlockHash string
+	}
 
 	viewCommitteesCache *cache.Cache // [committeeHash]:committeeDecodeStruct
-}
-
-type blockConsensusInstance struct {
-	Engine       *BLSBFT
-	View         blockchain.ChainViewInterface
-	ConsensusCfg consensusConfig
-	Block        common.BlockInterface
-	Votes        map[string]*BFTVote
-	lockVote     sync.RWMutex
-	Timeslot     uint64
-	Phase        string
-	Committee    committeeDecode
 }
 
 type consensusConfig struct {

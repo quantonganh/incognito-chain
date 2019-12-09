@@ -21,15 +21,48 @@ func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
 	return true
 }
 
-func (e BLSBFT) getProposeBlock(view blockchain.ChainViewInterface, timeslot uint64) (common.BlockInterface, error) {
+func (e BLSBFT) proposeBlock(timeslot uint64) error {
+	e.lockOnGoingBlocks.Lock()
+	defer e.lockOnGoingBlocks.Unlock()
 	if e.bestProposeBlock == "" {
-		block, err := view.CreateNewBlock(timeslot)
-		if err != nil {
-			return nil, err
+		if e.proposedBlockOnView.BlockHash == "" {
+			view := e.Chain.GetBestView()
+			block, err := view.CreateNewBlock(timeslot)
+			if err != nil {
+				return err
+			}
+			validationData := e.CreateValidationData(block)
+			validationDataString, _ := EncodeValidationData(validationData)
+			block.(blockValidation).AddValidationField(validationDataString)
+
+			blockHash := block.Hash().String()
+			e.lockOnGoingBlocks.Unlock()
+
+			if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
+				return err
+			}
+			instance := e.onGoingBlocks[blockHash]
+			err = instance.addBlock(block)
+			if err != nil {
+				return err
+			}
+
+			e.bestProposeBlock = blockHash
+			e.proposedBlockOnView.BlockHash = e.bestProposeBlock
+			e.proposedBlockOnView.ViewHash = view.Hash().String()
+
+			blockData, _ := json.Marshal(block)
+			msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+			go e.Node.PushMessageToChain(msg, e.Chain)
+			return nil
 		}
-		return block, nil
+	} else {
+		//re-broadcast best proposed block
+		blockData, _ := json.Marshal(e.onGoingBlocks[e.bestProposeBlock].Block)
+		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
-	return nil, nil
+	return nil
 }
 
 func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
