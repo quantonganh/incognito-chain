@@ -300,7 +300,7 @@ func (proof *PaymentProof) Bytes() []byte {
 		bytes = append(bytes, byte(privacy.Ed25519KeySize))
 		bytes = append(bytes, ephemeralPubKeyBytes...)
 	} else {
-		bytes = append(bytes, byte(0))
+		//bytes = append(bytes, byte(0))
 	}
 	//fmt.Printf("BYTES ------------------ %v\n", bytes)
 	//fmt.Printf("LEN BYTES ------------------ %v\n", len(bytes))

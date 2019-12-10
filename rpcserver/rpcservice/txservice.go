@@ -748,7 +748,7 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 	} else {
 		return nil, errors.New("payment address is invalid")
 	}
-	listTxHashFromFixedPK, listTxHashFromPKOTA, _, _, err := txService.BlockChain.GetTransactionHashByReceiver(keySet, fromBlockHeight, toBlockHeight)
+	listTxHashFromFixedPK, listTxHashFromPKOTA, _, _, currentBlockHeight, err := txService.BlockChain.GetTransactionHashByReceiver(keySet, fromBlockHeight, toBlockHeight)
 	if err != nil {
 		return nil, err
 	}
@@ -1455,7 +1455,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, 
 	if len(keySet.PaymentAddress.Pk) == 0 {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
 	}
-	listTxsHashFromFixedPK, listTxsHashFromPKOTA, indexOutputTxNornal, indexOutputTxPToken,  err := txService.BlockChain.GetTransactionHashByReceiver(&keySet, fromBlockHeight, toBlockHeight)
+	listTxsHashFromFixedPK, listTxsHashFromPKOTA, indexOutputTxNornal, indexOutputTxPToken, currentBlockHeight, err := txService.BlockChain.GetTransactionHashByReceiver(&keySet, fromBlockHeight, toBlockHeight)
 	if err != nil {
 		return nil, NewRPCError(UnexpectedError, errors.New("Can not find any tx"))
 	}
@@ -1464,6 +1464,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, 
 
 	result := jsonresult.ListReceivedTransaction{
 		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
+		CurrentBlockHeight: uint64(0),
 	}
 	for shardID, txHashs := range listTxsHashFromFixedPK {
 		for _, txHash := range txHashs {
@@ -1784,5 +1785,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, 
 
 		}
 	}
+
+	result.CurrentBlockHeight = currentBlockHeight
 	return &result, nil
 }

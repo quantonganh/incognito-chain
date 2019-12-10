@@ -166,4 +166,22 @@ func TestFee(t *testing.T){
 }
 
 
+func TestHashString(t *testing.T) {
+	//data := [][]byte{
+	//	{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32},                // 32 bytes
+	//	{16, 223, 34, 4, 35, 63, 73, 48, 69, 10, 11, 182, 183, 144, 150, 160, 17, 183, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}, // 32 bytes
+	//}
+	hashObj := new(common.Hash)
+
+	for i:=0; i< 100000; i++ {
+		bytesData := RandomScalar().ToBytesS()
+		hashData := common.HashB(bytesData)
+
+		hashObj.SetBytes(hashData)
+		str := hashObj.String()
+		assert.Equal(t,64, len(str))
+	}
+}
+
+
 

@@ -201,7 +201,7 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.publicKey != nil {
 		publicKey := coin.publicKey.ToBytesS()
-		if coin.shardIDLastByte != -1 {
+		if coin.shardIDLastByte >= 0 {
 			publicKey = append(publicKey, byte(coin.shardIDLastByte))
 		}
 		coinBytes = append(coinBytes, byte(len(publicKey)))
@@ -268,7 +268,7 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
 		coinBytes = append(coinBytes, coin.privRandOTA.ToBytesS()...)
 	} else {
-		coinBytes = append(coinBytes, byte(0))
+		//coinBytes = append(coinBytes, byte(0))
 	}
 
 	return coinBytes
