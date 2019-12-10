@@ -12,6 +12,7 @@ import (
 
 type ListOutputCoins struct {
 	Outputs map[string][]OutCoin `json:"Outputs"`
+	CurrentBlockHeights map[string]uint64
 }
 
 type OutCoin struct {

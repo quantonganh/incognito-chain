@@ -123,7 +123,7 @@ func (txService TxService) chooseOutsCoinByKeyset(
 	// get list outputcoins tx
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
-	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(keySet, shardIDSender, prvCoinID, 0, 0)
+	outCoins, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(keySet, shardIDSender, prvCoinID, 0, 0)
 	if err != nil {
 		return nil, 0, NewRPCError(GetOutputCoinError, err)
 	}
@@ -647,7 +647,7 @@ func (txService TxService) BuildPrivacyCustomTokenParam(tokenParamsRaw map[strin
 			if !existed && !existedCrossShard {
 				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New("Invalid Token ID"))
 			}
-			outputTokens, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(senderKeySet, shardIDSender, tokenID, 0, 0)
+			outputTokens, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(senderKeySet, shardIDSender, tokenID, 0, 0)
 			if err != nil {
 				return nil, nil, nil, NewRPCError(GetOutputCoinError, err)
 			}
@@ -939,7 +939,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		if err != nil {
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
 		}
-		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tokenID, 0, 0)
+		outcoints, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tokenID, 0, 0)
 		if err != nil {
 			Logger.log.Debugf("handleGetListPrivacyCustomTokenBalance result: %+v, err: %+v", nil, err)
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
@@ -976,7 +976,7 @@ func (txService TxService) GetListPrivacyCustomTokenBalance(privateKey string) (
 		if err != nil {
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(TokenIsInvalidError, err)
 		}
-		outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tokenID, 0, 0)
+		outcoints, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tokenID, 0, 0)
 		if err != nil {
 			return jsonresult.ListCustomTokenBalance{}, NewRPCError(UnexpectedError, err)
 		}
@@ -1018,7 +1018,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		if tokenID == tempTokenID.String() {
 			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tempTokenID, 0, 0)
+			outcoints, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tempTokenID, 0, 0)
 			if err != nil {
 				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 				return uint64(0), NewRPCError(UnexpectedError, err)
@@ -1032,7 +1032,7 @@ func (txService TxService) GetBalancePrivacyCustomToken(privateKey string, token
 		if tokenID == tempTokenID.String() {
 			lastByte := account.KeySet.PaymentAddress.Pk[len(account.KeySet.PaymentAddress.Pk)-1]
 			shardIDSender := common.GetShardIDFromLastByte(lastByte)
-			outcoints, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tempTokenID, 0, 0)
+			outcoints, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(&account.KeySet, shardIDSender, &tempTokenID, 0, 0)
 			if err != nil {
 				Logger.log.Debugf("handleGetBalancePrivacyCustomToken result: %+v, err: %+v", nil, err)
 				return uint64(0), NewRPCError(UnexpectedError, err)
@@ -1300,7 +1300,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 	if err1 != nil {
 		return nil, NewRPCError(TokenIsInvalidError, err1)
 	}
-	outCoins, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(senderKeySet, shardIDSender, prvCoinID, 0, 0)
+	outCoins, _, err := txService.BlockChain.GetListOutputCoinsByKeysetV2(senderKeySet, shardIDSender, prvCoinID, 0, 0)
 	if err != nil {
 		return nil, NewRPCError(GetOutputCoinError, err)
 	}

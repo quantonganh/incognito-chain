@@ -2380,7 +2380,7 @@ in case readonly-key: return all outputcoin tx with amount value
 in case payment-address: return all outputcoin tx with no amount value
 - Param #2: coinType - which type of joinsplitdesc(COIN or BOND)
 */
-func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, fromBlockHeightParam int64, toBlockHeightParam int64) ([]*privacy.OutputCoin, error) {
+func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.KeySet, shardID byte, tokenID *common.Hash, fromBlockHeightParam int64, toBlockHeightParam int64) ([]*privacy.OutputCoin, uint64, error) {
 	// lock chain
 	blockchain.BestState.Shard[shardID].lock.Lock()
 	defer blockchain.BestState.Shard[shardID].lock.Unlock()
@@ -2388,7 +2388,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	var outCointsInBytes [][]byte
 	var err error
 	if keyset == nil {
-		return nil, NewBlockChainError(UnExpectedError, errors.New("Invalid keyset"))
+		return nil, uint64(0), NewBlockChainError(UnExpectedError, errors.New("Invalid keyset"))
 	}
 
 	fromBlockHeight := uint64(0)
@@ -2406,7 +2406,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 	}
 
 	if fromBlockHeight > toBlockHeight && fromBlockHeight > 0 && toBlockHeight > 0 {
-		return nil, NewBlockChainError(UnExpectedError, errors.New("fromBlockHeight must be less than toBlockHeight"))
+		return nil, uint64(0), NewBlockChainError(UnExpectedError, errors.New("fromBlockHeight must be less than toBlockHeight"))
 	}
 
 
@@ -2435,7 +2435,7 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 		// get all output coins
 		outCointsInBytes, err = blockchain.config.DataBase.GetOutcoinsByViewKeyV2InBlocks(*tokenID,  shardID,  fromBlockHeight, toBlockHeight, keyset.ReadonlyKey)
 		if err != nil {
-			return nil, err
+			return nil, uint64(0), err
 		}
 	}
 
@@ -2459,5 +2459,5 @@ func (blockchain *BlockChain) GetListOutputCoinsByKeysetV2(keyset *incognitokey.
 		}
 	}
 
-	return results, nil
+	return results, toBlockHeight, nil
 }

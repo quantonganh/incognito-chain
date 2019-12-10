@@ -43,7 +43,7 @@ func (httpServer *HttpServer) handleEstimateFee(params interface{}, closeChan <-
 		return nil, rpcservice.NewRPCError(rpcservice.InvalidSenderPrivateKeyError, err)
 	}
 
-	outCoins, err := httpServer.outputCoinService.ListOutputCoinsByKeySetV2(senderKeySet, shardIDSender, 0, 0)
+	outCoins, _,  err := httpServer.outputCoinService.ListOutputCoinsByKeySetV2(senderKeySet, shardIDSender, 0, 0)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetOutputCoinError, err)
 	}
