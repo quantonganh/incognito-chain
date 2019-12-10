@@ -122,14 +122,18 @@ func (beaconPool BeaconPool) GetBeaconState() uint64 {
 }
 
 func (beaconPool *BeaconPool) addBeaconBlock(block *blockchain.BeaconBlock) error {
+	Logger.log.Info("DEBUGGING addBeaconBlock ckpt 0")
 	go beaconPool.PubSubManager.PublishMessage(pubsub.NewMessage(pubsub.NewBeaconBlockTopic, block))
 	err := beaconPool.validateBeaconBlock(block, false)
+	Logger.log.Info("DEBUGGING addBeaconBlock ckpt 1")
 	if err != nil {
 		Logger.log.Infof("addBeaconBlock err: %+v", err)
 		return err
 	}
 	beaconPool.insertNewBeaconBlockToPool(block)
+	Logger.log.Info("DEBUGGING addBeaconBlock ckpt 2")
 	beaconPool.promotePendingPool()
+	Logger.log.Info("DEBUGGING addBeaconBlock ckpt 3")
 	return nil
 }
 
@@ -232,13 +236,16 @@ func (beaconPool *BeaconPool) updateLatestBeaconState() {
 
 // Check block in pending block then add to valid pool if block is valid
 func (beaconPool *BeaconPool) promotePendingPool() {
+	Logger.log.Info("DEBUGGING promotePendingPool ckpt -1")
 	for {
 		// get next height
 		nextHeight := beaconPool.latestValidHeight + 1
 		// retrieve next height block in pending
 		if block, ok := beaconPool.pendingPool[nextHeight]; ok {
 			// validate next block
+			Logger.log.Info("DEBUGGING promotePendingPool ckpt 0")
 			err := beaconPool.validateBeaconBlock(block, true)
+			Logger.log.Info("DEBUGGING promotePendingPool ckpt 1")
 			if err != nil {
 				break
 			}
@@ -253,6 +260,7 @@ func (beaconPool *BeaconPool) promotePendingPool() {
 			break
 		}
 	}
+	Logger.log.Info("DEBUGGING promotePendingPool ckpt 2")
 }
 
 func (beaconPool *BeaconPool) PromotePendingPool() {

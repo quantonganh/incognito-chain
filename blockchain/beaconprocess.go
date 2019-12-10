@@ -117,30 +117,36 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		Logger.log.Infof("BEACON | SKIP Verify Best State With Beacon Block, Beacon Block Height %+v with hash %+v", beaconBlock.Header.Height, blockHash)
 	}
 	// Backup beststate
+	Logger.log.Info("DEBUGGING InsertBeaconBlock 0")
 	err := blockchain.config.DataBase.CleanBackup(true, 0)
 	if err != nil {
 		return NewBlockChainError(CleanBackUpError, err)
 	}
+	Logger.log.Info("DEBUGGING InsertBeaconBlock 1")
 	err = blockchain.BackupCurrentBeaconState(beaconBlock)
 	if err != nil {
 		return NewBlockChainError(BackUpBestStateError, err)
 	}
+	Logger.log.Info("DEBUGGING InsertBeaconBlock 2")
 	// process for slashing, make sure this one is called before update best state
 	// since we'd like to process with old committee, not updated committee
 	slashErr := blockchain.processForSlashing(beaconBlock)
 	if slashErr != nil {
 		Logger.log.Errorf("Failed to process slashing with error: %+v", NewBlockChainError(ProcessSlashingError, slashErr))
 	}
+	Logger.log.Info("DEBUGGING InsertBeaconBlock 3")
 
 	// snapshot current beacon committee and shard committee
 	snapshotBeaconCommittee, snapshotAllShardCommittee, err := snapshotCommittee(blockchain.BestState.Beacon.BeaconCommittee, blockchain.BestState.Beacon.ShardCommittee)
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
+	Logger.log.Info("DEBUGGING InsertBeaconBlock 4")
 	_, snapshotAllShardPending, err := snapshotCommittee([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.ShardPendingValidator)
 	if err != nil {
 		return NewBlockChainError(SnapshotCommitteeError, err)
 	}
+	Logger.log.Info("DEBUGGING InsertBeaconBlock 5")
 
 	snapshotShardWaiting := append([]incognitokey.CommitteePublicKey{}, blockchain.BestState.Beacon.CandidateShardWaitingForNextRandom...)
 	snapshotShardWaiting = append(snapshotShardWaiting, blockchain.BestState.Beacon.CandidateBeaconWaitingForCurrentRandom...)
@@ -233,6 +239,7 @@ func (blockchain *BlockChain) InsertBeaconBlock(beaconBlock *BeaconBlock, isVali
 		}
 		return err
 	}
+	Logger.log.Info("DEBUGGING InsertBeaconBlock")
 	blockchain.removeOldDataAfterProcessingBeaconBlock()
 	// go metrics.AnalyzeTimeSeriesMetricDataWithTime(map[string]interface{}{
 	// 	metrics.Measurement:      metrics.NumOfBlockInsertToChain,
@@ -1158,6 +1165,7 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := blockchain.config.DataBase.StoreAutoStakingByHeight(beaconBlock.Header.Height, blockchain.BestState.Beacon.AutoStaking); err != nil {
 		return NewBlockChainError(StoreAutoStakingByHeightError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 0")
 	//================================Store cross shard state ==================================
 	if beaconBlock.Body.ShardState != nil {
 		GetBeaconBestState().lock.Lock()
@@ -1195,10 +1203,12 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 		}
 		GetBeaconBestState().lock.Unlock()
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 1")
 	//=============================END Store cross shard state ==================================
 	if err := blockchain.config.DataBase.StoreBeaconBlockIndex(blockHash, beaconBlock.Header.Height); err != nil {
 		return NewBlockChainError(StoreBeaconBlockIndexError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 2")
 
 	batchPutData := []database.BatchData{}
 
@@ -1206,26 +1216,31 @@ func (blockchain *BlockChain) processStoreBeaconBlock(
 	if err := blockchain.StoreBeaconBestState(&batchPutData); err != nil {
 		return NewBlockChainError(StoreBeaconBestStateError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 3")
 	Logger.log.Debugf("Store Beacon Block Height %+v with Hash %+v ", beaconBlock.Header.Height, blockHash)
 	if err := blockchain.config.DataBase.StoreBeaconBlock(beaconBlock, blockHash, &batchPutData); err != nil {
 		return NewBlockChainError(StoreBeaconBlockError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 4")
 
 	err := blockchain.updateDatabaseWithBlockRewardInfo(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(UpdateDatabaseWithBlockRewardInfoError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 5")
 	// execute, store
 	err = blockchain.processBridgeInstructions(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(ProcessBridgeInstructionError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 6")
 
 	// execute, store
 	err = blockchain.processPDEInstructions(beaconBlock, &batchPutData)
 	if err != nil {
 		return NewBlockChainError(ProcessPDEInstructionError, err)
 	}
+	Logger.log.Info("DEBUGGING processStoreBeaconBlock ckpt 7")
 
 	return blockchain.config.DataBase.PutBatch(batchPutData)
 }
