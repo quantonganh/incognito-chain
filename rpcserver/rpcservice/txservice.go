@@ -726,7 +726,8 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 			metaData,
 			txParam.HasPrivacyCoin,
 			txParam.HasPrivacyToken,
-			txParam.ShardIDSender, txParam.Info))
+			txParam.ShardIDSender, txParam.Info,
+			transaction.TxVersion2))
 
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)

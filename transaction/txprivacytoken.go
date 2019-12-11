@@ -169,6 +169,7 @@ type TxPrivacyTokenInitParams struct {
 	hasPrivacyToken bool
 	shardID         byte
 	info            []byte
+	version int8
 }
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
@@ -181,7 +182,8 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
-	info []byte) *TxPrivacyTokenInitParams {
+	info []byte,
+	version int8) *TxPrivacyTokenInitParams {
 	params := &TxPrivacyTokenInitParams{
 		shardID:         shardID,
 		paymentInfo:     paymentInfo,
@@ -194,6 +196,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 		senderKey:       senderKey,
 		tokenParams:     tokenParams,
 		info:            info,
+		version: version,
 	}
 	return params
 }
@@ -213,7 +216,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		nil,
 		params.metaData,
 		params.info,
-		TxVersion2))
+		params.version))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -341,7 +344,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				propertyID,
 				nil,
 				nil,
-				TxVersion2))
+				params.version))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
@@ -711,6 +714,8 @@ type TxPrivacyTokenInitParamsForASM struct {
 	commitmentBytesForPToken     [][]byte
 	myCommitmentIndicesForPToken []uint64
 	sndOutputsForPToken          []*privacy.Scalar
+
+	version int8
 }
 
 func (param *TxPrivacyTokenInitParamsForASM) SetMetaData(meta metadata.Metadata) {
@@ -736,9 +741,10 @@ func NewTxPrivacyTokenInitParamsForASM(
 	commitmentIndicesForPToken []uint64,
 	commitmentBytesForPToken [][]byte,
 	myCommitmentIndicesForPToken []uint64,
-	sndOutputsForPToken []*privacy.Scalar) *TxPrivacyTokenInitParamsForASM {
+	sndOutputsForPToken []*privacy.Scalar,
+	version int8) *TxPrivacyTokenInitParamsForASM {
 
-	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info)
+	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, version)
 	params := &TxPrivacyTokenInitParamsForASM{
 		txParam:                           *txParam,
 		commitmentIndicesForNativeToken:   commitmentIndicesForNativeToken,
@@ -750,6 +756,8 @@ func NewTxPrivacyTokenInitParamsForASM(
 		commitmentBytesForPToken:     commitmentBytesForPToken,
 		myCommitmentIndicesForPToken: myCommitmentIndicesForPToken,
 		sndOutputsForPToken:          sndOutputsForPToken,
+
+		version: version,
 	}
 	return params
 }
@@ -772,6 +780,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 		params.commitmentBytesForNativeToken,
 		params.myCommitmentIndicesForNativeToken,
 		params.sndOutputsForNativeToken,
+		params.version,
 	))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
@@ -887,6 +896,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				params.commitmentBytesForPToken,
 				params.myCommitmentIndicesForPToken,
 				params.sndOutputsForPToken,
+				params.version,
 			))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)

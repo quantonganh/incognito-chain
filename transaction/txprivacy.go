@@ -1648,7 +1648,8 @@ func NewTxPrivacyInitParamsForASM(
 	commitmentIndices []uint64,
 	commitmentBytes [][]byte,
 	myCommitmentIndices []uint64,
-	sndOutputs []*privacy.Scalar) *TxPrivacyInitParamsForASM {
+	sndOutputs []*privacy.Scalar,
+	version int8) *TxPrivacyInitParamsForASM {
 
 	txParam := TxPrivacyInitParams{
 		senderSK:    senderSK,
@@ -1659,6 +1660,7 @@ func NewTxPrivacyInitParamsForASM(
 		tokenID:     tokenID,
 		metaData:    metaData,
 		info:        info,
+		version: 	version,
 	}
 	params := &TxPrivacyInitParamsForASM{
 		txParam:             txParam,

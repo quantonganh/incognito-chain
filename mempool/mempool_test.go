@@ -619,7 +619,8 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 			hasPrivacyCoin,
 			true,
 			shardIDSender,
-			[]byte{}))
+			[]byte{},
+			transaction.TxVersion2))
 	fmt.Println(tx.TxPrivacyTokenData.PropertyID.String())
 	if err1 != nil {
 		panic("no tx found")

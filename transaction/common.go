@@ -384,7 +384,8 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 				false,
 				false,
 				params.shardID,
-				nil))
+				nil,
+				TxVersion2))
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}
