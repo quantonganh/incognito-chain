@@ -21,63 +21,58 @@ func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
 	return true
 }
 
-func (e *BLSBFT) proposeBlock() error {
+func (e *BLSBFT) proposeBlock(timeslot uint64) error {
+	bestView := e.Chain.GetBestView()
+	bestViewHash := bestView.Hash().String()
+	bestProposedBlockHash, ok := e.bestProposeBlockOfView[bestViewHash]
 
-	if e.proposedBlockOnView.BlockHash == "" {
-
-	} else {
+	if ok {
 		//re-broadcast best proposed block
-		bestView := e.Chain.GetBestView()
-		bestViewHash := bestView.Hash().String()
 
-		consensusCfg, _ := parseConsensusConfig(bestView.GetConsensusConfig())
-		consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
-		if e.currentTimeslotOfViews[bestViewHash] == getTimeSlot(bestView.GetGenesisTime(), time.Now().Unix(), int64(consensusSlottime.Seconds())) {
+		// consensusCfg, _ := parseConsensusConfig(bestView.GetConsensusConfig())
+		// consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
+		// if e.currentTimeslotOfViews[bestViewHash] == getTimeSlot(bestView.GetGenesisTime(), time.Now().Unix(), int64(consensusSlottime.Seconds())) {
+		// }
 
+		blockData, _ := json.Marshal(e.onGoingBlocks[bestProposedBlockHash].Block)
+		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+		go e.Node.PushMessageToChain(msg, e.Chain)
+	} else {
+		//create block and boardcast block
+		if isProducer(timeslot, bestView.GetCommittee(), e.UserKeySet.GetPublicKeyBase58()) != nil {
+			return errors.New("I'm not the block producer")
+		}
+		block, err := bestView.CreateNewBlock(timeslot)
+		if err != nil {
+			return err
+		}
+		validationData := e.CreateValidationData(block)
+		validationDataString, _ := EncodeValidationData(validationData)
+		block.(blockValidation).AddValidationField(validationDataString)
+
+		blockHash := block.Hash().String()
+
+		if err := e.createBlockConsensusInstance(bestView, blockHash); err != nil {
+			return err
 		}
 
-		blockToPropose := e.bestProposeBlockOfView[bestViewHash]
-		blockData, _ := json.Marshal(e.onGoingBlocks[blockToPropose].Block)
+		e.lockOnGoingBlocks.RLock()
+		instance := e.onGoingBlocks[blockHash]
+		e.lockOnGoingBlocks.RUnlock()
+
+		err = instance.addBlock(block)
+		if err != nil {
+			return err
+		}
+
+		e.bestProposeBlockOfView[bestViewHash] = blockHash
+		e.proposedBlockOnView.BlockHash = blockHash
+		e.proposedBlockOnView.ViewHash = bestViewHash
+		blockData, _ := json.Marshal(block)
 		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
 
-	// if e.bestProposeBlock == "" {
-	// 	if e.proposedBlockOnView.BlockHash == "" {
-	// 		view := e.Chain.GetBestView()
-	// 		block, err := view.CreateNewBlock(timeslot)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 		validationData := e.CreateValidationData(block)
-	// 		validationDataString, _ := EncodeValidationData(validationData)
-	// 		block.(blockValidation).AddValidationField(validationDataString)
-
-	// 		blockHash := block.Hash().String()
-
-	// 		if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
-	// 			return err
-	// 		}
-
-	// 		e.lockOnGoingBlocks.RLock()
-	// 		instance := e.onGoingBlocks[blockHash]
-	// 		e.lockOnGoingBlocks.RUnlock()
-
-	// 		err = instance.addBlock(block)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-
-	// 		e.bestProposeBlock = blockHash
-	// 		e.proposedBlockOnView.BlockHash = e.bestProposeBlock
-	// 		e.proposedBlockOnView.ViewHash = view.Hash().String()
-
-	// 		blockData, _ := json.Marshal(block)
-	// 		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-	// 		go e.Node.PushMessageToChain(msg, e.Chain)
-	// 		return nil
-	// 	}
-	// }
 	return nil
 }
 
@@ -328,16 +323,23 @@ func validateProducerPosition(block common.BlockInterface, genesisTime int64, sl
 	if block.GetTimeslot() != timeSlot {
 		return consensus.NewConsensusError(consensus.InvalidTimeslotError, fmt.Errorf("Timeslot should be %v instead of %v", timeSlot, block.GetTimeslot()))
 	}
-	producerPosition := timeSlot % uint64(len(committee))
+	return isProducer(timeSlot, committee, block.GetProducer())
+}
+
+func getProducerPosition(timeslot uint64, committeeLen uint64) uint64 {
+	return timeslot % committeeLen
+}
+
+func isProducer(timeslot uint64, committee []incognitokey.CommitteePublicKey, producerPbk string) error {
+	producerPosition := getProducerPosition(timeslot, uint64(len(committee)))
 	tempProducer, err := committee[producerPosition].ToBase58()
 	if err != nil {
 		return err
 	}
-	if tempProducer == block.GetProducer() {
-		return nil
+	if tempProducer != producerPbk {
+		return consensus.NewConsensusError(consensus.UnExpectedError, fmt.Errorf("Producer should be should be %v instead of %v", tempProducer, producerPbk))
 	}
-
-	return consensus.NewConsensusError(consensus.UnExpectedError, fmt.Errorf("Producer should be should be %v instead of %v", tempProducer, block.GetProducer()))
+	return nil
 }
 
 func (blockCI *blockConsensusInstance) addBlock(block common.BlockInterface) error {

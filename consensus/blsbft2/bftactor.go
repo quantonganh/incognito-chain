@@ -87,7 +87,6 @@ func (e *BLSBFT) Start() error {
 				return
 			case <-ticker:
 				e.lockOnGoingBlocks.RLock()
-				//check timeslot of views
 				//check if is proposer of bestview
 				bestView := e.Chain.GetBestView()
 				bestViewHash := bestView.Hash().String()
@@ -96,11 +95,22 @@ func (e *BLSBFT) Start() error {
 				consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
 				timeSlot := getTimeSlot(bestView.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
 				if e.currentTimeslotOfViews[bestViewHash]+1 == timeSlot {
-					if err := e.proposeBlock(); err != nil {
+					if err := e.proposeBlock(timeSlot); err != nil {
 						e.Logger.Critical(consensus.UnExpectedError, errors.New("can't propose block"))
 					}
 				}
-
+				//update timeslot of views
+				views := e.Chain.GetAllViews()
+				for _, view := range views {
+					_, ok := e.currentTimeslotOfViews[view.Hash().String()]
+					if !ok {
+						continue
+					}
+					consensusCfg, _ := parseConsensusConfig(view.GetConsensusConfig())
+					consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
+					timeSlot := getTimeSlot(view.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
+					e.currentTimeslotOfViews[view.Hash().String()] = timeSlot
+				}
 				e.lockOnGoingBlocks.RUnlock()
 			}
 		}
