@@ -93,7 +93,7 @@ func isRightRatio(
 	waitingContribution2 *lvdb.PDEContribution,
 	poolPair *lvdb.PDEPoolForPair,
 ) bool {
-	if poolPair == nil { // first contribution on the pair
+	if poolPair == nil {
 		return true
 	}
 	if poolPair.Token1PoolValue == 0 || poolPair.Token2PoolValue == 0 {
