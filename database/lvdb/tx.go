@@ -822,7 +822,6 @@ func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64, s
 		// check whether pubKeyOTA corresponding to viewKey or not
 		isPair, _, err := privacy.IsPairOneTimeAddr(pubKeyOTAPoint, ephemeralPubKeyPoint, viewKey, int(indexOutputInTx))
 		if isPair && err == nil {
-
 			txID := common.Hash{}
 			txIDBytes := key[offset: offset + common.HashSize]
 			offset = offset + common.HashSize

@@ -103,11 +103,6 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
-	//paymentAddress, ok := arrayParams[0].(string)
-	//if !ok {
-	//	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address"))
-	//}
-
 	keys, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
