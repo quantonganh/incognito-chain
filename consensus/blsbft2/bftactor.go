@@ -27,8 +27,9 @@ type BLSBFT struct {
 	StopCh       chan struct{}
 	Logger       common.Logger
 
-	currentTimeslot   uint64
-	bestProposeBlock  string
+	currentTimeslotOfViews map[string]uint64
+	bestProposeBlockOfView map[string]string
+
 	onGoingBlocks     map[string]*blockConsensusInstance
 	lockOnGoingBlocks sync.RWMutex
 
@@ -72,6 +73,9 @@ func (e *BLSBFT) Start() error {
 	}
 	e.isStarted = true
 	e.StopCh = make(chan struct{})
+	e.currentTimeslotOfViews = make(map[string]uint64)
+	e.bestProposeBlockOfView = make(map[string]string)
+	e.onGoingBlocks = make(map[string]*blockConsensusInstance)
 
 	ticker := time.Tick(1 * time.Second)
 	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
@@ -82,9 +86,22 @@ func (e *BLSBFT) Start() error {
 			case <-e.StopCh:
 				return
 			case <-ticker:
-				e.lockOnGoingBlocks.Lock()
+				e.lockOnGoingBlocks.RLock()
+				//check timeslot of views
+				//check if is proposer of bestview
+				bestView := e.Chain.GetBestView()
+				bestViewHash := bestView.Hash().String()
+				currentTime := time.Now().Unix()
+				consensusCfg, _ := parseConsensusConfig(bestView.GetConsensusConfig())
+				consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
+				timeSlot := getTimeSlot(bestView.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
+				if e.currentTimeslotOfViews[bestViewHash]+1 == timeSlot {
+					if err := e.proposeBlock(); err != nil {
+						e.Logger.Critical(consensus.UnExpectedError, errors.New("can't propose block"))
+					}
+				}
 
-				e.lockOnGoingBlocks.Unlock()
+				e.lockOnGoingBlocks.RUnlock()
 			}
 		}
 	}()

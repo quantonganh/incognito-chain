@@ -21,47 +21,63 @@ func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
 	return true
 }
 
-func (e BLSBFT) proposeBlock(timeslot uint64) error {
-	e.lockOnGoingBlocks.Lock()
-	defer e.lockOnGoingBlocks.Unlock()
-	if e.bestProposeBlock == "" {
-		if e.proposedBlockOnView.BlockHash == "" {
-			view := e.Chain.GetBestView()
-			block, err := view.CreateNewBlock(timeslot)
-			if err != nil {
-				return err
-			}
-			validationData := e.CreateValidationData(block)
-			validationDataString, _ := EncodeValidationData(validationData)
-			block.(blockValidation).AddValidationField(validationDataString)
+func (e *BLSBFT) proposeBlock() error {
 
-			blockHash := block.Hash().String()
-			e.lockOnGoingBlocks.Unlock()
+	if e.proposedBlockOnView.BlockHash == "" {
 
-			if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
-				return err
-			}
-			instance := e.onGoingBlocks[blockHash]
-			err = instance.addBlock(block)
-			if err != nil {
-				return err
-			}
-
-			e.bestProposeBlock = blockHash
-			e.proposedBlockOnView.BlockHash = e.bestProposeBlock
-			e.proposedBlockOnView.ViewHash = view.Hash().String()
-
-			blockData, _ := json.Marshal(block)
-			msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
-			go e.Node.PushMessageToChain(msg, e.Chain)
-			return nil
-		}
 	} else {
 		//re-broadcast best proposed block
-		blockData, _ := json.Marshal(e.onGoingBlocks[e.bestProposeBlock].Block)
+		bestView := e.Chain.GetBestView()
+		bestViewHash := bestView.Hash().String()
+
+		consensusCfg, _ := parseConsensusConfig(bestView.GetConsensusConfig())
+		consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
+		if e.currentTimeslotOfViews[bestViewHash] == getTimeSlot(bestView.GetGenesisTime(), time.Now().Unix(), int64(consensusSlottime.Seconds())) {
+
+		}
+
+		blockToPropose := e.bestProposeBlockOfView[bestViewHash]
+		blockData, _ := json.Marshal(e.onGoingBlocks[blockToPropose].Block)
 		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	}
+
+	// if e.bestProposeBlock == "" {
+	// 	if e.proposedBlockOnView.BlockHash == "" {
+	// 		view := e.Chain.GetBestView()
+	// 		block, err := view.CreateNewBlock(timeslot)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		validationData := e.CreateValidationData(block)
+	// 		validationDataString, _ := EncodeValidationData(validationData)
+	// 		block.(blockValidation).AddValidationField(validationDataString)
+
+	// 		blockHash := block.Hash().String()
+
+	// 		if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
+	// 			return err
+	// 		}
+
+	// 		e.lockOnGoingBlocks.RLock()
+	// 		instance := e.onGoingBlocks[blockHash]
+	// 		e.lockOnGoingBlocks.RUnlock()
+
+	// 		err = instance.addBlock(block)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+
+	// 		e.bestProposeBlock = blockHash
+	// 		e.proposedBlockOnView.BlockHash = e.bestProposeBlock
+	// 		e.proposedBlockOnView.ViewHash = view.Hash().String()
+
+	// 		blockData, _ := json.Marshal(block)
+	// 		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+	// 		go e.Node.PushMessageToChain(msg, e.Chain)
+	// 		return nil
+	// 	}
+	// }
 	return nil
 }
 
@@ -73,8 +89,11 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 	if err != nil {
 		return err
 	}
-	if block.GetTimeslot() > e.currentTimeslot {
-		return fmt.Errorf("this propose block has timeslot higher than current timeslot. BLOCK:%v CURRENT:%v", block.GetTimeslot(), e.currentTimeslot)
+	currentViewTimeslot := e.currentTimeslotOfViews[block.GetPreviousViewHash().String()]
+
+	if block.GetTimeslot() > currentViewTimeslot {
+		// hmm... something wrong with local clock?
+		return fmt.Errorf("this propose block has timeslot higher than current timeslot. BLOCK:%v CURRENT:%v", block.GetTimeslot(), currentViewTimeslot)
 	}
 	blockHash := block.Hash().String()
 	if blockHash == e.Chain.GetBestView().GetTipBlock().Hash().String() {
@@ -112,13 +131,15 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 		}
 		if len(e.onGoingBlocks) > 0 {
 			e.lockOnGoingBlocks.RLock()
-			if block.GetTimeslot() < e.onGoingBlocks[e.bestProposeBlock].Timeslot {
-				e.lockOnGoingBlocks.RUnlock()
+			if bestBlockHash, ok := e.bestProposeBlockOfView[block.GetPreviousViewHash().String()]; ok {
+				if block.GetTimeslot() < e.onGoingBlocks[bestBlockHash].Timeslot {
+					e.lockOnGoingBlocks.RUnlock()
 
-				if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
-					return err
+					if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
+						return err
+					}
+					e.bestProposeBlockOfView[block.GetPreviousViewHash().String()] = blockHash
 				}
-				e.bestProposeBlock = blockHash
 			} else {
 				defer e.lockOnGoingBlocks.RUnlock()
 				instance := e.onGoingBlocks[blockHash]
@@ -135,7 +156,7 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 			if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
 				return err
 			}
-			e.bestProposeBlock = blockHash
+			e.bestProposeBlockOfView[block.GetPreviousViewHash().String()] = blockHash
 		}
 	}
 	return nil
@@ -294,15 +315,16 @@ func (vote *BFTVote) signVote(signFunc func(data []byte) ([]byte, error)) error 
 	return err
 }
 
-func (e *BLSBFT) getTimeSlot() uint64 {
-	return uint64(e.Chain.GetGenesisTime())
+func getTimeSlot(genesisTime int64, pointInTime int64, slotTime int64) uint64 {
+	slotTimeDur := time.Duration(slotTime)
+	blockTime := time.Unix(pointInTime, 0)
+	timePassed := blockTime.Sub(time.Unix(genesisTime, 0)).Round(slotTimeDur)
+	timeSlot := uint64(int64(timePassed.Seconds()) / slotTime)
+	return timeSlot
 }
 
 func validateProducerPosition(block common.BlockInterface, genesisTime int64, slotTime int64, committee []incognitokey.CommitteePublicKey) error {
-	slotTimeDur := time.Duration(slotTime)
-	blockTime := time.Unix(block.GetBlockTimestamp(), 0)
-	timePassed := blockTime.Sub(time.Unix(genesisTime, 0)).Round(slotTimeDur)
-	timeSlot := uint64(int64(timePassed.Seconds()) / slotTime)
+	timeSlot := getTimeSlot(genesisTime, block.GetBlockTimestamp(), slotTime)
 	if block.GetTimeslot() != timeSlot {
 		return consensus.NewConsensusError(consensus.InvalidTimeslotError, fmt.Errorf("Timeslot should be %v instead of %v", timeSlot, block.GetTimeslot()))
 	}
