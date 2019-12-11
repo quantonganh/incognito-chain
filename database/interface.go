@@ -220,7 +220,7 @@ type DatabaseInterface interface {
 	HasEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) (bool, error)
 
 	StoreTxByPubKeyV2(blockHeight uint64, shardIDReceiver byte, shardIDSender byte, publicKey []byte, txID common.Hash, indexOutputInTx byte, ephemeralPubKey []byte, isPToken bool) error
-	GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error)
-	GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64)(
-		map[byte][]common.Hash, map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error)
+	GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64, shardIDSender byte) ([]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error)
+	GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64, shardIDSender byte)(
+		[]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error)
 }

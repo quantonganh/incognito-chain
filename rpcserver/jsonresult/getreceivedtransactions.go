@@ -23,5 +23,5 @@ type ReceivedCoin struct {
 
 type ListReceivedTransaction struct {
 	ReceivedTransactions []ReceivedTransaction `json:"ReceivedTransactions"`
-	CurrentBlockHeight map[byte]uint64
+	CurrentBlockHeight   map[byte]uint64
 }

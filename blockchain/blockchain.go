@@ -1194,54 +1194,76 @@ func (blockchain *BlockChain) GetTransactionByHash(txHash common.Hash) (byte, co
 
 // GetTransactionHashByReceiver - return list tx id which receiver get from any sender
 // this feature only apply on full node, because full node get all data from all shard
-func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet, fromBlockHeightParam int64, toBlockHeightParam int64) (map[byte][]common.Hash, map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, uint64, error) {
+func (blockchain *BlockChain) GetTransactionHashByReceiver(keySet *incognitokey.KeySet, fromBlockHeightParam map[byte]int64, toBlockHeightParam map[byte]int64) (map[byte][]common.Hash, map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, map[byte]uint64, error) {
 	txHashListFromFixedPK := make(map[byte][]common.Hash)
 	txHashListFromPKOTA := make(map[byte][]common.Hash)
 	indexOutputTxNormal := make(map[common.Hash][]byte)
 	indexOutputTxPToken := make(map[common.Hash][]byte)
+	currentBlockHeight := make(map[byte] uint64)
 	var err error
 
 	// return all txs with fixed public key and one time address
 	if keySet.ReadonlyKey.Rk != nil && len(keySet.ReadonlyKey.Rk) == privacy.Ed25519KeySize {
-		fromBlockHeight := uint64(0)
-		if fromBlockHeightParam < 1 {
-			fromBlockHeight = 1
-		} else {
-			fromBlockHeight = uint64(fromBlockHeightParam)
+		// 1. get all txs with fixed public key on all shards
+		if keySet.ReadonlyKey.Pk != nil && len(keySet.ReadonlyKey.Pk) == privacy.Ed25519KeySize {
+			txHashListFromFixedPK, err = blockchain.config.DataBase.GetTxByPublicKey(keySet.ReadonlyKey.Pk)
+			if err != nil {
+				return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, currentBlockHeight, NewBlockChainError(UnExpectedError, err)
+			}
 		}
 
-		toBlockHeight := uint64(0)
-		if toBlockHeightParam < 1 {
-			shardID := common.GetShardIDFromLastByte(keySet.PaymentAddress.Pk[len(keySet.PaymentAddress.Pk) - 1])
-			bestStateShard, err := blockchain.BestState.GetClonedAShardBestState(shardID)
-			if err != nil {
-				return nil, nil, nil, nil, uint64(0), err
+		// 2. get txs with one time address on each shard
+		for shardID, fromBlockHeightItem := range fromBlockHeightParam {
+
+			fromBlockHeight := uint64(0)
+			if fromBlockHeightItem < 1 {
+				fromBlockHeight = 1
+			} else {
+				fromBlockHeight = uint64(fromBlockHeightItem)
 			}
 
-			toBlockHeight = bestStateShard.GetShardHeight()
-		} else {
-			toBlockHeight = uint64(toBlockHeightParam)
-		}
+			toBlockHeight := uint64(0)
+			if toBlockHeightParam[shardID] < 1 {
+				bestStateShard, err := blockchain.BestState.GetClonedAShardBestState(shardID)
+				if err != nil {
+					return nil, nil, nil, nil, nil, err
+				}
+
+				toBlockHeight = bestStateShard.GetShardHeight()
+			} else {
+				toBlockHeight = uint64(toBlockHeightParam[shardID])
+			}
 
 
-		txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, err = blockchain.config.DataBase.GetTxByViewKeyV2InBlocks(keySet.ReadonlyKey, fromBlockHeight, toBlockHeight)
+			txHashListFromPKOTATmp, indexOutputTxNormalTmp, indexOutputTxPTokenTmp, err := blockchain.config.DataBase.GetTxByViewKeyV2InBlocks(keySet.ReadonlyKey, fromBlockHeight, toBlockHeight, shardID)
 			if err != nil {
-			return nil, nil, nil, nil, uint64(0), NewBlockChainError(UnExpectedError, err)
+				return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, currentBlockHeight, NewBlockChainError(UnExpectedError, err)
+			}
+
+			currentBlockHeight[shardID] = toBlockHeight
+			txHashListFromPKOTA[shardID] = txHashListFromPKOTATmp
+
+			for txHash, indices := range indexOutputTxNormalTmp {
+				indexOutputTxNormal[txHash] = indices
+			}
+			for txHash, indices := range indexOutputTxPTokenTmp {
+				indexOutputTxPToken[txHash] = indices
+			}
 		}
 
-		return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, toBlockHeight, nil
+		return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, currentBlockHeight, nil
 	}
 
 	// return only txs with fixed public key
 	if keySet.PaymentAddress.Pk != nil && len(keySet.PaymentAddress.Pk) == privacy.Ed25519KeySize {
 		txHashListFromFixedPK, err = blockchain.config.DataBase.GetTxByPublicKey(keySet.PaymentAddress.Pk)
 		if err != nil {
-			return nil, nil, nil, nil, uint64(0), NewBlockChainError(UnExpectedError, err)
+			return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, currentBlockHeight, NewBlockChainError(UnExpectedError, err)
 		}
-		return txHashListFromFixedPK, nil, nil, nil, uint64(0), nil
+		return txHashListFromFixedPK, nil, nil, nil, nil, nil
 	}
 
-	return nil, nil, nil, nil, uint64(0), nil
+	return nil, nil, nil, nil, nil, nil
 }
 
 // Check Custom token ID is existed

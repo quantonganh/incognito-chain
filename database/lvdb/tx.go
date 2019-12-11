@@ -779,7 +779,7 @@ func (db *db) StoreTxByPubKeyV2(blockHeight uint64, shardIDReceiver byte, shardI
 
 // GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
 // and index output of public key in tx normal, and in tx ptoken
-func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
+func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64, shardIDSender byte) ([]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
 	// get shardID of reciever
 	shardIDReceiver := common.GetShardIDFromLastByte(viewKey.Pk[len(viewKey.Pk) - 1])
 
@@ -787,12 +787,13 @@ func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (
 	keyPrefix := make([]byte, 0)
 	keyPrefix = append(keyPrefix, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
 	keyPrefix = append(keyPrefix, shardIDReceiver)
+	keyPrefix = append(keyPrefix, shardIDSender)
 	lenKeyPrefix := len(keyPrefix)
 
 	// get db with key prefix
 	itertor := db.lvdb.NewIterator(util.BytesPrefix(keyPrefix), nil)
 
-	listTxHash := make(map[byte][]common.Hash)
+	listTxHash := make([]common.Hash, 0)
 	indexOutputInTxNormal := make(map[common.Hash][]byte)
 	indexOutputInTxPToken := make(map[common.Hash][]byte)
 
@@ -801,10 +802,6 @@ func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (
 		iKey := itertor.Key()
 		key := make([]byte, len(iKey))
 		copy(key, iKey)
-
-		// get shardIDSender
-		shardIDSender := key[lenKeyPrefix]
-		offset++
 
 		// get publicKey one time address, index output in tx, ephemeralPubkey
 		pubKeyOTA := key[offset: offset + privacy.Ed25519KeySize]
@@ -825,9 +822,6 @@ func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (
 		// check whether pubKeyOTA corresponding to viewKey or not
 		isPair, _, err := privacy.IsPairOneTimeAddr(pubKeyOTAPoint, ephemeralPubKeyPoint, viewKey, int(indexOutputInTx))
 		if isPair && err == nil {
-			if listTxHash[shardIDSender] == nil {
-				listTxHash[shardIDSender] = make([]common.Hash, 0)
-			}
 
 			txID := common.Hash{}
 			txIDBytes := key[offset: offset + common.HashSize]
@@ -838,10 +832,10 @@ func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (
 				return nil, nil, nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err)
 			}
 
-			isExisted, _ := common.SliceExists(listTxHash[shardIDSender], txID)
+			isExisted, _ := common.SliceExists(listTxHash, txID)
 
 			if !isExisted {
-				listTxHash[shardIDSender] = append(listTxHash[shardIDSender], txID)
+				listTxHash = append(listTxHash, txID)
 			}
 
 			isPToken := false
@@ -871,44 +865,29 @@ func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64) (
 }
 
 // GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
-func (db *db) GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64)(
-	map[byte][]common.Hash, map[byte][]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
+func (db *db) GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64, shardIDSender byte)(
+	[]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
 
-	txHashListFromFixedPK := make(map[byte][]common.Hash)
-	txHashListFromPKOTA := make(map[byte][]common.Hash)
+	txHashListFromPKOTA := make([]common.Hash, 0)
 	indexOutputTxNormal :=  make(map[common.Hash][]byte)
 	indexOutputTxPToken :=  make(map[common.Hash][]byte)
 
-	// get tx with fixed public key
-	txHashListFromFixedPK, err := db.GetTxByPublicKey( viewKey.Pk)
-	if err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	// get tx v2 with one time address
+	// get txs with one time address
 	for i := fromBlockHeight; i<= toBlockHeight; i++{
-		txHashListFromPKOTATmp, indexOutputTxNormalTmp, indexOutputTxPTokenTmp, err := db.GetTxByViewKeyV2(viewKey, i)
+		txHashListFromPKOTATmp, indexOutputTxNormalTmp, indexOutputTxPTokenTmp, err := db.GetTxByViewKeyV2(viewKey, i, shardIDSender)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, nil, nil, err
 		}
 
-		for shardID, txHashs := range txHashListFromPKOTATmp {
-			if txHashListFromPKOTA[shardID] == nil {
-				txHashListFromPKOTA[shardID] = make([]common.Hash, 0)
-			}
-
-			txHashListFromPKOTA[shardID] = append(txHashListFromPKOTA[shardID], txHashs...)
-		}
-
+		txHashListFromPKOTA = append(txHashListFromPKOTA, txHashListFromPKOTATmp...)
 		for txHash, indices := range indexOutputTxNormalTmp {
 			indexOutputTxNormal[txHash] = indices
 		}
-
 		for txHash, indices := range indexOutputTxPTokenTmp {
 			indexOutputTxPToken[txHash] = indices
 		}
 	}
 
-	return txHashListFromFixedPK, txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, nil
+	return txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, nil
 }
 

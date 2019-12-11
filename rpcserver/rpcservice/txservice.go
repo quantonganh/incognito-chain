@@ -735,22 +735,10 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 	return tx, nil
 }
 
-func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam string, fromBlockHeight int64, toBlockHeight int64) (map[byte][]common.Hash, error) {
-	var keySet *incognitokey.KeySet
-
-	if paymentAddressParam != "" {
-		senderKey, err := wallet.Base58CheckDeserialize(paymentAddressParam)
-		if err != nil {
-			return nil, errors.New("payment address is invalid")
-		}
-
-		keySet = &senderKey.KeySet
-	} else {
-		return nil, errors.New("payment address is invalid")
-	}
+func (txService TxService) GetTransactionHashByReceiver(keySet *incognitokey.KeySet, fromBlockHeight map[byte]int64, toBlockHeight map[byte]int64) (map[byte][]common.Hash,  map[byte]uint64, error) {
 	listTxHashFromFixedPK, listTxHashFromPKOTA, _, _, currentBlockHeight, err := txService.BlockChain.GetTransactionHashByReceiver(keySet, fromBlockHeight, toBlockHeight)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	result := make(map[byte][]common.Hash, 0)
@@ -771,7 +759,7 @@ func (txService TxService) GetTransactionHashByReceiver(paymentAddressParam stri
 		result[key] = append(result[key], value...)
 	}
 
-	return result, nil
+	return result, currentBlockHeight, nil
 }
 
 func (txService TxService) GetTransactionByHash(txHashStr string) (*jsonresult.TransactionDetail, *RPCError) {
@@ -1450,7 +1438,7 @@ func (txService TxService) SendRawCustomTokenTxWithMetadata(base58CheckDate stri
 // if this keyset contain payment-addr, we can detect tx hash
 // if this keyset contain viewing key, we can detect amount in tx, but can not know output in tx is spent
 // because this is monitoring output to get received tx -> can not know this is a returned amount tx
-func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, fromBlockHeight int64, toBlockHeight int64) (*jsonresult.ListReceivedTransaction, *RPCError) {
+func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, fromBlockHeight map[byte]int64, toBlockHeight map[byte]int64) (*jsonresult.ListReceivedTransaction, *RPCError) {
 	//todo: need to be refactor code
 	if len(keySet.PaymentAddress.Pk) == 0 {
 		return nil, NewRPCError(RPCInvalidParamsError, errors.New("Missing payment address"))
@@ -1464,7 +1452,7 @@ func (txService TxService) GetTransactionByReceiver(keySet incognitokey.KeySet, 
 
 	result := jsonresult.ListReceivedTransaction{
 		ReceivedTransactions: []jsonresult.ReceivedTransaction{},
-		CurrentBlockHeight: uint64(0),
+		CurrentBlockHeight: map[byte]uint64{},
 	}
 	for shardID, txHashs := range listTxsHashFromFixedPK {
 		for _, txHash := range txHashs {

@@ -12,6 +12,7 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/jsonresult"
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/wallet"
+	"strconv"
 )
 
 /*
@@ -102,32 +103,87 @@ func (httpServer *HttpServer) handleGetTransactionHashByReceiver(params interfac
 		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("param must be an array at least 1 element"))
 	}
 
-	paymentAddress, ok := arrayParams[0].(string)
+	//paymentAddress, ok := arrayParams[0].(string)
+	//if !ok {
+	//	return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address"))
+	//}
+
+	keys, ok := arrayParams[0].(map[string]interface{})
 	if !ok {
-		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("Payment address"))
+		return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("key param is invalid"))
 	}
 
-	fromBlockHeight := int64(0)
+	// create a key set
+	keySet := incognitokey.KeySet{}
+
+	// get keyset only contain readonly-key by deserializing
+	readonlyKeyStr, ok := keys["ReadonlyKey"].(string)
+	if ok {
+		readonlyKey, err := wallet.Base58CheckDeserialize(readonlyKeyStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		keySet.ReadonlyKey = readonlyKey.KeySet.ReadonlyKey
+	}
+
+	// get keyset only contain payment address by deserializing
+	paymentAddressStr, ok := keys["PaymentAddress"].(string)
+	if ok {
+		paymentAddress, err := wallet.Base58CheckDeserialize(paymentAddressStr)
+		if err != nil {
+			Logger.log.Debugf("handleListOutputCoins result: %+v, err: %+v", nil, err)
+			return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
+		}
+		keySet.PaymentAddress = paymentAddress.KeySet.PaymentAddress
+	}
+
+
+	// default block height for all shards
+	fromBlockHeight := make(map[byte]int64, 0)
+	toBlockHeight := make(map[byte]int64, 0)
+	for i := 0; i < common.MaxShardNumber; i++ {
+		fromBlockHeight[byte(i)] = 0
+		toBlockHeight[byte(i)] = 0
+	}
+
 	if len(arrayParams) >= 2 {
-		fromBlockHeightParam, ok := arrayParams[1].(float64)
+		blockHeightParam, ok := arrayParams[1].(map[string]interface{})
 		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
 		}
 
-		fromBlockHeight = int64(fromBlockHeightParam)
-	}
+		for shardIDStr, blockHeight := range blockHeightParam {
+			shardID, err := strconv.Atoi(shardIDStr)
+			if err != nil || shardID < 0 || shardID >= common.MaxShardNumber {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param shardID is invalid"))
+			}
 
-	toBlockHeight := int64(0)
-	if len(arrayParams) >= 3 {
-		toBlockHeightParam, ok := arrayParams[2].(float64)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+			blockHeightArr, ok := (blockHeight).([]interface{})
+			if !ok {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
+			}
+
+			if len(blockHeightArr) >= 1 {
+				fromTmp, ok := blockHeightArr[0].(float64)
+				if !ok {
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
+				}
+				fromBlockHeight[byte(shardID)] = int64(fromTmp)
+
+				if len(blockHeightArr) >= 2 {
+					toTmp, ok := blockHeightArr[1].(float64)
+					if !ok {
+						return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
+					}
+					toBlockHeight[byte(shardID)] = int64(toTmp)
+				}
+			}
+
 		}
-
-		toBlockHeight = int64(toBlockHeightParam)
 	}
 
-	result, err := httpServer.txService.GetTransactionHashByReceiver(paymentAddress, fromBlockHeight, toBlockHeight)
+	result, _, err := httpServer.txService.GetTransactionHashByReceiver(&keySet, fromBlockHeight, toBlockHeight)
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.UnexpectedError, err)
 	}
@@ -167,24 +223,47 @@ func (httpServer *HttpServer) handleGetTransactionByReceiver(params interface{},
 		keySet.PaymentAddress = paymentAddress.KeySet.PaymentAddress
 	}
 
-	fromBlockHeight := int64(0)
-	if len(paramsArray) >= 2 {
-		fromBlockHeightParam, ok := paramsArray[1].(float64)
-		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
-		}
-
-		fromBlockHeight = int64(fromBlockHeightParam)
+	// default block height for all shards
+	fromBlockHeight := make(map[byte]int64, 0)
+	toBlockHeight := make(map[byte]int64, 0)
+	for i := 0; i < common.MaxShardNumber; i++ {
+		fromBlockHeight[byte(i)] = 0
+		toBlockHeight[byte(i)] = 0
 	}
 
-	toBlockHeight := int64(0)
-	if len(paramsArray) >= 3 {
-		toBlockHeightParam, ok := paramsArray[2].(float64)
+	if len(paramsArray) >= 2 {
+		blockHeightParam, ok := paramsArray[1].(map[string]interface{})
 		if !ok {
-			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("From block height"))
+			return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
 		}
 
-		toBlockHeight = int64(toBlockHeightParam)
+		for shardIDStr, blockHeight := range blockHeightParam {
+			shardID, err := strconv.Atoi(shardIDStr)
+			if err != nil || shardID < 0 || shardID >= common.MaxShardNumber {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param shardID is invalid"))
+			}
+
+			blockHeightArr, ok := (blockHeight).([]interface{})
+			if !ok {
+				return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
+			}
+
+			if len(blockHeightArr) >= 1 {
+				fromTmp, ok := blockHeightArr[0].(float64)
+				if !ok {
+					return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
+				}
+				fromBlockHeight[byte(shardID)] = int64(fromTmp)
+
+				if len(blockHeightArr) >= 2 {
+					toTmp, ok := blockHeightArr[1].(float64)
+					if !ok {
+						return nil, rpcservice.NewRPCError(rpcservice.RPCInvalidParamsError, errors.New("block height param is invalid"))
+					}
+					toBlockHeight[byte(shardID)] = int64(toTmp)
+				}
+			}
+		}
 	}
 
 	result, err := httpServer.txService.GetTransactionByReceiver(keySet, fromBlockHeight, toBlockHeight)
