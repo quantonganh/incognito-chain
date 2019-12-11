@@ -225,9 +225,9 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
-func (e *BLSBFT) isInTimeslot(view blockchain.ChainViewInterface) bool {
-	return false
-}
+// func (e *BLSBFT) isInTimeslot(view blockchain.ChainViewInterface) bool {
+// 	return false
+// }
 
 func (blockCI *blockConsensusInstance) addVote(vote *BFTVote) error {
 	blockCI.lockVote.Lock()
@@ -385,5 +385,36 @@ func (e *BLSBFT) createBlockConsensusInstance(view blockchain.ChainViewInterface
 	}
 
 	e.onGoingBlocks[blockHash] = &blockCI
+	return nil
+}
+
+func (blockCI *blockConsensusInstance) FinalizeBlock() error {
+	aggSig, brigSigs, validatorIdx, err := combineVotes(blockCI.Votes, blockCI.Committee.StringList)
+	if err != nil {
+		return err
+	}
+
+	blockCI.ValidationData.AggSig = aggSig
+	blockCI.ValidationData.BridgeSig = brigSigs
+	blockCI.ValidationData.ValidatiorsIdx = validatorIdx
+
+	validationDataString, _ := EncodeValidationData(blockCI.ValidationData)
+	blockCI.Block.(blockValidation).AddValidationField(validationDataString)
+
+	//TODO 0xakk0r0kamui trace who is malicious node if ValidateCommitteeSig return false
+	err = validateCommitteeSig(blockCI.Block, blockCI.Committee.Committee)
+	if err != nil {
+		return err
+	}
+
+	if err := blockCI.View.InsertAndBroadcastBlock(blockCI.Block); err != nil {
+		if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
+			if blockchainError.Code == blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
+				return nil
+			}
+		}
+		return err
+	}
+
 	return nil
 }

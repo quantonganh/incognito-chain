@@ -3,11 +3,13 @@ package chain
 import (
 	"bytes"
 	"encoding/gob"
+	"errors"
+	"sync"
+	"time"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/incognitokey"
-	"sync"
-	"time"
 )
 
 /*
@@ -135,15 +137,23 @@ func (ViewManager) GetAllViews() map[string]blockchain.ChainViewInterface {
 	panic("implement me")
 }
 
-func (s *ViewManager) GetViewByHash(h *common.Hash) blockchain.ChainViewInterface {
+func (s *ViewManager) GetViewByHash(h *common.Hash) (blockchain.ChainViewInterface, error) {
 	viewnode, ok := s.manager.node[*h]
 	if !ok {
-		return nil
+		return nil, errors.New("view not exist")
 	} else {
-		return viewnode.view
+		return viewnode.view, nil
 	}
 }
 
 func (ViewManager) GetGenesisTime() int64 {
 	panic("implement me")
+}
+
+func (s *ViewManager) GetAllTipBlocksHash() []*common.Hash {
+	var result []*common.Hash
+	for _, node := range s.manager.node {
+		result = append(result, node.view.GetTipBlock().Hash())
+	}
+	return result
 }

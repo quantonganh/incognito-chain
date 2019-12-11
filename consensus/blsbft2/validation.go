@@ -85,8 +85,7 @@ func validateProducerSig(block common.BlockInterface) error {
 func (e BLSBFT) ValidateProducerSig(block common.BlockInterface) error {
 	return validateProducerSig(block)
 }
-
-func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+func validateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
 	valData, err := DecodeValidationData(block.GetValidationField())
 	if err != nil {
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
@@ -100,6 +99,10 @@ func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []in
 		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	return nil
+}
+
+func (e BLSBFT) ValidateCommitteeSig(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error {
+	return validateCommitteeSig(block, committee)
 }
 
 func (e BLSBFT) ValidateData(data []byte, sig string, publicKey string) error {

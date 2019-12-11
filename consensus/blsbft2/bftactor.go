@@ -111,6 +111,21 @@ func (e *BLSBFT) Start() error {
 					timeSlot := getTimeSlot(view.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
 					e.currentTimeslotOfViews[view.Hash().String()] = timeSlot
 				}
+
+				for proposedBlockHash, proposedBlock := range e.onGoingBlocks {
+					if proposedBlock.Phase == votePhase {
+						if len(proposedBlock.Votes) > (2/3*len(proposedBlock.Committee.Committee))-1 {
+							err := proposedBlock.FinalizeBlock()
+							if err != nil {
+								//weird thing happend
+								panic(err)
+							}
+							go func(blockHash string) {
+								e.deleteProposeBlock(blockHash)
+							}(proposedBlockHash)
+						}
+					}
+				}
 				e.lockOnGoingBlocks.RUnlock()
 			}
 		}
@@ -130,4 +145,10 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 
 func init() {
 	consensus.RegisterConsensus(common.BlsConsensus2, &BLSBFT{})
+}
+
+func (e *BLSBFT) deleteProposeBlock(blockHash string) {
+	e.lockOnGoingBlocks.Lock()
+	delete(e.onGoingBlocks, blockHash)
+	e.lockOnGoingBlocks.Unlock()
 }
