@@ -13,6 +13,8 @@ import (
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/metadata"
 	"github.com/incognitochain/incognito-chain/wire"
+
+	peer2 "github.com/libp2p/go-libp2p-core/peer"
 )
 
 func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
@@ -190,6 +192,24 @@ func (e *BLSBFT) processVoteMsg(vote *BFTVote) error {
 }
 
 func (e *BLSBFT) processRequestBlkMsg(requestMsg *BFTRequestBlock) error {
+	e.lockOnGoingBlocks.RLock()
+	defer e.lockOnGoingBlocks.RUnlock()
+	block, ok := e.onGoingBlocks[requestMsg.BlockHash]
+	if ok {
+		blockData, err := json.Marshal(block)
+		if err != nil {
+			return err
+		}
+		msg, err := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
+		if err != nil {
+			return err
+		}
+		peerID, err := peer2.IDB58Decode(requestMsg.PeerID)
+		if err != nil {
+			return err
+		}
+		go e.Node.PushMessageToPeer(msg, peerID)
+	}
 	return nil
 }
 
@@ -199,7 +219,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		var msgPropose BFTPropose
 		err := json.Unmarshal(msg.Content, &msgPropose)
 		if err != nil {
-			fmt.Println(err)
+			e.Logger.Error(err)
 			return
 		}
 		go e.processProposeMsg(&msgPropose)
@@ -207,7 +227,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		var msgVote BFTVote
 		err := json.Unmarshal(msg.Content, &msgVote)
 		if err != nil {
-			fmt.Println(err)
+			e.Logger.Error(err)
 			return
 		}
 		go e.processVoteMsg(&msgVote)
@@ -215,7 +235,7 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 		var msgRequest BFTRequestBlock
 		err := json.Unmarshal(msg.Content, &msgRequest)
 		if err != nil {
-			fmt.Println(err)
+			e.Logger.Error(err)
 			return
 		}
 		go e.processRequestBlkMsg(&msgRequest)

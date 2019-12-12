@@ -29,9 +29,8 @@ type BLSBFT struct {
 
 	currentTimeslotOfViews map[string]uint64
 	bestProposeBlockOfView map[string]string
-
-	onGoingBlocks     map[string]*blockConsensusInstance
-	lockOnGoingBlocks sync.RWMutex
+	onGoingBlocks          map[string]*blockConsensusInstance
+	lockOnGoingBlocks      sync.RWMutex
 
 	proposedBlockOnView struct {
 		ViewHash  string
@@ -77,6 +76,8 @@ func (e *BLSBFT) Start() error {
 	e.bestProposeBlockOfView = make(map[string]string)
 	e.onGoingBlocks = make(map[string]*blockConsensusInstance)
 
+	//init view maps
+
 	ticker := time.Tick(1 * time.Second)
 	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
@@ -86,7 +87,7 @@ func (e *BLSBFT) Start() error {
 			case <-e.StopCh:
 				return
 			case <-ticker:
-				e.lockOnGoingBlocks.RLock()
+				e.lockOnGoingBlocks.Lock()
 				//check if is proposer of bestview
 				bestView := e.Chain.GetBestView()
 				bestViewHash := bestView.Hash().String()
@@ -94,12 +95,21 @@ func (e *BLSBFT) Start() error {
 				consensusCfg, _ := parseConsensusConfig(bestView.GetConsensusConfig())
 				consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
 				timeSlot := getTimeSlot(bestView.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
-				if e.currentTimeslotOfViews[bestViewHash]+1 == timeSlot {
+				willProposeBlock := false
+				if _, ok := e.currentTimeslotOfViews[bestViewHash]; ok {
+					if e.currentTimeslotOfViews[bestViewHash]+1 == timeSlot {
+						willProposeBlock = true
+					}
+				} else {
+					willProposeBlock = true
+				}
+				if willProposeBlock {
 					if err := e.proposeBlock(timeSlot); err != nil {
 						e.Logger.Critical(consensus.UnExpectedError, errors.New("can't propose block"))
 					}
 				}
 				//update timeslot of views
+				//clean all view
 				views := e.Chain.GetAllViews()
 				for _, view := range views {
 					_, ok := e.currentTimeslotOfViews[view.Hash().String()]
@@ -121,12 +131,21 @@ func (e *BLSBFT) Start() error {
 								panic(err)
 							}
 							go func(blockHash string) {
-								e.deleteProposeBlock(blockHash)
+								e.deleteOnGoingBlock(blockHash)
 							}(proposedBlockHash)
 						}
 					}
 				}
-				e.lockOnGoingBlocks.RUnlock()
+				finalView := e.Chain.GetFinalView()
+				finalViewHeight := finalView.CurrentHeight()
+				for _, block := range e.onGoingBlocks {
+					if block.Block.GetHeight() <= finalViewHeight {
+						go func(blockHash string) {
+							e.deleteOnGoingBlock(blockHash)
+						}(block.Block.Hash().String())
+					}
+				}
+				e.lockOnGoingBlocks.Unlock()
 			}
 		}
 	}()
@@ -147,7 +166,7 @@ func init() {
 	consensus.RegisterConsensus(common.BlsConsensus2, &BLSBFT{})
 }
 
-func (e *BLSBFT) deleteProposeBlock(blockHash string) {
+func (e *BLSBFT) deleteOnGoingBlock(blockHash string) {
 	e.lockOnGoingBlocks.Lock()
 	delete(e.onGoingBlocks, blockHash)
 	e.lockOnGoingBlocks.Unlock()

@@ -2,13 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/incognitochain/incognito-chain/blockchain"
 	"github.com/incognitochain/incognito-chain/common"
 	blsbft "github.com/incognitochain/incognito-chain/consensus/blsbft2"
 	"github.com/incognitochain/incognito-chain/consensus/chain"
 	"github.com/incognitochain/incognito-chain/incognitokey"
 	"github.com/incognitochain/incognito-chain/wire"
-	"os"
+	libp2p "github.com/libp2p/go-libp2p-peer"
 )
 
 type Node struct {
@@ -137,4 +139,12 @@ func (Node) GetPrivateKey() string {
 func (Node) DropAllConnections() {
 	//not use in bft
 	return
+}
+
+func (Node) PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error {
+	return nil
+}
+
+func main() {
+
 }
