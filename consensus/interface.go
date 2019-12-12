@@ -13,7 +13,7 @@ type NodeInterface interface {
 	// PushBlockToPeer(block common.BlockInterface, isShard bool, peerID libp2p.ID) error
 	PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error
 	PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error
-	// PushMessageToBlockToAll(msg wire.Message) error
+
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
 	IsEnableMining() bool
 	GetMiningKeys() string

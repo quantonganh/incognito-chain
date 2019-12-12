@@ -26,17 +26,15 @@ func (e BLSBFT) preValidateCheck(block *common.BlockInterface) bool {
 func (e *BLSBFT) proposeBlock(timeslot uint64) error {
 	bestView := e.Chain.GetBestView()
 	bestViewHash := bestView.Hash().String()
+	e.lockOnGoingBlocks.RLock()
 	bestProposedBlockHash, ok := e.bestProposeBlockOfView[bestViewHash]
+	e.lockOnGoingBlocks.RUnlock()
 
 	if ok {
 		//re-broadcast best proposed block
-
-		// consensusCfg, _ := parseConsensusConfig(bestView.GetConsensusConfig())
-		// consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
-		// if e.currentTimeslotOfViews[bestViewHash] == getTimeSlot(bestView.GetGenesisTime(), time.Now().Unix(), int64(consensusSlottime.Seconds())) {
-		// }
-
+		e.lockOnGoingBlocks.RLock()
 		blockData, _ := json.Marshal(e.onGoingBlocks[bestProposedBlockHash].Block)
+		e.lockOnGoingBlocks.RUnlock()
 		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
 		go e.Node.PushMessageToChain(msg, e.Chain)
 	} else {

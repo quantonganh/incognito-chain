@@ -2,7 +2,6 @@ package blsbftv2
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -77,11 +76,23 @@ func (e *BLSBFT) Start() error {
 	e.onGoingBlocks = make(map[string]*blockConsensusInstance)
 
 	//init view maps
-
 	ticker := time.Tick(1 * time.Second)
 	e.Logger.Info("start bls-bftv2 consensus for chain", e.ChainKey)
 	go func() {
-		fmt.Println("action")
+
+		currentTime := time.Now().Unix()
+		views := e.Chain.GetAllViews()
+		for _, view := range views {
+			_, ok := e.currentTimeslotOfViews[view.Hash().String()]
+			if !ok {
+				continue
+			}
+			consensusCfg, _ := parseConsensusConfig(view.GetConsensusConfig())
+			consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
+			timeSlot := getTimeSlot(view.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
+			e.currentTimeslotOfViews[view.Hash().String()] = timeSlot
+		}
+
 		for { //actor loop
 			select {
 			case <-e.StopCh:
@@ -168,6 +179,9 @@ func init() {
 
 func (e *BLSBFT) deleteOnGoingBlock(blockHash string) {
 	e.lockOnGoingBlocks.Lock()
+	if _, ok := e.bestProposeBlockOfView[blockHash]; ok {
+		delete(e.bestProposeBlockOfView, blockHash)
+	}
 	delete(e.onGoingBlocks, blockHash)
 	e.lockOnGoingBlocks.Unlock()
 }
