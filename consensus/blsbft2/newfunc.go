@@ -37,6 +37,7 @@ func (e *BLSBFT) proposeBlock(timeslot uint64) error {
 		e.lockOnGoingBlocks.RUnlock()
 		msg, _ := MakeBFTProposeMsg(blockData, e.ChainKey, e.UserKeySet)
 		go e.Node.PushMessageToChain(msg, e.Chain)
+		e.onGoingBlocks[bestProposedBlockHash].createAndSendVote()
 	} else {
 		//create block and boardcast block
 		if isProducer(timeslot, bestView.GetCommittee(), e.UserKeySet.GetPublicKeyBase58()) != nil {
@@ -120,40 +121,45 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 	if err != nil {
 		return err
 	}
-	if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() {
-		if err := e.validateProducer(block, view, int64(consensusSlottime.Seconds()), view.GetCommittee(), e.Logger); err != nil {
-			return err
-		}
-		if len(e.onGoingBlocks) > 0 {
-			e.lockOnGoingBlocks.RLock()
-			if bestBlockHash, ok := e.bestProposeBlockOfView[block.GetPreviousViewHash().String()]; ok {
-				if block.GetTimeslot() < e.onGoingBlocks[bestBlockHash].Timeslot {
-					e.lockOnGoingBlocks.RUnlock()
-
-					if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
-						return err
-					}
-					e.bestProposeBlockOfView[block.GetPreviousViewHash().String()] = blockHash
-				}
-			} else {
-				defer e.lockOnGoingBlocks.RUnlock()
-				instance := e.onGoingBlocks[blockHash]
-				err := instance.addBlock(block)
-				if err != nil {
+	// if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() {
+	if err := e.validateProducer(block, view, int64(consensusSlottime.Seconds()), view.GetCommittee(), e.Logger); err != nil {
+		return err
+	}
+	if len(e.onGoingBlocks) > 0 {
+		e.lockOnGoingBlocks.RLock()
+		if bestBlockHash, ok := e.bestProposeBlockOfView[block.GetPreviousViewHash().String()]; ok {
+			if block.GetTimeslot() < e.onGoingBlocks[bestBlockHash].Timeslot {
+				e.lockOnGoingBlocks.RUnlock()
+				if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
 					return err
 				}
+				e.lockOnGoingBlocks.RLock()
+				e.bestProposeBlockOfView[block.GetPreviousViewHash().String()] = blockHash
+				e.onGoingBlocks[bestBlockHash].createAndSendVote()
+				e.lockOnGoingBlocks.RUnlock()
 			}
 		} else {
-			err := view.ValidatePreSignBlock(block)
+			defer e.lockOnGoingBlocks.RUnlock()
+			instance := e.onGoingBlocks[blockHash]
+			err := instance.addBlock(block)
 			if err != nil {
 				return err
 			}
-			if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
-				return err
-			}
-			e.bestProposeBlockOfView[block.GetPreviousViewHash().String()] = blockHash
 		}
+	} else {
+		err := view.ValidatePreSignBlock(block)
+		if err != nil {
+			return err
+		}
+		if err := e.createBlockConsensusInstance(view, blockHash); err != nil {
+			return err
+		}
+		e.lockOnGoingBlocks.RLock()
+		e.bestProposeBlockOfView[block.GetPreviousViewHash().String()] = blockHash
+		e.onGoingBlocks[blockHash].createAndSendVote()
+		e.lockOnGoingBlocks.RUnlock()
 	}
+	// }
 	return nil
 }
 
@@ -243,10 +249,6 @@ func (e *BLSBFT) ProcessBFTMsg(msg *wire.MessageBFT) {
 	}
 }
 
-// func (e *BLSBFT) isInTimeslot(view blockchain.ChainViewInterface) bool {
-// 	return false
-// }
-
 func (blockCI *blockConsensusInstance) addVote(vote *BFTVote) error {
 	blockCI.lockVote.Lock()
 	defer blockCI.lockVote.Unlock()
@@ -271,7 +273,7 @@ func (blockCI *blockConsensusInstance) confirmVote(blockHash *common.Hash, vote 
 	return err
 }
 
-func (blockCI *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
+func (blockCI *blockConsensusInstance) createAndSendVote() error {
 	var vote BFTVote
 
 	pubKey := blockCI.Engine.UserKeySet.GetPublicKey()
@@ -279,13 +281,13 @@ func (blockCI *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
 
 	blsSig, err := blockCI.Engine.UserKeySet.BLSSignData(blockCI.Block.Hash().GetBytes(), selfIdx, blockCI.Committee.ByteList)
 	if err != nil {
-		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 	bridgeSig := []byte{}
 	if metadata.HasBridgeInstructions(blockCI.Block.GetInstructions()) {
 		bridgeSig, err = blockCI.Engine.UserKeySet.BriSignData(blockCI.Block.Hash().GetBytes())
 		if err != nil {
-			return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
+			return consensus.NewConsensusError(consensus.UnExpectedError, err)
 		}
 	}
 
@@ -295,13 +297,13 @@ func (blockCI *blockConsensusInstance) createAndSendVote() (BFTVote, error) {
 
 	msg, err := MakeBFTVoteMsg(&vote, blockCI.Engine.ChainKey)
 	if err != nil {
-		return vote, consensus.NewConsensusError(consensus.UnExpectedError, err)
+		return consensus.NewConsensusError(consensus.UnExpectedError, err)
 	}
 
 	blockCI.Votes[pubKey.GetMiningKeyBase58(consensusName)] = &vote
 	blockCI.Engine.Logger.Info("sending vote...")
 	go blockCI.Engine.Node.PushMessageToChain(msg, blockCI.Engine.Chain)
-	return vote, nil
+	return nil
 }
 
 func validateProposeBlock(block common.BlockInterface, view blockchain.ChainViewInterface) (BFTVote, error) {

@@ -83,10 +83,6 @@ func (e *BLSBFT) Start() error {
 		currentTime := time.Now().Unix()
 		views := e.Chain.GetAllViews()
 		for _, view := range views {
-			_, ok := e.currentTimeslotOfViews[view.Hash().String()]
-			if !ok {
-				continue
-			}
 			consensusCfg, _ := parseConsensusConfig(view.GetConsensusConfig())
 			consensusSlottime, _ := time.ParseDuration(consensusCfg.Slottime)
 			timeSlot := getTimeSlot(view.GetGenesisTime(), currentTime, int64(consensusSlottime.Seconds()))
