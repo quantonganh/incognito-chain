@@ -323,7 +323,7 @@ func (txService TxService) BuildRawTransaction(params *bean.CreateRawTxParam, me
 			nil, // use for prv coin -> nil is valid
 			meta,
 			params.Info,
-			transaction.TxVersion2,
+			common.TxVersion2,
 		))
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -727,7 +727,7 @@ func (txService TxService) BuildRawPrivacyCustomTokenTransaction(
 			txParam.HasPrivacyCoin,
 			txParam.HasPrivacyToken,
 			txParam.ShardIDSender, txParam.Info,
-			transaction.TxVersion2))
+			common.TxVersion2))
 
 	if err != nil {
 		return nil, NewRPCError(CreateTxDataError, err)
@@ -1347,7 +1347,7 @@ func (txService TxService) BuildRawDefragmentAccountTransaction(params interface
 			*txService.DB,
 			nil, // use for prv coin -> nil is valid
 			meta, nil,
-			transaction.TxVersion2))
+			common.TxVersion2))
 	// END create tx
 
 	if err != nil {

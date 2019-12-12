@@ -57,7 +57,7 @@ type PaymentWitnessParam struct {
 // if hashPrivacy = false, witness includes spending key, input coins, output coins
 // otherwise, witness includes all attributes in PaymentWitness struct
 func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privacy.PrivacyError {
-	if PaymentWitnessParam.Version == privacy.TxVersion1 {
+	if PaymentWitnessParam.Version == common.TxVersion1 {
 		hasPrivacy := PaymentWitnessParam.HasPrivacy
 		privateKey := PaymentWitnessParam.PrivateKey
 		inputCoins := PaymentWitnessParam.InputCoins
@@ -276,7 +276,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 		wit.comOutputShardID = cmOutputShardID
 
 		return nil
-	} else if PaymentWitnessParam.Version == privacy.TxVersion2 {
+	} else if PaymentWitnessParam.Version == common.TxVersion2 {
 		hasPrivacy := PaymentWitnessParam.HasPrivacy
 		privateKey := PaymentWitnessParam.PrivateKey
 		inputCoins := PaymentWitnessParam.InputCoins

@@ -103,7 +103,7 @@ func TestInitTx(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress.KeySet.PaymentAddress, Amount: uint64(transferAmount), Message: msgCipherText.Bytes()}},
-				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, TxVersion2,
+				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, common.TxVersion2,
 			),
 		)
 		if err != nil {
@@ -304,7 +304,7 @@ func TestInitTxWithMultiScenario(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverPaymentAddress, Amount: uint64(transferAmount)}},
-				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, TxVersion2,
+				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, common.TxVersion2,
 			),
 		)
 		assert.Equal(t, nil, err)
@@ -523,7 +523,7 @@ func TestInitTxV1(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount), Message: msgCipherText.Bytes()}},
-				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, TxVersion2,
+				coinBaseOutput, uint64(fee), hasPrivacy, db, nil, nil, []byte{}, common.TxVersion2,
 			),
 		)
 		if err != nil {
@@ -609,7 +609,7 @@ func TestInitTxV1(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount2), Message: msgCipherText2.Bytes()}},
-				newOutput, uint64(fee2), hasPrivacy2, db, nil, nil, []byte{}, TxVersion2,
+				newOutput, uint64(fee2), hasPrivacy2, db, nil, nil, []byte{}, common.TxVersion2,
 			),
 		)
 		if err != nil {
@@ -693,7 +693,7 @@ func TestInitTxV1(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount3), Message: msgCipherText3.Bytes()}},
-				outputFromTx2, uint64(fee3), hasPrivacy3, db, nil, nil, []byte{}, TxVersion2,
+				outputFromTx2, uint64(fee3), hasPrivacy3, db, nil, nil, []byte{}, common.TxVersion2,
 			),
 		)
 		if err != nil {
@@ -768,7 +768,7 @@ func TestInitTxV1(t *testing.T) {
 			NewTxPrivacyInitParams(
 				&senderKey.KeySet.PrivateKey,
 				[]*privacy.PaymentInfo{{PaymentAddress: receiverKeyWallet.KeySet.PaymentAddress, Amount: uint64(transferAmount4), Message: msgCipherText4.Bytes()}},
-				outputFromTx3, uint64(fee4), hasPrivacy4, db, nil, nil, []byte{}, TxVersion2,
+				outputFromTx3, uint64(fee4), hasPrivacy4, db, nil, nil, []byte{}, common.TxVersion2,
 			),
 		)
 		if err != nil {

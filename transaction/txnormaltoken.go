@@ -470,7 +470,7 @@ func (txCustomToken *TxNormalToken) Init(params *NormalTokenInitParam) error {
 		nil,
 		params.metaData,
 		nil,
-		TxVersion2))
+		common.TxVersion2))
 	if err != nil {
 		return NewTransactionErr(UnexpectedError, err)
 	}

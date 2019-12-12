@@ -673,7 +673,7 @@ func (proof *PaymentProof) SetBytes(proofbytes []byte) *privacy.PrivacyError {
 }
 
 func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, version int8) (bool, error) {
-	if version == privacy.TxVersion1{
+	if version == common.TxVersion1{
 		var sumInputValue, sumOutputValue uint64
 		sumInputValue = 0
 		sumOutputValue = 0
@@ -760,7 +760,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 			return false, privacy.NewPrivacyErr(privacy.VerifyAmountNoPrivacyFailedErr, nil)
 		}
 		return true, nil
-	} else if version == privacy.TxVersion2 {
+	} else if version == common.TxVersion2 {
 		var sumInputValue, sumOutputValue uint64
 		sumInputValue = 0
 		sumOutputValue = 0
@@ -862,7 +862,7 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 }
 
 func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64, db database.DatabaseInterface, shardID byte, tokenID *common.Hash, version int8) (bool, error) {
-	if version == privacy.TxVersion1{
+	if version == common.TxVersion1{
 		// verify for input coins
 		cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 		for i := 0; i < len(proof.oneOfManyProof); i++ {
@@ -964,7 +964,7 @@ func (proof PaymentProof) verifyHasPrivacy(pubKey privacy.PublicKey, fee uint64,
 		}
 
 		return true, nil
-	} else if version == privacy.TxVersion2 {
+	} else if version == common.TxVersion2 {
 		// verify for input coins
 		cmInputSum := make([]*privacy.Point, len(proof.oneOfManyProof))
 		for i := 0; i < len(proof.oneOfManyProof); i++ {

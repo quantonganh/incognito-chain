@@ -110,9 +110,9 @@ func NewTxPrivacyInitParams(senderSK *privacy.PrivateKey,
 // if not want to create a privacy tx proof, set hashPrivacy = false
 // database is used like an interface which use to query info from db in building tx
 func (tx *Tx) Init(params *TxPrivacyInitParams) error {
-	if params.version == TxVersion1 {
+	if params.version == common.TxVersion1 {
 		Logger.log.Debugf("CREATING TX........\n")
-		tx.Version = TxVersion1
+		tx.Version = common.TxVersion1
 		var err error
 
 		if len(params.inputCoins) > 255 {
@@ -384,9 +384,9 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 		return nil
 
-	} else if params.version == TxVersion2 {
+	} else if params.version == common.TxVersion2 {
 		Logger.log.Debugf("CREATING TX........\n")
-		tx.Version = TxVersion2
+		tx.Version = common.TxVersion2
 		var err error
 
 		if len(params.inputCoins) > 255 {
@@ -1141,8 +1141,8 @@ func (tx Tx) ValidateTxWithBlockChain(
 
 func (tx Tx) validateNormalTxSanityData() (bool, error) {
 	//check version
-	if tx.Version > TxVersion2 {
-		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, TxVersion2))
+	if tx.Version > common.TxVersion2 {
+		return false, errors.New(fmt.Sprintf("tx version is %d. Wrong version tx. Only support for version <= %d", tx.Version, common.TxVersion2))
 	}
 	// check LockTime before now
 	if int64(tx.LockTime) > time.Now().Unix() {
@@ -1478,7 +1478,7 @@ func (tx *Tx) InitTxSalary(
 	db database.DatabaseInterface,
 	metaData metadata.Metadata,
 ) error {
-	tx.Version = TxVersion1
+	tx.Version = common.TxVersion2
 	tx.Type = common.TxRewardType
 
 	if tx.LockTime == 0 {
@@ -1679,7 +1679,7 @@ func (param *TxPrivacyInitParamsForASM) SetMetaData(meta metadata.Metadata) {
 func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 
 	//Logger.log.Debugf("CREATING TX........\n")
-	tx.Version = TxVersion1
+	tx.Version = common.TxVersion1
 	var err error
 
 	if len(params.txParam.inputCoins) > 255 {

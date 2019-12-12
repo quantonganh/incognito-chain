@@ -61,7 +61,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		paramToCreateTx := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
 			paymentInfoPRV, inputCoinsPRV, 0, tokenParam, db, nil,
-			hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{}, TxVersion2)
+			hasPrivacyForPRV, hasPrivacyForToken, shardID, []byte{}, common.TxVersion2)
 
 		// init tx
 		tx := new(TxCustomTokenPrivacy)
@@ -184,7 +184,7 @@ func TestInitTxPrivacyToken(t *testing.T) {
 
 		paramToCreateTx2 := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
 			paymentInfoPRV, inputCoinsPRV, 0, tokenParam2, db, nil,
-			hasPrivacyForPRV, true, shardID, []byte{}, TxVersion2)
+			hasPrivacyForPRV, true, shardID, []byte{}, common.TxVersion2)
 
 		// init tx
 		tx2 := new(TxCustomTokenPrivacy)
@@ -266,7 +266,7 @@ func TestInitTxPTokenV1(t *testing.T) {
 
 		paramToCreateTx1 := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
 			paymentInfoPRV, inputCoinsPRV, 0, tokenParam, db, nil,
-			hasPrivacyForPRV, hasPrivacyForToken, senderShardID, []byte{}, TxVersion2)
+			hasPrivacyForPRV, hasPrivacyForToken, senderShardID, []byte{}, common.TxVersion2)
 
 		// init tx
 		tx1 := new(TxCustomTokenPrivacy)
@@ -345,7 +345,7 @@ func TestInitTxPTokenV1(t *testing.T) {
 
 		paramToCreateTx2 := NewTxPrivacyTokenInitParams(&senderKey.KeySet.PrivateKey,
 			paymentInfoPRV2, inputCoinsPRV2, 0, tokenParam2, db, nil,
-			hasPrivacyForPRV2, hasPrivacyForToken2, senderShardID, []byte{}, TxVersion2)
+			hasPrivacyForPRV2, hasPrivacyForToken2, senderShardID, []byte{}, common.TxVersion2)
 
 		// init tx
 		tx2 := new(TxCustomTokenPrivacy)
