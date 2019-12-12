@@ -241,7 +241,7 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 		sndOutputs[i] = new(privacy.Scalar).FromBytesS(tmp)
 	}
 
-	paramCreateTx := transaction.NewTxPrivacyInitParamsForASM(&senderSK, paymentInfo, inputCoins, uint64(fee), hasPrivacy, nil, nil, infoBytes, commitmentIndices, commitmentBytes, myCommitmentIndices, sndOutputs)
+	paramCreateTx := transaction.NewTxPrivacyInitParamsForASM(&senderSK, paymentInfo, inputCoins, uint64(fee), hasPrivacy, nil, nil, infoBytes, commitmentIndices, commitmentBytes, myCommitmentIndices, sndOutputs, common.TxVersion2)
 	println("paramCreateTx: ", paramCreateTx)
 
 	return paramCreateTx, nil
@@ -722,7 +722,7 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 	paramCreateTx := transaction.NewTxPrivacyTokenInitParamsForASM(
 		&senderSK, paymentInfo, inputCoins, uint64(fee), privacyTokenParam, nil, hasPrivacy, hasPrivacyForPToken, shardID, infoBytes,
 		commitmentIndicesForNativeToken, commitmentBytesForNativeToken, myCommitmentIndicesForNativeToken, sndOutputsForNativeToken,
-		commitmentIndicesForPToken, commitmentBytesForPToken, myCommitmentIndicesForPToken, sndOutputsForPToken)
+		commitmentIndicesForPToken, commitmentBytesForPToken, myCommitmentIndicesForPToken, sndOutputsForPToken, common.TxVersion2)
 	println("paramCreateTx: ", paramCreateTx)
 
 	return paramCreateTx, nil
