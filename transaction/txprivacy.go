@@ -1696,7 +1696,6 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 	tx.Version = versionTmp
 
 	if tx.Version == common.TxVersion1 {
-		//Logger.log.Debugf("CREATING TX........\n")
 		var err error
 
 		if len(params.txParam.inputCoins) > privacy.MaxInputNumber {
@@ -1921,22 +1920,266 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 			Logger.log.Error(err)
 			return NewTransactionErr(SignTxError, err)
 		}
-
-		snProof := tx.Proof.GetSerialNumberProof()
-		for i := 0; i < len(snProof); i++ {
-			res, _ := snProof[i].Verify(nil)
-			println("Verify serial number proof: ", i, ": ", res)
-		}
-
 		//elapsedPrivacy := time.Since(startPrivacy)
 		//elapsed := time.Since(start)
 		//Logger.log.Debugf("Creating payment proof time %s", elapsedPrivacy)
 		//Logger.log.Debugf("Successfully Creating normal tx %+v in %s time", *tx.Hash(), elapsed)
 		return nil
 	} else if tx.Version == common.TxVersion2 {
-		//todo:
+		var err error
+
+		if len(params.txParam.inputCoins) > privacy.MaxInputNumberV2 {
+			return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.txParam.inputCoins)))
+		}
+
+		// 1 output for change output coins
+		if len(params.txParam.paymentInfo) > privacy.MaxOutputNumberV2 - 1 {
+			return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.txParam.paymentInfo)))
+		}
+
+		if params.txParam.tokenID == nil {
+			// using default PRV
+			params.txParam.tokenID = &common.Hash{}
+			err := params.txParam.tokenID.SetBytes(common.PRVCoinID[:])
+			if err != nil {
+				return NewTransactionErr(TokenIDInvalidError, err, params.txParam.tokenID.GetBytes())
+			}
+		}
+
+		// Calculate execution time
+		//start := time.Now()
+
+		if tx.LockTime == 0 {
+			tx.LockTime = time.Now().Unix()
+		}
+
+		// create sender's key set from sender's spending key
+		senderFullKey := incognitokey.KeySet{}
+		err = senderFullKey.InitFromPrivateKey(params.txParam.senderSK)
+		if err != nil {
+			Logger.log.Error(errors.New(fmt.Sprintf("Can not import Private key for sender keyset from %+v", params.txParam.senderSK)))
+			return NewTransactionErr(PrivateKeySenderInvalidError, err)
+		}
+		// get public key last byte of sender
+		pkLastByteSender := senderFullKey.PaymentAddress.Pk[len(senderFullKey.PaymentAddress.Pk)-1]
+
+		// init info of tx
+		tx.Info = []byte{}
+		if len(params.txParam.info) > 0 {
+			tx.Info = params.txParam.info
+		}
+
+		// set metadata
+		tx.Metadata = params.txParam.metaData
+
+		// set tx type
+		tx.Type = common.TxNormalType
+		//Logger.log.Debugf("len(inputCoins), fee, hasPrivacy: %d, %d, %v\n", len(params.inputCoins), params.fee, params.hasPrivacy)
+
+		if len(params.txParam.inputCoins) == 0 && params.txParam.fee == 0 && !params.txParam.hasPrivacy {
+			//Logger.log.Debugf("len(inputCoins) == 0 && fee == 0 && !hasPrivacy\n")
+			tx.Fee = params.txParam.fee
+			tx.sigPrivKey = *params.txParam.senderSK
+			tx.PubKeyLastByteSender = pkLastByteSender
+			err := tx.signTx()
+			if err != nil {
+				Logger.log.Error(errors.New(fmt.Sprintf("Cannot sign tx %v\n", err)))
+				return NewTransactionErr(SignTxError, err)
+			}
+			return nil
+		}
+
+		shardID := common.GetShardIDFromLastByte(pkLastByteSender)
+
+		if params.txParam.hasPrivacy {
+			// Check number of list of random commitments, list of random commitment indices
+			if len(params.commitmentIndices) != len(params.txParam.inputCoins)*privacy.CommitmentRingSize {
+				return NewTransactionErr(RandomCommitmentError, nil)
+			}
+
+			if len(params.myCommitmentIndices) != len(params.txParam.inputCoins) {
+				return NewTransactionErr(RandomCommitmentError, errors.New("number of list my commitment indices must be equal to number of input coins"))
+			}
+		}
+
+		// Calculate execution time for creating payment proof
+		//startPrivacy := time.Now()
+
+		// Calculate sum of all output coins' value
+		sumOutputValue := uint64(0)
+		for _, p := range params.txParam.paymentInfo {
+			sumOutputValue += p.Amount
+		}
+
+		// Calculate sum of all input coins' value
+		sumInputValue := uint64(0)
+		for _, coin := range params.txParam.inputCoins {
+			sumInputValue += coin.CoinDetails.GetValue()
+		}
+		//Logger.log.Debugf("sumInputValue: %d\n", sumInputValue)
+
+		// Calculate over balance, it will be returned to sender
+		overBalance := int64(sumInputValue - sumOutputValue - params.txParam.fee)
+
+		// Check if sum of input coins' value is at least sum of output coins' value and tx fee
+		if overBalance < 0 {
+			return NewTransactionErr(WrongInputError,
+				errors.New(
+					fmt.Sprintf("input value less than output value. sumInputValue=%d sumOutputValue=%d fee=%d",
+						sumInputValue, sumOutputValue, params.txParam.fee)))
+		}
+
+		// if overBalance > 0, create a new payment info with pk is sender's pk and amount is overBalance
+		if overBalance > 0 {
+			changePaymentInfo := new(privacy.PaymentInfo)
+			changePaymentInfo.Amount = uint64(overBalance)
+			changePaymentInfo.PaymentAddress = senderFullKey.PaymentAddress
+			params.txParam.paymentInfo = append(params.txParam.paymentInfo, changePaymentInfo)
+		}
+
+		// create new output coins
+		outputCoins := make([]*privacy.OutputCoin, len(params.txParam.paymentInfo))
+
+		// create SNDs for output coins
+		sndOuts := params.sndOutputs
+
+		// only random ephemeral key
+		ephemeralPrivKey := new(privacy.Scalar)
+		ephemeralPubKey := new(privacy.Point).Identity()
+		if len(params.txParam.paymentInfo) > 0 && params.txParam.hasPrivacy {
+			ephemeralPrivKey = privacy.RandomScalar()
+			ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
+			fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
+		}
+
+		// create new output coins with info: Pk, value, last byte of pk, snd
+		for i, pInfo := range params.txParam.paymentInfo {
+			outputCoins[i] = new(privacy.OutputCoin)
+			outputCoins[i].CoinDetails = new(privacy.Coin)
+			outputCoins[i].CoinDetails.SetValue(pInfo.Amount)
+			if len(pInfo.Message) > 0 {
+				if len(pInfo.Message) > privacy.MaxSizeInfoCoin {
+					return NewTransactionErr(ExceedSizeInfoOutCoinError, nil)
+				}
+			}
+			outputCoins[i].CoinDetails.SetInfo(pInfo.Message)
+
+			if params.txParam.hasPrivacy {
+				// generate one time address
+				pubOTA, privRandOTA, err := privacy.GenerateOneTimeAddrFromPaymentAddr(pInfo.PaymentAddress, ephemeralPrivKey, i)
+				if err != nil {
+					return NewTransactionErr(GenOneTimeAddrError, err)
+				}
+				fmt.Printf("privRandOTA out %v: %v\n", i, privRandOTA)
+				fmt.Printf("pubOTA out %v: %v\n", i, pubOTA)
+				outputCoins[i].CoinDetails.SetPublicKey(pubOTA)
+				outputCoins[i].CoinDetails.SetPrivRandOTA(privRandOTA)
+				outputCoins[i].CoinDetails.SetShardIDLastByte(int(pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]))
+			} else {
+				pubKey, err := new(privacy.Point).FromBytesS(pInfo.PaymentAddress.Pk)
+				if err != nil {
+					return NewTransactionErr(DecompressPaymentAddressError, err)
+				}
+				outputCoins[i].CoinDetails.SetPublicKey(pubKey)
+				outputCoins[i].CoinDetails.SetShardIDLastByte(-1)
+			}
+			outputCoins[i].CoinDetails.SetSNDerivatorRandom(sndOuts[i])
+		}
+
+		// assign fee tx
+		tx.Fee = params.txParam.fee
+
+		// create zero knowledge proof of payment
+		tx.Proof = &zkp.PaymentProof{}
+
+		// get list of commitments for proving one-out-of-many from commitmentIndexs
+		commitmentProving := make([]*privacy.Point, len(params.commitmentBytes))
+		for i, cmBytes := range params.commitmentBytes {
+			commitmentProving[i] = new(privacy.Point)
+			commitmentProving[i], err = commitmentProving[i].FromBytesS(cmBytes)
+			if err != nil {
+				Logger.log.Error(errors.New(fmt.Sprintf("can not get commitment from index=%d shardID=%+v value=%+v", params.commitmentIndices[i], shardID, cmBytes)))
+				return NewTransactionErr(CanNotDecompressCommitmentFromIndexError, err, params.commitmentIndices[i], shardID, cmBytes)
+			}
+		}
+
+		// prepare witness for proving
+		witness := new(zkp.PaymentWitness)
+		paymentWitnessParam := zkp.PaymentWitnessParam{
+			HasPrivacy:              params.txParam.hasPrivacy,
+			PrivateKey:              new(privacy.Scalar).FromBytesS(*params.txParam.senderSK),
+			InputCoins:              params.txParam.inputCoins,
+			OutputCoins:             outputCoins,
+			PublicKeyLastByteSender: pkLastByteSender,
+			Commitments:             commitmentProving,
+			CommitmentIndices:       params.commitmentIndices,
+			MyCommitmentIndices:     params.myCommitmentIndices,
+			Fee:                     params.txParam.fee,
+		}
+		err = witness.Init(paymentWitnessParam)
+		if err.(*privacy.PrivacyError) != nil {
+			Logger.log.Error(err)
+			jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+			return NewTransactionErr(InitWithnessError, err, string(jsonParam))
+		}
+
+		tx.Proof, err = witness.Prove(params.txParam.hasPrivacy)
+		if err.(*privacy.PrivacyError) != nil {
+			Logger.log.Error(err)
+			jsonParam, _ := json.MarshalIndent(paymentWitnessParam, common.EmptyString, "  ")
+			return NewTransactionErr(WithnessProveError, err, params.txParam.hasPrivacy, string(jsonParam))
+		}
+
+		tx.Proof.SetEphemeralPubKey(ephemeralPubKey)
+		fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
+		fmt.Printf("ephemeralPubKey when initing tx: %v\n", tx.Proof.GetEphemeralPubKey())
+
+		Logger.log.Debugf("DONE PROVING........\n")
+
+		// set private key for signing tx
+		if params.txParam.hasPrivacy {
+			randSK := witness.GetRandSecretKey()
+			tx.sigPrivKey = append(*params.txParam.senderSK, randSK.ToBytesS()...)
+
+			// encrypt coin details (Randomness)
+			// hide information of output coins except coin commitments, public key, snDerivators
+			for i := 0; i < len(tx.Proof.GetOutputCoins()); i++ {
+				err = tx.Proof.GetOutputCoins()[i].Encrypt(params.txParam.paymentInfo[i].PaymentAddress.Tk)
+				if err.(*privacy.PrivacyError) != nil {
+					Logger.log.Error(err)
+					return NewTransactionErr(EncryptOutputError, err)
+				}
+				tx.Proof.GetOutputCoins()[i].CoinDetails.SetSerialNumber(nil)
+				tx.Proof.GetOutputCoins()[i].CoinDetails.SetValue(0)
+				tx.Proof.GetOutputCoins()[i].CoinDetails.SetRandomness(nil)
+				tx.Proof.GetOutputCoins()[i].CoinDetails.SetPrivRandOTA(nil)
+			}
+
+			// hide information of input coins except serial number of input coins
+			for i := 0; i < len(tx.Proof.GetInputCoins()); i++ {
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetCoinCommitment(nil)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetValue(0)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetSNDerivatorRandom(nil)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetPublicKey(nil)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetRandomness(nil)
+				tx.Proof.GetInputCoins()[i].CoinDetails.SetPrivRandOTA(nil)
+			}
+
+		} else {
+			tx.sigPrivKey = []byte{}
+			randSK := big.NewInt(0)
+			tx.sigPrivKey = append(*params.txParam.senderSK, randSK.Bytes()...)
+		}
+
+		// sign tx
+		tx.PubKeyLastByteSender = pkLastByteSender
+		err = tx.signTx()
+		if err != nil {
+			Logger.log.Error(err)
+			return NewTransactionErr(SignTxError, err)
+		}
+		return nil
 	}
 
 	return nil
-
 }
