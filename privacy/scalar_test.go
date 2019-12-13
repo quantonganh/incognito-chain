@@ -4,7 +4,6 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"math/big"
 	//C25519 "github.com/deroproject/derosuite/crypto"
 	C25519 "github.com/incognitochain/incognito-chain/privacy/curve25519"
 	"testing"
@@ -49,16 +48,6 @@ func TestScalar_Mul(t *testing.T) {
 		c := RandomScalar()
 		res := new(Scalar).Mul(a, b)
 		res = res.Mul(res, c)
-
-		curveOrder := C25519.CurveOrder()
-
-		resBN := new(big.Int).SetBytes(res.ToBytesS())
-		curveOrderBN := new(big.Int).SetBytes(ArrayToSlice(curveOrder.ToBytes()))
-
-		if resBN.Cmp(curveOrderBN) == 1{
-			count ++
-			fmt.Printf("Wrong!!!!!\n")
-		}
 
 		var resPrime C25519.Key
 		C25519.ScMul(&resPrime, &a.key, &b.key)
