@@ -84,7 +84,7 @@ const (
 	ValidatorRole  = "validator"
 	PendingRole    = "pending"
 	WaitingRole    = "waiting"
-	MaxShardNumber = 8
+	MaxShardNumber = 2
 
 	BlsConsensus    = "bls"
 	BridgeConsensus = "dsa"
