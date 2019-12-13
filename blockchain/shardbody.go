@@ -100,7 +100,7 @@ func (shardBody ShardBody) Hash() common.Hash {
 		for _, value := range shardBody.CrossTransactions[byte(shardID)] {
 			res = append(res, []byte(fmt.Sprintf("%v", value.BlockHeight))...)
 			res = append(res, value.BlockHash.GetBytes()...)
-			for _, coins := range value.OutputCoin {
+			for _, coins := range value.OutputCoinWithIndex {
 				res = append(res, coins.Bytes()...)
 			}
 			for _, coins := range value.TokenPrivacyData {

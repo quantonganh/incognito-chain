@@ -14,11 +14,24 @@ import (
 type Coin struct {
 	publicKey      *Point
 	coinCommitment *Point
-	snDerivator    *Scalar
-	serialNumber   *Point
-	randomness     *Scalar
-	value          uint64
-	info           []byte //256 bytes
+	// snDerivatorRandom only has in no privacy tx version
+	// it is a random scalar, is used to generate serial number
+	snDerivatorRandom *Scalar
+	serialNumber      *Point
+	randomness        *Scalar
+	value             uint64
+	info              []byte //256 bytes
+
+	// shardIDLastByte shardId of receiver
+	// only has in privacy tx
+	// if shardIDLastByte == -1: get shardID from public key
+	// if shardIDLastByte != -1: get shardID from shardIDLastByte (because public key is one-time public key)
+	shardIDLastByte int
+
+	// it used to be witness for output coins with one-time address
+	// only has in privacy tx
+	// and it used to generate serial number in privacy tx
+	privRandOTA *Scalar
 }
 
 // Start GET/SET
@@ -38,12 +51,12 @@ func (coin *Coin) SetCoinCommitment(v *Point) {
 	coin.coinCommitment = v
 }
 
-func (coin Coin) GetSNDerivator() *Scalar {
-	return coin.snDerivator
+func (coin Coin) GetSNDerivatorRandom() *Scalar {
+	return coin.snDerivatorRandom
 }
 
-func (coin *Coin) SetSNDerivator(v *Scalar) {
-	coin.snDerivator = v
+func (coin *Coin) SetSNDerivatorRandom(v *Scalar) {
+	coin.snDerivatorRandom = v
 }
 
 func (coin Coin) GetSerialNumber() *Point {
@@ -79,25 +92,59 @@ func (coin *Coin) SetInfo(v []byte) {
 	copy(coin.info, v)
 }
 
+func (coin Coin) GetPrivRandOTA() *Scalar {
+	return coin.privRandOTA
+}
+
+func (coin *Coin) SetPrivRandOTA(privRandOTA *Scalar) {
+	coin.privRandOTA = privRandOTA
+}
+
+func (coin Coin) GetShardIDLastByte() int {
+	return coin.shardIDLastByte
+}
+
+func (coin *Coin) SetShardIDLastByte(shardIDLastByte int) {
+	coin.shardIDLastByte = shardIDLastByte
+}
+
+func (coin Coin) GetSerialNumberDerivator() (*Scalar, error){
+	sndRandom := coin.GetSNDerivatorRandom()
+	privRandOTA := coin.GetPrivRandOTA()
+	if sndRandom != nil && !sndRandom.IsZero() {
+		// input from tx version 0 or tx version 1 no privacy
+		return sndRandom, nil
+	} else if privRandOTA != nil && !privRandOTA.IsZero() {
+		// input from tx version 1 has privacy
+		return privRandOTA, nil
+	} else {
+		return nil, errors.New("Both snd and privRandOTA are not existed")
+	}
+}
+
 // Init (Coin) initializes a coin
 func (coin *Coin) Init() *Coin {
 	coin.publicKey = new(Point).Identity()
 
 	coin.coinCommitment = new(Point).Identity()
 
-	coin.snDerivator = new(Scalar).FromUint64(0)
+	coin.snDerivatorRandom = new(Scalar).FromUint64(0)
 
 	coin.serialNumber = new(Point).Identity()
 
 	coin.randomness = new(Scalar)
 
 	coin.value = 0
+	coin.shardIDLastByte = -1
 
 	return coin
 }
 
-// GetPubKeyLastByte returns the last byte of public key
+// GetPubKeyLastByte returns the last byte of fixed public key
 func (coin *Coin) GetPubKeyLastByte() byte {
+	if coin.shardIDLastByte >= 0 {
+		return byte(coin.shardIDLastByte)
+	}
 	pubKeyBytes := coin.publicKey.ToBytes()
 	return pubKeyBytes[Ed25519KeySize-1]
 }
@@ -136,7 +183,7 @@ func (coin *Coin) HashH() *common.Hash {
 // public key, value, serial number derivator, shardID form last byte public key, randomness
 func (coin *Coin) CommitAll() error {
 	shardID := common.GetShardIDFromLastByte(coin.GetPubKeyLastByte())
-	values := []*Scalar{new(Scalar).FromUint64(0), new(Scalar).FromUint64(coin.value), coin.snDerivator, new(Scalar).FromUint64(uint64(shardID)), coin.randomness}
+	values := []*Scalar{new(Scalar).FromUint64(0), new(Scalar).FromUint64(coin.value), coin.snDerivatorRandom, new(Scalar).FromUint64(uint64(shardID)), coin.randomness}
 	commitment, err := PedCom.commitAll(values)
 	if err != nil {
 		return err
@@ -154,7 +201,10 @@ func (coin *Coin) Bytes() []byte {
 
 	if coin.publicKey != nil {
 		publicKey := coin.publicKey.ToBytesS()
-		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		if coin.shardIDLastByte >= 0 {
+			publicKey = append(publicKey, byte(coin.shardIDLastByte))
+		}
+		coinBytes = append(coinBytes, byte(len(publicKey)))
 		coinBytes = append(coinBytes, publicKey...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
@@ -168,9 +218,9 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
-	if coin.snDerivator != nil {
+	if coin.snDerivatorRandom != nil {
 		coinBytes = append(coinBytes, byte(Ed25519KeySize))
-		coinBytes = append(coinBytes, coin.snDerivator.ToBytesS()...)
+		coinBytes = append(coinBytes, coin.snDerivatorRandom.ToBytesS()...)
 	} else {
 		coinBytes = append(coinBytes, byte(0))
 	}
@@ -214,6 +264,13 @@ func (coin *Coin) Bytes() []byte {
 		coinBytes = append(coinBytes, byte(0))
 	}
 
+	if coin.privRandOTA != nil {
+		coinBytes = append(coinBytes, byte(Ed25519KeySize))
+		coinBytes = append(coinBytes, coin.privRandOTA.ToBytesS()...)
+	} else {
+		//coinBytes = append(coinBytes, byte(0))
+	}
+
 	return coinBytes
 }
 
@@ -231,15 +288,22 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 	lenField := coinBytes[offset]
 	offset++
 	if lenField != 0 {
-		if offset+int(lenField) > len(coinBytes) {
+		if offset+int(lenField) > len(coinBytes) || lenField < Ed25519KeySize {
 			// out of range
 			return errors.New("out of range Parse PublicKey")
 		}
-		data := coinBytes[offset : offset+int(lenField)]
-		coin.publicKey, err = new(Point).FromBytesS(data)
+		dataPublicKey := coinBytes[offset : offset+Ed25519KeySize]
+		coin.publicKey, err = new(Point).FromBytesS(dataPublicKey)
 		if err != nil {
 			return err
 		}
+
+		if lenField == Ed25519KeySize + 1 {
+			coin.shardIDLastByte = int(coinBytes[offset + Ed25519KeySize])
+		} else{
+			coin.shardIDLastByte = int(-1)
+		}
+
 		offset += int(lenField)
 	}
 
@@ -276,7 +340,7 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 			return errors.New("out of range Parse SNDerivator")
 		}
 		data := coinBytes[offset : offset+int(lenField)]
-		coin.snDerivator = new(Scalar).FromBytesS(data)
+		coin.snDerivatorRandom = new(Scalar).FromBytesS(data)
 
 		offset += int(lenField)
 	}
@@ -348,7 +412,44 @@ func (coin *Coin) SetBytes(coinBytes []byte) error {
 		}
 		coin.info = make([]byte, lenField)
 		copy(coin.info, coinBytes[offset:offset+int(lenField)])
+		offset += int(lenField)
 	}
+
+	// Parse PrivRandOTA
+	if offset >= len(coinBytes) {
+		// out of range
+		return nil
+	}
+	lenField = coinBytes[offset]
+	offset++
+	if lenField != 0 {
+		if offset+int(lenField) > len(coinBytes) {
+			// out of range
+			return errors.New("out of range Parse PrivRandOTA")
+		}
+		data := coinBytes[offset : offset+int(lenField)]
+		coin.privRandOTA = new(Scalar).FromBytesS(data)
+		offset += int(lenField)
+	}
+
+	return nil
+}
+
+func (coin *Coin) CalSerialNumber(privateKey *Scalar) error {
+	snd := new(Scalar).FromUint64(0)
+	if coin.snDerivatorRandom != nil && !coin.snDerivatorRandom.IsZero() {
+		snd = coin.snDerivatorRandom
+	}
+
+	if coin.privRandOTA != nil && !coin.privRandOTA.IsZero() {
+		snd = coin.privRandOTA
+	}
+
+	if snd == nil || snd.IsZero() {
+		return  errors.New("serial number derivator is nil")
+	}
+
+	coin.serialNumber = new(Point).Derive(PedCom.G[PedersenPrivateKeyIndex], snd, privateKey)
 	return nil
 }
 
@@ -382,6 +483,7 @@ type CoinObject struct {
 	PublicKey      string `json:"PublicKey"`
 	CoinCommitment string `json:"CoinCommitment"`
 	SNDerivator    string `json:"SNDerivator"`
+	PrivRandOTA    string `json:"PrivRandOTA"`
 	SerialNumber   string `json:"SerialNumber"`
 	Randomness     string `json:"Randomness"`
 	Value          string `json:"Value"`
@@ -429,7 +531,20 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 		if err != nil {
 			return err
 		}
-		inputCoin.CoinDetails.SetSNDerivator(snderivatorScalar)
+		inputCoin.CoinDetails.SetSNDerivatorRandom(snderivatorScalar)
+	}
+
+	if coinObj.PrivRandOTA != "" {
+		privRandOTA, _, err := base58.Base58Check{}.Decode(coinObj.PrivRandOTA)
+		if err != nil {
+			return err
+		}
+
+		privRandOTAScalar := new(Scalar).FromBytesS(privRandOTA)
+		if err != nil {
+			return err
+		}
+		inputCoin.CoinDetails.SetPrivRandOTA(privRandOTAScalar)
 	}
 
 	if coinObj.SerialNumber != "" {

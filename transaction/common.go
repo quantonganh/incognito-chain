@@ -95,10 +95,24 @@ func RandomCommitmentsProcess(param *RandomCommitmentsProcessParam) (commitmentI
 		commitmentIndexs = []uint64{0, 0, 0, 0, 0, 0, 0}
 		temp := param.usableInputCoins[0].CoinDetails.GetCoinCommitment().ToBytesS()
 		commitments = [][]byte{temp, temp, temp, temp, temp, temp, temp}
+	} else if lenCommitment.Uint64() == uint64(len(listUsableCommitments)) {
+		for i := 0; i < cpRandNum; i++ {
+			for {
+				index, _ := common.RandBigIntMaxRange(lenCommitment)
+				ok, err := param.db.HasCommitmentIndex(*param.tokenID, index.Uint64(), param.shardID)
+				if ok && err == nil {
+					temp, _ := param.db.GetCommitmentByIndex(*param.tokenID, index.Uint64(), param.shardID)
+					commitmentIndexs = append(commitmentIndexs, index.Uint64())
+					commitments = append(commitments, temp)
+					break
+				} else {
+					continue
+				}
+			}
+		}
 	} else {
 		for i := 0; i < cpRandNum; i++ {
 			for {
-				lenCommitment, _ = param.db.GetCommitmentLength(*param.tokenID, param.shardID)
 				index, _ := common.RandBigIntMaxRange(lenCommitment)
 				ok, err := param.db.HasCommitmentIndex(*param.tokenID, index.Uint64(), param.shardID)
 				if ok && err == nil {
@@ -370,7 +384,8 @@ func BuildCoinBaseTxByCoinID(params *BuildCoinBaseTxByCoinIDParams) (metadata.Tr
 				false,
 				false,
 				params.shardID,
-				nil))
+				nil,
+				common.TxVersion2))
 		if err != nil {
 			return nil, errors.New(err.Error())
 		}

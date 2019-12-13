@@ -169,6 +169,7 @@ type TxPrivacyTokenInitParams struct {
 	hasPrivacyToken bool
 	shardID         byte
 	info            []byte
+	version         int8
 }
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
@@ -181,7 +182,8 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	hasPrivacyCoin bool,
 	hasPrivacyToken bool,
 	shardID byte,
-	info []byte) *TxPrivacyTokenInitParams {
+	info []byte,
+	txVersion int8) *TxPrivacyTokenInitParams {
 	params := &TxPrivacyTokenInitParams{
 		shardID:         shardID,
 		paymentInfo:     paymentInfo,
@@ -194,6 +196,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 		senderKey:       senderKey,
 		tokenParams:     tokenParams,
 		info:            info,
+		version:         txVersion,
 	}
 	return params
 }
@@ -212,7 +215,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 		params.db,
 		nil,
 		params.metaData,
-		params.info))
+		params.info,
+		params.version))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
 	}
@@ -259,7 +263,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 			}
 
 			sndOut := privacy.RandomScalar()
-			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			tempOutputCoin[0].CoinDetails.SetSNDerivatorRandom(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment
@@ -339,7 +343,8 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) Init(params *TxPrivacyTokenIni
 				params.db,
 				propertyID,
 				nil,
-				nil))
+				nil,
+				params.version))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)
 			}
@@ -677,6 +682,10 @@ func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetTokenID() *common.Hash {
 	return &txCustomTokenPrivacy.TxPrivacyTokenData.PropertyID
 }
 
+func (txCustomTokenPrivacy TxCustomTokenPrivacy) GetVersionTx() int8 {
+	return txCustomTokenPrivacy.Tx.Version
+}
+
 // GetTxFee - return fee PRV of Tx which contain privacy token Tx
 func (tx TxCustomTokenPrivacy) GetTxFee() uint64 {
 	return tx.Tx.GetTxFee()
@@ -705,6 +714,8 @@ type TxPrivacyTokenInitParamsForASM struct {
 	commitmentBytesForPToken     [][]byte
 	myCommitmentIndicesForPToken []uint64
 	sndOutputsForPToken          []*privacy.Scalar
+
+	version int8
 }
 
 func (param *TxPrivacyTokenInitParamsForASM) SetMetaData(meta metadata.Metadata) {
@@ -730,9 +741,10 @@ func NewTxPrivacyTokenInitParamsForASM(
 	commitmentIndicesForPToken []uint64,
 	commitmentBytesForPToken [][]byte,
 	myCommitmentIndicesForPToken []uint64,
-	sndOutputsForPToken []*privacy.Scalar) *TxPrivacyTokenInitParamsForASM {
+	sndOutputsForPToken []*privacy.Scalar,
+	version int8) *TxPrivacyTokenInitParamsForASM {
 
-	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info)
+	txParam := NewTxPrivacyTokenInitParams(senderKey, paymentInfo, inputCoin, feeNativeCoin, tokenParams, nil, metaData, hasPrivacyCoin, hasPrivacyToken, shardID, info, version)
 	params := &TxPrivacyTokenInitParamsForASM{
 		txParam:                           *txParam,
 		commitmentIndicesForNativeToken:   commitmentIndicesForNativeToken,
@@ -744,6 +756,8 @@ func NewTxPrivacyTokenInitParamsForASM(
 		commitmentBytesForPToken:     commitmentBytesForPToken,
 		myCommitmentIndicesForPToken: myCommitmentIndicesForPToken,
 		sndOutputsForPToken:          sndOutputsForPToken,
+
+		version: version,
 	}
 	return params
 }
@@ -766,6 +780,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 		params.commitmentBytesForNativeToken,
 		params.myCommitmentIndicesForNativeToken,
 		params.sndOutputsForNativeToken,
+		params.version,
 	))
 	if err != nil {
 		return NewTransactionErr(PrivacyTokenInitPRVError, err)
@@ -814,7 +829,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 			}
 
 			sndOut := privacy.RandomScalar()
-			tempOutputCoin[0].CoinDetails.SetSNDerivator(sndOut)
+			tempOutputCoin[0].CoinDetails.SetSNDerivatorRandom(sndOut)
 			temp.Proof.SetOutputCoins(tempOutputCoin)
 
 			// create coin commitment
@@ -881,6 +896,7 @@ func (txCustomTokenPrivacy *TxCustomTokenPrivacy) InitForASM(params *TxPrivacyTo
 				params.commitmentBytesForPToken,
 				params.myCommitmentIndicesForPToken,
 				params.sndOutputsForPToken,
+				params.version,
 			))
 			if err != nil {
 				return NewTransactionErr(PrivacyTokenInitTokenDataError, err)

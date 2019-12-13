@@ -339,7 +339,8 @@ func CreateAndSaveTestNormalTransaction(privateKey string, fee int64, hasPrivacy
 			db,
 			nil, // use for prv coin -> nil is valid
 			nil,
-			[]byte{}))
+			[]byte{},
+			common.TxVersion2))
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -442,7 +443,8 @@ func CreateAndSaveTestStakingTransaction(privateKey string, privateSeed string, 
 			db,
 			nil, // use for prv coin -> nil is valid
 			stakingMetadata,
-			[]byte{}))
+			[]byte{},
+			common.TxVersion2))
 	if err1 != nil {
 		panic("no tx found")
 	}
@@ -617,7 +619,8 @@ func CreateAndSaveTestInitCustomTokenTransactionPrivacy(privateKey string, fee i
 			hasPrivacyCoin,
 			true,
 			shardIDSender,
-			[]byte{}))
+			[]byte{},
+			common.TxVersion2))
 	fmt.Println(tx.TxPrivacyTokenData.PropertyID.String())
 	if err1 != nil {
 		panic("no tx found")

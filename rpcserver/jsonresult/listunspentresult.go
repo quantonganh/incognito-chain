@@ -12,6 +12,7 @@ import (
 
 type ListOutputCoins struct {
 	Outputs map[string][]OutCoin `json:"Outputs"`
+	CurrentBlockHeights map[string]uint64
 }
 
 type OutCoin struct {
@@ -22,6 +23,7 @@ type OutCoin struct {
 	Randomness     string `json:"Randomness"`
 	Value          string `json:"Value"`
 	Info           string `json:"Info"`
+	PrivRandOTA    string `json:"PrivRandOTA"`
 }
 
 func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
@@ -42,9 +44,19 @@ func NewOutcoinFromInterface(data interface{}) (*OutCoin, error) {
 
 func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
 	serialNumber := ""
+	snderivatorRandom := ""
+	privRandOTA := ""
 
 	if outCoin.CoinDetails.GetSerialNumber() != nil && !outCoin.CoinDetails.GetSerialNumber().IsIdentity() {
 		serialNumber = base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSerialNumber().ToBytesS(), common.ZeroByte)
+	}
+
+	if outCoin.CoinDetails.GetSNDerivatorRandom() != nil && !outCoin.CoinDetails.GetSNDerivatorRandom().IsZero() {
+		snderivatorRandom = base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivatorRandom().ToBytesS(), common.ZeroByte)
+	}
+
+	if outCoin.CoinDetails.GetPrivRandOTA() != nil && !outCoin.CoinDetails.GetPrivRandOTA().IsZero() {
+		privRandOTA = base58.Base58Check{}.Encode(outCoin.CoinDetails.GetPrivRandOTA().ToBytesS(), common.ZeroByte)
 	}
 
 	result := OutCoin{
@@ -53,8 +65,9 @@ func NewOutCoin(outCoin *privacy.OutputCoin) OutCoin {
 		Info:           base58.Base58Check{}.Encode(outCoin.CoinDetails.GetInfo()[:], common.ZeroByte),
 		CoinCommitment: base58.Base58Check{}.Encode(outCoin.CoinDetails.GetCoinCommitment().ToBytesS(), common.ZeroByte),
 		Randomness:     base58.Base58Check{}.Encode(outCoin.CoinDetails.GetRandomness().ToBytesS(), common.ZeroByte),
-		SNDerivator:    base58.Base58Check{}.Encode(outCoin.CoinDetails.GetSNDerivator().ToBytesS(), common.ZeroByte),
+		SNDerivator:    snderivatorRandom,
 		SerialNumber:   serialNumber,
+		PrivRandOTA:    privRandOTA,
 	}
 
 	return result

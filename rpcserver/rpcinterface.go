@@ -173,6 +173,9 @@ var HttpHandler = map[string]httpHandler{
 	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
 	convertPDEPrices:                      (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
+
+	// transaction v2
+	listOutputCoinsV2:                         (*HttpServer).handleListOutputCoinsV2,
 }
 
 // Commands that are available to a limited user

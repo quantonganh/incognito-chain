@@ -117,6 +117,7 @@ type Transaction interface {
 	IsCoinsBurning() bool
 	CalculateTxValue() uint64
 	IsSalaryTx() bool
+	GetVersionTx() int8
 }
 
 func getPDEPoolPair(

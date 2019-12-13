@@ -564,3 +564,329 @@ func (db *db) GetTxByPublicKey(publicKey []byte) (map[byte][]common.Hash, error)
 	}
 	return result, nil
 }
+
+/*********************************** TRANSACTION VERSION 2 ***********************************/
+
+//StoreOutputCoins - store output coin bytes of publicKey in indexOutputInTx at blockHeight
+// key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][publicKey][indexOutputInTx][ephemeralPubKey][hash(output)]
+// value: output in bytes
+func (db *db) StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey []byte) error {
+	keyTmp := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+	keyTmp = append(keyTmp, shardID)
+	keyTmp = append(keyTmp, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
+	keyTmp = append(keyTmp, publicKey...)
+
+	batchData := []database.BatchData{}
+	for i, item := range outputCoinBytes {
+		key := []byte{}
+		// has privacy
+		if ephemeralPubKey != nil {
+			key = append(keyTmp, indexOutputInTx[i])
+			key = append(key, ephemeralPubKey...)
+		}
+
+		key = append(key, common.HashB(item)...)
+		// Put to batch
+		batchData = append(batchData, database.BatchData{
+			Key:   key,
+			Value: item,
+		})
+	}
+
+	if len(batchData) > 0 {
+		err := db.PutBatch(batchData)
+		if err != nil {
+			return database.NewDatabaseError(database.StoreOutputCoinsError, err)
+		}
+	}
+
+	return nil
+}
+
+//GetOutcoinsByPubkeyV2 - get all output coin of pubkey at blockheight
+// key: [outcoinsPrefixV2][tokenID][shardID][blockHeight][pubKey]
+// value: output in bytes
+//func (db *db) GetOutcoinsByPubKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, pubKey []byte) ([][]byte, error) {
+//	key := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+//	key = append(key, shardID)
+//	key = append(key, new(big.Int).SetUint64(blockHeight).Bytes()...)
+//	key = append(key, pubKey...)
+//
+//	arrDatabyPubkey := make([][]byte, 0)
+//	iter := db.lvdb.NewIterator(util.BytesPrefix(key), nil)
+//	if iter.Error() != nil {
+//		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+//	}
+//	for iter.Next() {
+//		value := make([]byte, len(iter.Value()))
+//		copy(value, iter.Value())
+//		arrDatabyPubkey = append(arrDatabyPubkey, value)
+//	}
+//	iter.Release()
+//	return arrDatabyPubkey, nil
+//}
+
+//GetOutcoinsByViewKeyV2 - get list of output coins corresponding to viewKey at blockHeight
+// both UTXO with fixec public key and one time public key
+// key: [outcoinsPrefixV2][tokenID][shardID][blockHeight]
+// value: output in bytes
+func (db *db) GetOutcoinsByViewKeyV2(tokenID common.Hash, shardID byte, blockHeight uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
+	// get output coins with one time public key corresponding to viewKey
+	outCoinsFromViewKeyBytes := make([][]byte, 0)
+	keyPrefix := addPrefixToKeyHash(string(outcoinsPrefixV2), tokenID)
+	keyPrefix = append(keyPrefix, shardID)
+	keyPrefix = append(keyPrefix, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
+	lenKeyPrefix := len(keyPrefix)
+
+	iter := db.lvdb.NewIterator(util.BytesPrefix(keyPrefix), nil)
+	if iter.Error() != nil {
+		return nil, database.NewDatabaseError(database.GetOutputCoinByPublicKeyError, errors.Wrap(iter.Error(), "db.lvdb.NewIterator"))
+	}
+
+	for iter.Next() {
+		// get public one-time address, index of output in tx from key
+		key := make([]byte, len(iter.Key()))
+		copy(key, iter.Key())
+
+		// 97 = len(PK) + len(index) + len(EphemeralPubKey) + len(hash(outCoins))
+		if len(key) == lenKeyPrefix+97 {
+			offset := lenKeyPrefix
+			pubOneTimeAddr := key[offset : offset+privacy.Ed25519KeySize]
+			pubOneTimeAddrPoint, err := new(privacy.Point).FromBytesS(pubOneTimeAddr)
+			if err != nil {
+				database.Logger.Log.Errorf("Invalid one time address from db")
+				return nil, err
+			}
+			offset += privacy.Ed25519KeySize
+
+			indexOutInTx := key[offset]
+			offset += 1
+
+			ephemeralPubKey := key[offset : offset+privacy.Ed25519KeySize]
+			ephemeralPubKeyPoint, err := new(privacy.Point).FromBytesS(ephemeralPubKey)
+			if err != nil {
+				database.Logger.Log.Errorf("Invalid ephemeralPubKey from db")
+				return nil, err
+			}
+
+			isPair, randOTA, err := privacy.IsPairOneTimeAddr(pubOneTimeAddrPoint, ephemeralPubKeyPoint, viewKey, int(indexOutInTx))
+			if isPair && err == nil {
+				outCoinBytes := make([]byte, len(iter.Value()))
+				copy(outCoinBytes, iter.Value())
+
+				tmpCoin := new(privacy.OutputCoin)
+				err := tmpCoin.SetBytes(outCoinBytes)
+				if err != nil {
+					database.Logger.Log.Errorf("Can not setbytes output coins from db")
+				}
+				tmpCoin.CoinDetails.SetPrivRandOTA(randOTA)
+
+				outCoinsFromViewKeyBytes = append(outCoinsFromViewKeyBytes, tmpCoin.Bytes())
+			}
+		}
+	}
+
+	iter.Release()
+	return outCoinsFromViewKeyBytes, nil
+}
+
+//func (db *db) GetOutcoinsByPubKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, pubKey []byte) ([][]byte, error) {
+//	outCoins := make([][]byte, 0)
+//
+//	for i := fromBlock; i <= toBlock; i++ {
+//		outCoinsTmp, err := db.GetOutcoinsByPubKeyV2(tokenID, shardID, i, pubKey)
+//		if err != nil {
+//			return nil, err
+//		}
+//		outCoins = append(outCoins, outCoinsTmp...)
+//	}
+//
+//	return outCoins, nil
+//}
+
+// GetOutcoinsByViewKeyV2InBlocks returns all output coins with fixed publicKey in all blocks
+// and output coins with one-time address corresponding to viewing Key in block [fromBlock, toBlock]
+func (db *db) GetOutcoinsByViewKeyV2InBlocks(tokenID common.Hash, shardID byte, fromBlock uint64, toBlock uint64, viewKey privacy.ViewingKey) ([][]byte, error) {
+	// get all output coins with fixed public key in all blocks
+	outCoins, err := db.GetOutcoinsByPubkey(tokenID, viewKey.Pk, shardID)
+	if err != nil {
+		return nil, err
+	}
+
+	// get output coins with one-time address corresponding to viewing Key in block [fromBlock, toBlock]
+	for i := fromBlock; i <= toBlock; i++ {
+		outCoinsTmp, err := db.GetOutcoinsByViewKeyV2(tokenID, shardID, i, viewKey)
+		if err != nil {
+			return nil, err
+		}
+		outCoins = append(outCoins, outCoinsTmp...)
+	}
+
+	return outCoins, nil
+}
+
+// StoreEphemeralPubKey - store ephemeralPubKey by shardID and tokenID
+func (db *db) StoreEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) error {
+	key := addPrefixToKeyHash(string(ephemeralPubKeyPrefix), tokenID)
+	key = append(key, ephemeralPubKey...)
+
+	if err := db.Put(key, nil); err != nil {
+		return database.NewDatabaseError(database.StoreEphemeralPubKeyError, err)
+	}
+
+	return nil
+}
+
+// HasEphemeralPubKey - Check ephemeralPubKey in list ephemeralPubKey by shardID and tokenID
+func (db *db) HasEphemeralPubKey(tokenID common.Hash, ephemeralPubKey []byte) (bool, error) {
+	key := addPrefixToKeyHash(string(ephemeralPubKeyPrefix), tokenID)
+	keySpec := append(key, ephemeralPubKey...)
+
+	hasValue, err := db.HasValue(keySpec)
+	if err != nil {
+		return false, database.NewDatabaseError(database.HasEphemeralPubKeyError, err, ephemeralPubKey, tokenID.String())
+	} else {
+		return hasValue, nil
+	}
+}
+
+
+// StoreTxByPubKeyV2 - store txID by public key of receiver,
+// use this data to get tx which send to receiver
+// It is used to store tx v2 (has one time address)
+func (db *db) StoreTxByPubKeyV2(blockHeight uint64, shardIDReceiver byte, shardIDSender byte, publicKey []byte, txID common.Hash, indexOutputInTx byte, ephemeralPubKey []byte, isPToken bool) error {
+	key := make([]byte, 0)
+	key = append(key, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)       // 8 bytes for block height
+	key = append(key, shardIDReceiver)			// 1 byte for shardID receiver
+	key = append(key, shardIDSender)			// 1 byte for shardID sender
+	key = append(key, publicKey...)				// 32 bytes for public key
+	key = append(key, indexOutputInTx)			// 1 byte for index of output in tx
+	key = append(key, ephemeralPubKey...)		// 32 bytes for ephemeral public key
+	key = append(key, txID.GetBytes()...) 		// 32 bytes for txID
+
+	if isPToken {
+		tmp := []byte(OutputPtokenTag)
+		key = append(key, tmp...)
+	}
+
+	if err := db.Put(key, []byte{}); err != nil {
+		database.Logger.Log.Debug("StoreTxByPublicKey", err)
+		return database.NewDatabaseError(database.StoreTxByPublicKeyError, err, txID.String(), publicKey, blockHeight, shardIDSender)
+	}
+
+	return nil
+}
+
+// GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
+// and index output of public key in tx normal, and in tx ptoken
+func (db *db) GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64, shardIDSender byte) ([]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
+	// get shardID of reciever
+	shardIDReceiver := common.GetShardIDFromLastByte(viewKey.Pk[len(viewKey.Pk) - 1])
+
+	// get key prefix
+	keyPrefix := make([]byte, 0)
+	keyPrefix = append(keyPrefix, common.AddPaddingBigInt(new(big.Int).SetUint64(blockHeight), common.Uint64Size)...)
+	keyPrefix = append(keyPrefix, shardIDReceiver)
+	keyPrefix = append(keyPrefix, shardIDSender)
+	lenKeyPrefix := len(keyPrefix)
+
+	// get db with key prefix
+	itertor := db.lvdb.NewIterator(util.BytesPrefix(keyPrefix), nil)
+
+	listTxHash := make([]common.Hash, 0)
+	indexOutputInTxNormal := make(map[common.Hash][]byte)
+	indexOutputInTxPToken := make(map[common.Hash][]byte)
+
+	for itertor.Next() {
+		offset := lenKeyPrefix
+		iKey := itertor.Key()
+		key := make([]byte, len(iKey))
+		copy(key, iKey)
+
+		// get publicKey one time address, index output in tx, ephemeralPubkey
+		pubKeyOTA := key[offset: offset + privacy.Ed25519KeySize]
+		offset = offset + privacy.Ed25519KeySize
+		pubKeyOTAPoint, err := new(privacy.Point).FromBytesS(pubKeyOTA)
+		if err != nil{
+			return nil, nil, nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err)
+		}
+		indexOutputInTx := key[offset]
+		offset = offset + 1
+		ephemeralPubKey := key[offset: offset + privacy.Ed25519KeySize]
+		offset = offset + privacy.Ed25519KeySize
+		ephemeralPubKeyPoint, err := new(privacy.Point).FromBytesS(ephemeralPubKey)
+		if err != nil{
+			return nil, nil, nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err)
+		}
+
+		// check whether pubKeyOTA corresponding to viewKey or not
+		isPair, _, err := privacy.IsPairOneTimeAddr(pubKeyOTAPoint, ephemeralPubKeyPoint, viewKey, int(indexOutputInTx))
+		if isPair && err == nil {
+			txID := common.Hash{}
+			txIDBytes := key[offset: offset + common.HashSize]
+			offset = offset + common.HashSize
+			err := txID.SetBytes(txIDBytes)
+			if err != nil {
+				database.Logger.Log.Debugf("Err at GetTxByViewKeyV2", err)
+				return nil, nil, nil, database.NewDatabaseError(database.GetTxByPublicKeyError, err)
+			}
+
+			isExisted, _ := common.SliceExists(listTxHash, txID)
+
+			if !isExisted {
+				listTxHash = append(listTxHash, txID)
+			}
+
+			isPToken := false
+			if offset < len(key) {
+				tmp := string(key[offset])
+				if tmp == OutputPtokenTag {
+					isPToken = true
+				}
+				offset++
+			}
+
+			if isPToken {
+				if indexOutputInTxPToken[txID] == nil {
+					indexOutputInTxPToken[txID] = make([]byte, 0)
+				}
+				indexOutputInTxPToken[txID] = append(indexOutputInTxPToken[txID], indexOutputInTx)
+			} else{
+				if indexOutputInTxNormal[txID] == nil {
+					indexOutputInTxNormal[txID] = make([]byte, 0)
+				}
+				indexOutputInTxNormal[txID] = append(indexOutputInTxNormal[txID], indexOutputInTx)
+			}
+
+		}
+	}
+	return listTxHash, indexOutputInTxNormal, indexOutputInTxPToken, nil
+}
+
+// GetTxByPublicKey -  from public key, use this function to get list all txID which someone send use by txID from any shardID
+func (db *db) GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64, shardIDSender byte)(
+	[]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error) {
+
+	txHashListFromPKOTA := make([]common.Hash, 0)
+	indexOutputTxNormal :=  make(map[common.Hash][]byte)
+	indexOutputTxPToken :=  make(map[common.Hash][]byte)
+
+	// get txs with one time address
+	for i := fromBlockHeight; i<= toBlockHeight; i++{
+		txHashListFromPKOTATmp, indexOutputTxNormalTmp, indexOutputTxPTokenTmp, err := db.GetTxByViewKeyV2(viewKey, i, shardIDSender)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		txHashListFromPKOTA = append(txHashListFromPKOTA, txHashListFromPKOTATmp...)
+		for txHash, indices := range indexOutputTxNormalTmp {
+			indexOutputTxNormal[txHash] = indices
+		}
+		for txHash, indices := range indexOutputTxPTokenTmp {
+			indexOutputTxPToken[txHash] = indices
+		}
+	}
+
+	return txHashListFromPKOTA, indexOutputTxNormal, indexOutputTxPToken, nil
+}
+
