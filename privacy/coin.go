@@ -108,7 +108,7 @@ func (coin *Coin) SetShardIDLastByte(shardIDLastByte int) {
 	coin.shardIDLastByte = shardIDLastByte
 }
 
-func (coin Coin) GetSerialNumberDerivator() (*Scalar, *PrivacyError){
+func (coin Coin) GetSerialNumberDerivator() (*Scalar, error){
 	sndRandom := coin.GetSNDerivatorRandom()
 	privRandOTA := coin.GetPrivRandOTA()
 	if sndRandom != nil && !sndRandom.IsZero() {
@@ -118,7 +118,7 @@ func (coin Coin) GetSerialNumberDerivator() (*Scalar, *PrivacyError){
 		// input from tx version 1 has privacy
 		return privRandOTA, nil
 	} else {
-		return nil, NewPrivacyErr(InvalidCoinSNDErr, nil)
+		return nil, errors.New("Both snd and privRandOTA are not existed")
 	}
 }
 
@@ -483,6 +483,7 @@ type CoinObject struct {
 	PublicKey      string `json:"PublicKey"`
 	CoinCommitment string `json:"CoinCommitment"`
 	SNDerivator    string `json:"SNDerivator"`
+	PrivRandOTA    string `json:"PrivRandOTA"`
 	SerialNumber   string `json:"SerialNumber"`
 	Randomness     string `json:"Randomness"`
 	Value          string `json:"Value"`
@@ -531,6 +532,19 @@ func (inputCoin *InputCoin) ParseCoinObjectToInputCoin(coinObj CoinObject) error
 			return err
 		}
 		inputCoin.CoinDetails.SetSNDerivatorRandom(snderivatorScalar)
+	}
+
+	if coinObj.PrivRandOTA != "" {
+		privRandOTA, _, err := base58.Base58Check{}.Decode(coinObj.PrivRandOTA)
+		if err != nil {
+			return err
+		}
+
+		privRandOTAScalar := new(Scalar).FromBytesS(privRandOTA)
+		if err != nil {
+			return err
+		}
+		inputCoin.CoinDetails.SetPrivRandOTA(privRandOTAScalar)
 	}
 
 	if coinObj.SerialNumber != "" {

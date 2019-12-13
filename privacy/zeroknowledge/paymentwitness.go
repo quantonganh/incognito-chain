@@ -309,7 +309,7 @@ func (wit *PaymentWitness) Init(PaymentWitnessParam PaymentWitnessParam) *privac
 				for i := 0; i < len(inputCoins); i++ {
 					inputSND, err := inputCoins[i].CoinDetails.GetSerialNumberDerivator()
 					if err != nil{
-						return err
+						return  privacy.NewPrivacyErr(privacy.CommitNewOutputCoinNoPrivacyErr, err)
 					}
 					if wit.serialNumberNoPrivacyWitness[i] == nil {
 						wit.serialNumberNoPrivacyWitness[i] = new(serialnumbernoprivacy.SNNoPrivacyWitness)

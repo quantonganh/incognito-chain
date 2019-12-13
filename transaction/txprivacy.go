@@ -119,7 +119,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
 		}
 
-		if len(params.paymentInfo) > privacy.MaxOutputNumber - 1 {
+		if len(params.paymentInfo) > privacy.MaxOutputNumber-1 {
 			return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 		}
 
@@ -393,7 +393,7 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 			return NewTransactionErr(InputCoinIsVeryLargeError, nil, strconv.Itoa(len(params.inputCoins)))
 		}
 
-		if len(params.paymentInfo) > privacy.MaxOutputNumberV2 - 1 {
+		if len(params.paymentInfo) > privacy.MaxOutputNumberV2-1 {
 			return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.paymentInfo)))
 		}
 
@@ -1671,7 +1671,7 @@ func NewTxPrivacyInitParamsForASM(
 		tokenID:     tokenID,
 		metaData:    metaData,
 		info:        info,
-		version: 	version,
+		version:     version,
 	}
 	params := &TxPrivacyInitParamsForASM{
 		txParam:             txParam,
@@ -1703,7 +1703,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		}
 
 		// 1 output for change output coins
-		if len(params.txParam.paymentInfo) > privacy.MaxOutputNumber - 1 {
+		if len(params.txParam.paymentInfo) > privacy.MaxOutputNumber-1 {
 			return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.txParam.paymentInfo)))
 		}
 
@@ -1863,6 +1863,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 			CommitmentIndices:       params.commitmentIndices,
 			MyCommitmentIndices:     params.myCommitmentIndices,
 			Fee:                     params.txParam.fee,
+			Version:                 params.txParam.version,
 		}
 		err = witness.Init(paymentWitnessParam)
 		if err.(*privacy.PrivacyError) != nil {
@@ -1933,7 +1934,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		}
 
 		// 1 output for change output coins
-		if len(params.txParam.paymentInfo) > privacy.MaxOutputNumberV2 - 1 {
+		if len(params.txParam.paymentInfo) > privacy.MaxOutputNumberV2-1 {
 			return NewTransactionErr(PaymentInfoIsVeryLargeError, nil, strconv.Itoa(len(params.txParam.paymentInfo)))
 		}
 
@@ -2049,7 +2050,6 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		if len(params.txParam.paymentInfo) > 0 && params.txParam.hasPrivacy {
 			ephemeralPrivKey = privacy.RandomScalar()
 			ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
-			fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
 		}
 
 		// create new output coins with info: Pk, value, last byte of pk, snd
@@ -2070,8 +2070,6 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 				if err != nil {
 					return NewTransactionErr(GenOneTimeAddrError, err)
 				}
-				fmt.Printf("privRandOTA out %v: %v\n", i, privRandOTA)
-				fmt.Printf("pubOTA out %v: %v\n", i, pubOTA)
 				outputCoins[i].CoinDetails.SetPublicKey(pubOTA)
 				outputCoins[i].CoinDetails.SetPrivRandOTA(privRandOTA)
 				outputCoins[i].CoinDetails.SetShardIDLastByte(int(pInfo.PaymentAddress.Pk[len(pInfo.PaymentAddress.Pk)-1]))
@@ -2082,8 +2080,8 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 				}
 				outputCoins[i].CoinDetails.SetPublicKey(pubKey)
 				outputCoins[i].CoinDetails.SetShardIDLastByte(-1)
+				outputCoins[i].CoinDetails.SetSNDerivatorRandom(sndOuts[i])
 			}
-			outputCoins[i].CoinDetails.SetSNDerivatorRandom(sndOuts[i])
 		}
 
 		// assign fee tx
@@ -2115,6 +2113,7 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 			CommitmentIndices:       params.commitmentIndices,
 			MyCommitmentIndices:     params.myCommitmentIndices,
 			Fee:                     params.txParam.fee,
+			Version:                 params.txParam.version,
 		}
 		err = witness.Init(paymentWitnessParam)
 		if err.(*privacy.PrivacyError) != nil {
@@ -2131,10 +2130,6 @@ func (tx *Tx) InitForASM(params *TxPrivacyInitParamsForASM) error {
 		}
 
 		tx.Proof.SetEphemeralPubKey(ephemeralPubKey)
-		fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
-		fmt.Printf("ephemeralPubKey when initing tx: %v\n", tx.Proof.GetEphemeralPubKey())
-
-		Logger.log.Debugf("DONE PROVING........\n")
 
 		// set private key for signing tx
 		if params.txParam.hasPrivacy {

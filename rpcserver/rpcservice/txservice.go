@@ -1177,11 +1177,21 @@ func (txService TxService) RandomCommitments(paymentAddressStr string, outputs [
 		}
 		outputCoin.CoinDetails.SetRandomness(new(privacy.Scalar).FromBytesS(RandomnessInBytes))
 
-		SNDerivatorInBytes, _, err := base58.Base58Check{}.Decode(out.SNDerivator)
-		if err != nil {
-			return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("snderivator output is invalid", out.SNDerivator)))
+		if out.SNDerivator != "" {
+			SNDerivatorInBytes, _, err := base58.Base58Check{}.Decode(out.SNDerivator)
+			if err != nil {
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("snderivator output is invalid", out.SNDerivator)))
+			}
+			outputCoin.CoinDetails.SetSNDerivatorRandom(new(privacy.Scalar).FromBytesS(SNDerivatorInBytes))
 		}
-		outputCoin.CoinDetails.SetSNDerivatorRandom(new(privacy.Scalar).FromBytesS(SNDerivatorInBytes))
+
+		if out.PrivRandOTA != "" {
+			PrivRandOTAInBytes, _, err := base58.Base58Check{}.Decode(out.PrivRandOTA)
+			if err != nil {
+				return nil, nil, nil, NewRPCError(RPCInvalidParamsError, errors.New(fmt.Sprint("PrivRandOTA output is invalid", out.SNDerivator)))
+			}
+			outputCoin.CoinDetails.SetPrivRandOTA(new(privacy.Scalar).FromBytesS(PrivRandOTAInBytes))
+		}
 
 		CoinCommitmentBytes, _, err := base58.Base58Check{}.Decode(out.CoinCommitment)
 		if err != nil {

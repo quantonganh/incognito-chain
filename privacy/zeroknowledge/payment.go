@@ -782,12 +782,15 @@ func (proof PaymentProof) verifyNoPrivacy(pubKey privacy.PublicKey, fee uint64, 
 			cmSK := proof.inputCoins[i].CoinDetails.GetPublicKey()
 			cmValue := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenValueIndex], new(privacy.Scalar).FromUint64(proof.inputCoins[i].CoinDetails.GetValue()))
 
-			sndTmp := new(privacy.Scalar)
 			cmSND := new(privacy.Point).Identity()
 			snd := proof.inputCoins[i].CoinDetails.GetSNDerivatorRandom()
-			if snd != nil && !snd.IsZero(){
-				sndTmp = snd
-				cmSND = new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], sndTmp)
+			privRandOTA := proof.inputCoins[i].CoinDetails.GetPrivRandOTA()
+			if snd != nil && !snd.IsZero() {
+				// input from tx version 0 or tx version 1 no privacy
+				cmSND = new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenSndIndex], snd)
+			} else if privRandOTA != nil && !privRandOTA.IsZero() {
+				// input from tx version 1 has privacy
+				new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], privRandOTA)
 			}
 
 			cmRandomness := new(privacy.Point).ScalarMult(privacy.PedCom.G[privacy.PedersenRandomnessIndex], proof.inputCoins[i].CoinDetails.GetRandomness())

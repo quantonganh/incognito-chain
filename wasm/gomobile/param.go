@@ -152,6 +152,11 @@ func InitParamCreatePrivacyTx(args string) (*transaction.TxPrivacyInitParamsForA
 			println("Invalid input coin snderivator param!")
 			return nil, errors.New("Invalid input coin snderivator param")
 		}
+		coinObjTmp.PrivRandOTA, ok = tmp["PrivRandOTA"].(string)
+		if !ok {
+			println("Invalid input coin PrivRandOTA param!")
+			return nil, errors.New("Invalid input coin PrivRandOTA param")
+		}
 		coinObjTmp.SerialNumber, ok = tmp["SerialNumber"].(string)
 		if !ok {
 			println("Invalid input coin serial number param!")
@@ -400,6 +405,11 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 		if !ok {
 			println("Invalid input coin snderivator param!")
 			return nil, errors.New("Invalid input coin snderivator param")
+		}
+		coinObjTmp.PrivRandOTA, ok = tmp["PrivRandOTA"].(string)
+		if !ok {
+			println("Invalid input coin PrivRandOTA param!")
+			return nil, errors.New("Invalid input coin PrivRandOTA param")
 		}
 		coinObjTmp.SerialNumber, ok = tmp["SerialNumber"].(string)
 		if !ok {
@@ -682,6 +692,11 @@ func InitParamCreatePrivacyTokenTx(args string) (*transaction.TxPrivacyTokenInit
 		if !ok {
 			println("Invalid input coin snderivator param!")
 			return nil, errors.New("Invalid input coin snderivator param")
+		}
+		coinObjTmp.PrivRandOTA, ok = tmp["PrivRandOTA"].(string)
+		if !ok {
+			println("Invalid input coin PrivRandOTA param!")
+			return nil, errors.New("Invalid input coin PrivRandOTA param")
 		}
 		coinObjTmp.SerialNumber, ok = tmp["SerialNumber"].(string)
 		if !ok {
