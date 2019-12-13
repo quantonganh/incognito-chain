@@ -169,7 +169,7 @@ type TxPrivacyTokenInitParams struct {
 	hasPrivacyToken bool
 	shardID         byte
 	info            []byte
-	version int8
+	version         int8
 }
 
 func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
@@ -183,7 +183,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 	hasPrivacyToken bool,
 	shardID byte,
 	info []byte,
-	version int8) *TxPrivacyTokenInitParams {
+	txVersion int8) *TxPrivacyTokenInitParams {
 	params := &TxPrivacyTokenInitParams{
 		shardID:         shardID,
 		paymentInfo:     paymentInfo,
@@ -196,7 +196,7 @@ func NewTxPrivacyTokenInitParams(senderKey *privacy.PrivateKey,
 		senderKey:       senderKey,
 		tokenParams:     tokenParams,
 		info:            info,
-		version: version,
+		version:         txVersion,
 	}
 	return params
 }
