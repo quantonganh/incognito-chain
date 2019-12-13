@@ -33,6 +33,9 @@ const (
 	SignMultiSigErr
 	InvalidLengthMultiSigErr
 	InvalidMultiSigErr
+	InvalidVersionProofErr
+	InvalidInputSNDErr
+	InvalidCoinSNDErr
 )
 
 var ErrCodeMessage = map[int]struct {
@@ -55,6 +58,9 @@ var ErrCodeMessage = map[int]struct {
 	SignMultiSigErr:                 {-9012, "Can not sign multi sig"},
 	InvalidLengthMultiSigErr:        {-9013, "Invalid length of multi sig signature"},
 	InvalidMultiSigErr:              {-9014, "invalid multiSig for converting to bytes array"},
+	InvalidVersionProofErr:          {-9015, "invalid version payment proof"},
+	InvalidInputSNDErr:              {-9016, "invalid input coin's snd when creating witness for payment proof"},
+	InvalidCoinSNDErr:               {-9016, "coin's snd is not existed"},
 
 	ProveSerialNumberNoPrivacyErr: {-9100, "Proving serial number no privacy proof error"},
 	ProveOneOutOfManyErr:          {-9101, "Proving one out of many proof error"},

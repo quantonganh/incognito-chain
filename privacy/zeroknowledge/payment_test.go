@@ -44,7 +44,7 @@ func ParseCoinObjectToStruct(coinObjects []CoinObject) ([]*privacy.InputCoin, ui
 		coins[i] = new(privacy.InputCoin).Init()
 		coins[i].CoinDetails.SetPublicKey(publicKeyPoint)
 		coins[i].CoinDetails.SetCoinCommitment(coinCommitmentPoint)
-		coins[i].CoinDetails.SetSNDerivator(sndBN)
+		coins[i].CoinDetails.SetSNDerivatorRandom(sndBN)
 		coins[i].CoinDetails.SetSerialNumber(serialNumberPoint)
 		coins[i].CoinDetails.SetRandomness(randomnessBN)
 		coins[i].CoinDetails.SetValue(coinObjects[i].Value)
@@ -139,7 +139,7 @@ func TestPaymentProofToBytes(t *testing.T) {
 	outputCoins[0].Init()
 	outputCoins[0].CoinDetails.SetValue(uint64(amountTransfer))
 	outputCoins[0].CoinDetails.SetPublicKey(receiverPublicKeyPoint)
-	outputCoins[0].CoinDetails.SetSNDerivator(privacy.RandomScalar())
+	outputCoins[0].CoinDetails.SetSNDerivatorRandom(privacy.RandomScalar())
 
 	changeAmount := sumValue - amountTransfer
 
@@ -147,7 +147,7 @@ func TestPaymentProofToBytes(t *testing.T) {
 	outputCoins[1].Init()
 	outputCoins[1].CoinDetails.SetValue(changeAmount)
 	outputCoins[1].CoinDetails.SetPublicKey(senderPKPoint)
-	outputCoins[1].CoinDetails.SetSNDerivator(privacy.RandomScalar())
+	outputCoins[1].CoinDetails.SetSNDerivatorRandom(privacy.RandomScalar())
 
 	//HasPrivacy              bool
 	//PrivateKey              *big.Int

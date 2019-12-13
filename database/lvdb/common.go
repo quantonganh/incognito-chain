@@ -66,6 +66,10 @@ var (
 	PDEContributionStatusPrefix  = []byte("pdecontributionstatus-")
 	PDETradeStatusPrefix         = []byte("pdetradestatus-")
 	PDEWithdrawalStatusPrefix    = []byte("pdewithdrawalstatus-")
+
+	// transaction v2
+	outcoinsPrefixV2      = []byte("outcoinsv2-")
+	ephemeralPubKeyPrefix = []byte("ephemeralpubkey-")
 )
 
 // value
@@ -99,6 +103,11 @@ func addPrefixToKeyHash(keyType string, keyHash common.Hash) []byte {
 		dbkey = append(tokenInitPrefix, keyHash[:]...)
 	case string(privacyTokenInitPrefix):
 		dbkey = append(privacyTokenInitPrefix, keyHash[:]...)
+	case string(outcoinsPrefixV2):
+		dbkey = append(outcoinsPrefixV2, keyHash[:]...)
+	case string(ephemeralPubKeyPrefix):
+		dbkey = append(ephemeralPubKeyPrefix, keyHash[:]...)
 	}
+
 	return dbkey
 }

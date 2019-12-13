@@ -193,7 +193,8 @@ func (p *Point) InvertScalarMult(pa *Point, a *Scalar) *Point {
 
 func (p *Point) Derive(pa *Point, a *Scalar, b *Scalar) *Point {
 	c := new(Scalar).Add(a, b)
-	return p.InvertScalarMult(pa, c)
+	result := p.InvertScalarMult(pa, c)
+	return result
 }
 
 func (p *Point) Add(pa, pb *Point) *Point {

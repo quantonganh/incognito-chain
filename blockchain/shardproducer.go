@@ -737,10 +737,10 @@ func (blockGenerator *BlockGenerator) getCrossShardData(toShard byte, lastBeacon
 		for _, index := range indexs {
 			blk := crossShardBlock[index]
 			crossTransaction := CrossTransaction{
-				OutputCoin:       blk.CrossOutputCoin,
-				TokenPrivacyData: blk.CrossTxTokenPrivacyData,
-				BlockHash:        *blk.Hash(),
-				BlockHeight:      blk.Header.Height,
+				OutputCoinWithIndex: blk.CrossOutputCoin,
+				TokenPrivacyData:    blk.CrossTxTokenPrivacyData,
+				BlockHash:           *blk.Hash(),
+				BlockHeight:         blk.Header.Height,
 			}
 			crossTransactions[blk.Header.ShardID] = append(crossTransactions[blk.Header.ShardID], crossTransaction)
 			txTokenData := CrossTxTokenData{

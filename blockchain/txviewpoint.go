@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"errors"
+	"github.com/incognitochain/incognito-chain/database/lvdb"
 	"sort"
 	"strconv"
 
@@ -40,6 +41,10 @@ type TxViewPoint struct {
 
 	// use to fetch tx - pubkey
 	txByPubKey map[string]interface{} // map[base58check.encode{pubkey}+"_"+base58check.encode{txid})
+
+	blockHeight      uint64
+	indexOutCoinInTx map[string][]byte
+	ephemeralPubKey  map[string][]byte
 }
 
 /*
@@ -74,13 +79,16 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	db database.DatabaseInterface,
 	proof *zkp.PaymentProof,
 	tokenID *common.Hash,
-) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
+) ([][]byte, map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, map[string][]byte, map[string][]byte, error) {
 	acceptedSerialNumbers := make([][]byte, 0)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make(map[string][]privacy.Scalar)
+	indexOutputInTx := make(map[string][]byte)
+	acceptedEphemeralPubKey := make(map[string][]byte)
+
 	if proof == nil {
-		return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
+		return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, nil
 	}
 	// Get data for serialnumbers
 	// Process input of transaction
@@ -90,10 +98,24 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 		serialNum := item.CoinDetails.GetSerialNumber().ToBytesS()
 		ok, err := db.HasSerialNumber(*tokenID, serialNum, shardID)
 		if err != nil {
-			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, err
 		}
 		if !ok {
 			acceptedSerialNumbers = append(acceptedSerialNumbers, serialNum)
+		}
+	}
+
+	// get data for ephemeral public key
+	// ephemeralPubKey must not exist before in db
+	ephemeralPubKey := []byte{}
+	if proof.GetEphemeralPubKey() != nil && !proof.GetEphemeralPubKey().IsIdentity() {
+		ephemeralPubKeyTmp := proof.GetEphemeralPubKey().ToBytesS()
+		ok, err := db.HasEphemeralPubKey(*tokenID, ephemeralPubKeyTmp)
+		if err != nil {
+			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, err
+		}
+		if !ok {
+			ephemeralPubKey = ephemeralPubKeyTmp
 		}
 	}
 
@@ -101,37 +123,84 @@ func (view *TxViewPoint) processFetchTxViewPoint(
 	// Proccessed variable: commitment, snd, outputcoins
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
-	for _, item := range proof.GetOutputCoins() {
-		commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
-		pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
-		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
-		if err != nil {
-			return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
-		}
-		if !ok {
-			publicKeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
-			if acceptedCommitments[publicKeyStr] == nil {
-				acceptedCommitments[publicKeyStr] = make([][]byte, 0)
-			}
-			// get data for commitments
-			acceptedCommitments[publicKeyStr] = append(acceptedCommitments[publicKeyStr], item.CoinDetails.GetCoinCommitment().ToBytesS())
 
-			// get data for output coin
-			if acceptedOutputcoins[publicKeyStr] == nil {
-				acceptedOutputcoins[publicKeyStr] = make([]privacy.OutputCoin, 0)
+	if len(ephemeralPubKey) > 0 {
+		// tx version 2 has privacy
+		// Proccessed variable: commitment, outputcoins, indexOutInTx, ephemeralPubKey
+		for i, item := range proof.GetOutputCoins() {
+			commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
+			pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
+			pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+			ok, err := db.HasCommitment(*tokenID, commitment, shardID)
+			if err != nil {
+				return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, err
 			}
-			acceptedOutputcoins[publicKeyStr] = append(acceptedOutputcoins[publicKeyStr], *item)
-		}
+			if !ok {
+				if acceptedCommitments[pubkeyStr] == nil {
+					acceptedCommitments[pubkeyStr] = make([][]byte, 0)
+				}
+				// get data for commitments
+				acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.GetCoinCommitment().ToBytesS())
 
-		// get data for Snderivators
-		snD := item.CoinDetails.GetSNDerivator()
-		ok, err = db.HasSNDerivator(*tokenID, snD.ToBytesS())
-		if !ok && err == nil {
-			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+				// get data for output coin
+				if acceptedOutputcoins[pubkeyStr] == nil {
+					acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
+				}
+				acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
+
+				// get index output coin in tx
+				if indexOutputInTx[pubkeyStr] == nil {
+					indexOutputInTx[pubkeyStr] = make([]byte, 0)
+				}
+				indexOutputInTx[pubkeyStr] = append(indexOutputInTx[pubkeyStr], byte(i))
+			}
+
+			// get ephemeral public key
+			acceptedEphemeralPubKey[pubkeyStr] = ephemeralPubKey
+		}
+	} else {
+		// tx version 1 and tx version 2 no privacy
+		// Proccessed variable: commitment, outputcoins, snds
+		for _, item := range proof.GetOutputCoins() {
+			commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
+			pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
+			pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
+			ok, err := db.HasCommitment(*tokenID, commitment, shardID)
+			if err != nil {
+				return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, err
+			}
+			if !ok {
+				if acceptedCommitments[pubkeyStr] == nil {
+					acceptedCommitments[pubkeyStr] = make([][]byte, 0)
+				}
+				// get data for commitments
+				acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.GetCoinCommitment().ToBytesS())
+
+				// get data for output coin
+				if acceptedOutputcoins[pubkeyStr] == nil {
+					acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
+				}
+				acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
+			}
+
+			// get data for Snderivators
+			snD := item.CoinDetails.GetSNDerivatorRandom()
+			if snD != nil && !snD.IsZero() {
+				ok, err = db.HasSNDerivator(*tokenID, snD.ToBytesS())
+				if err != nil {
+					return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, err
+				}
+				if !ok {
+					acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+				}
+			} else {
+				return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey,
+					errors.New("snd in input coins is invalid")
+			}
 		}
 	}
-	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
+
+	return acceptedSerialNumbers, acceptedCommitments, acceptedOutputcoins, acceptedSnD, indexOutputInTx, acceptedEphemeralPubKey, nil
 }
 
 /*
@@ -147,14 +216,20 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make(map[string][][]byte)
+	acceptedIndexOutInTx := make(map[string][]byte)
+	acceptedEphemeralPubKey := make(map[string][]byte)
+
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
+
+	view.blockHeight = block.GetHeight()
+
 	for indexTx, tx := range transactions {
 		switch tx.GetType() {
 		case common.TxNormalType, common.TxRewardType, common.TxReturnStakingType:
 			{
 				normalTx := tx.(*transaction.Tx)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, prvCoinID)
+				serialNumbers, commitments, outCoins, snDs, indexOutInTx, ephemeralPubKey, err := view.processFetchTxViewPoint(block.Header.ShardID, db, normalTx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -164,7 +239,16 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+
+					if ephemeralPubKey[pubkey] != nil {
+						// tx with one time address
+						// get shardID receiver
+						shardIDReceiver := common.GetShardIDFromLastByte(byte(outCoins[pubkey][0].CoinDetails.GetShardIDLastByte()))
+						view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))+"_"+strconv.Itoa(int(shardIDReceiver))+"_"+strconv.Itoa(int(indexOutInTx[pubkey][0]))+"_"+base58.Base58Check{}.Encode(ephemeralPubKey[pubkey], 0x0)] = true
+
+					} else {
+						view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+					}
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -180,43 +264,54 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedSnD[pubkey] = append(acceptedSnD[pubkey], snd.ToBytesS())
 					}
 				}
+				for pubkey, data := range indexOutInTx {
+					if acceptedIndexOutInTx[pubkey] == nil {
+						acceptedIndexOutInTx[pubkey] = make([]byte, 0)
+					}
+					for _, index := range data {
+						acceptedIndexOutInTx[pubkey] = append(acceptedIndexOutInTx[pubkey], index)
+					}
+				}
+				for pubkey, data := range ephemeralPubKey {
+					acceptedEphemeralPubKey[pubkey] = data
+				}
 			}
 		case common.TxCustomTokenType:
-			{
-				tx := tx.(*transaction.TxNormalToken)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
-				if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}
-				acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
-				for pubkey, data := range commitments {
-					if acceptedCommitments[pubkey] == nil {
-						acceptedCommitments[pubkey] = make([][]byte, 0)
-					}
-					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
-				}
-				for pubkey, data := range outCoins {
-					if acceptedOutputcoins[pubkey] == nil {
-						acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
-					}
-					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
-				}
-				for pubkey, data := range snDs {
-					if snDs[pubkey] == nil {
-						snDs[pubkey] = make([]privacy.Scalar, 0)
-					}
-					snDs[pubkey] = append(snDs[pubkey], data...)
-				}
-				// acceptedSnD = append(acceptedSnD, snDs...)
-
-				// indexTx is index of transaction in block
-				view.customTokenTxs[int32(indexTx)] = tx
-			}
+			//{
+			//	tx := tx.(*transaction.TxNormalToken)
+			//	serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
+			//	if err != nil {
+			//		return NewBlockChainError(UnExpectedError, err)
+			//	}
+			//	acceptedSerialNumbers = append(acceptedSerialNumbers, serialNumbers...)
+			//	for pubkey, data := range commitments {
+			//		if acceptedCommitments[pubkey] == nil {
+			//			acceptedCommitments[pubkey] = make([][]byte, 0)
+			//		}
+			//		acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
+			//		view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+			//	}
+			//	for pubkey, data := range outCoins {
+			//		if acceptedOutputcoins[pubkey] == nil {
+			//			acceptedOutputcoins[pubkey] = make([]privacy.OutputCoin, 0)
+			//		}
+			//		acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
+			//	}
+			//	for pubkey, data := range snDs {
+			//		if snDs[pubkey] == nil {
+			//			snDs[pubkey] = make([]privacy.Scalar, 0)
+			//		}
+			//		snDs[pubkey] = append(snDs[pubkey], data...)
+			//	}
+			//	// acceptedSnD = append(acceptedSnD, snDs...)
+			//
+			//	// indexTx is index of transaction in block
+			//	view.customTokenTxs[int32(indexTx)] = tx
+			//}
 		case common.TxCustomTokenPrivacyType:
 			{
 				tx := tx.(*transaction.TxCustomTokenPrivacy)
-				serialNumbers, commitments, outCoins, snDs, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
+				serialNumbers, commitments, outCoins, snDs, indexOutInTx, ephemeralPubKey, err := view.processFetchTxViewPoint(block.Header.ShardID, db, tx.Proof, prvCoinID)
 				if err != nil {
 					return NewBlockChainError(UnExpectedError, err)
 				}
@@ -226,7 +321,16 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						acceptedCommitments[pubkey] = make([][]byte, 0)
 					}
 					acceptedCommitments[pubkey] = append(acceptedCommitments[pubkey], data...)
-					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+
+					if ephemeralPubKey[pubkey] != nil {
+						// tx with one time address
+						// get shardID receiver
+						shardIDReceiver := common.GetShardIDFromLastByte(byte(outCoins[pubkey][0].CoinDetails.GetShardIDLastByte()))
+						view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))+"_"+strconv.Itoa(int(shardIDReceiver))+"_"+strconv.Itoa(int(indexOutInTx[pubkey][0]))+"_"+base58.Base58Check{}.Encode(ephemeralPubKey[pubkey], 0x0)] = true
+
+					} else {
+						view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+					}
 				}
 				for pubkey, data := range outCoins {
 					if acceptedOutputcoins[pubkey] == nil {
@@ -235,20 +339,32 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 					acceptedOutputcoins[pubkey] = append(acceptedOutputcoins[pubkey], data...)
 				}
 				for pubkey, data := range snDs {
-					if snDs[pubkey] == nil {
-						snDs[pubkey] = make([]privacy.Scalar, 0)
+					if acceptedSnD[pubkey] == nil {
+						acceptedSnD[pubkey] = make([][]byte, 0)
 					}
-					snDs[pubkey] = append(snDs[pubkey], data...)
+					for _, snd := range data {
+						acceptedSnD[pubkey] = append(acceptedSnD[pubkey], snd.ToBytesS())
+					}
 				}
-				// acceptedSnD = append(acceptedSnD, snDs...)
-				/*if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}*/
+
+				for pubkey, data := range indexOutInTx {
+					if acceptedIndexOutInTx[pubkey] == nil {
+						acceptedIndexOutInTx[pubkey] = make([]byte, 0)
+					}
+					for _, index := range data {
+						acceptedIndexOutInTx[pubkey] = append(acceptedIndexOutInTx[pubkey], index)
+					}
+				}
+
+				for pubkey, data := range ephemeralPubKey {
+					acceptedEphemeralPubKey[pubkey] = data
+				}
 
 				// sub view for privacy custom token
 				subView := NewTxViewPoint(block.Header.ShardID)
+				subView.blockHeight = view.blockHeight
 				subView.tokenID = &tx.TxPrivacyTokenData.PropertyID
-				serialNumbersP, commitmentsP, outCoinsP, snDsP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
+				serialNumbersP, commitmentsP, outCoinsP, snDsP, indexOutInTxP, ephemeralPubKeyP, errP := subView.processFetchTxViewPoint(subView.shardID, db, tx.TxPrivacyTokenData.TxNormal.Proof, subView.tokenID)
 				if errP != nil {
 					return NewBlockChainError(UnExpectedError, errP)
 				}
@@ -258,7 +374,16 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						subView.mapCommitments[pubkey] = make([][]byte, 0)
 					}
 					subView.mapCommitments[pubkey] = append(subView.mapCommitments[pubkey], data...)
-					view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+
+					if ephemeralPubKeyP[pubkey] != nil {
+						// tx with one time address
+						// get shardID receiver
+						shardIDReceiver := common.GetShardIDFromLastByte(byte(outCoinsP[pubkey][0].CoinDetails.GetShardIDLastByte()))
+						view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))+"_"+strconv.Itoa(int(shardIDReceiver))+"_"+strconv.Itoa(int(indexOutInTxP[pubkey][0]))+"_"+base58.Base58Check{}.Encode(ephemeralPubKeyP[pubkey], 0x0)+"_"+lvdb.OutputPtokenTag] = true
+
+					} else {
+						view.txByPubKey[pubkey+"_"+base58.Base58Check{}.Encode(tx.Hash().GetBytes(), 0x0)+"_"+strconv.Itoa(int(block.Header.ShardID))] = true
+					}
 				}
 				for pubkey, data := range outCoinsP {
 					if subView.mapOutputCoins[pubkey] == nil {
@@ -275,10 +400,17 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 						subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
 					}
 				}
-				// subView.listSnD = append(subView.listSnD, snDsP...)
-				/*if err != nil {
-					return NewBlockChainError(UnExpectedError, err)
-				}*/
+
+				for pubkey, data := range indexOutInTxP {
+					if subView.indexOutCoinInTx[pubkey] == nil {
+						subView.indexOutCoinInTx[pubkey] = make([]byte, 0)
+					}
+					subView.indexOutCoinInTx[pubkey] = append(subView.indexOutCoinInTx[pubkey], data...)
+				}
+
+				for pubkey, data := range ephemeralPubKeyP {
+					subView.ephemeralPubKey[pubkey] = data
+				}
 
 				view.privacyCustomTokenViewPoint[int32(indexTx)] = subView
 				view.privacyCustomTokenTxs[int32(indexTx)] = tx
@@ -302,6 +434,12 @@ func (view *TxViewPoint) fetchTxViewPointFromBlock(db database.DatabaseInterface
 	if len(acceptedSnD) > 0 {
 		view.mapSnD = acceptedSnD
 	}
+	if len(acceptedIndexOutInTx) > 0 {
+		view.indexOutCoinInTx = acceptedIndexOutInTx
+	}
+	if len(acceptedEphemeralPubKey) > 0 {
+		view.ephemeralPubKey = acceptedEphemeralPubKey
+	}
 	return nil
 }
 
@@ -323,6 +461,10 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 		crossTxTokenData:            make(map[int32]*transaction.TxNormalTokenData),
 
 		txByPubKey: make(map[string]interface{}),
+
+		indexOutCoinInTx: make(map[string][]byte),
+		ephemeralPubKey:  make(map[string][]byte),
+		blockHeight:      uint64(0),
 	}
 	result.tokenID.SetBytes(common.PRVCoinID[:])
 	return result
@@ -337,52 +479,69 @@ func NewTxViewPoint(shardID byte) *TxViewPoint {
 func (view *TxViewPoint) processFetchCrossOutputViewPoint(
 	shardID byte,
 	db database.DatabaseInterface,
-	outputCoins []privacy.OutputCoin,
+	outputCoinsWithIndex []CrossOutputCoinWithIndex,
 	tokenID *common.Hash,
-) (map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, error) {
+) (map[string][][]byte, map[string][]privacy.OutputCoin, map[string][]privacy.Scalar, map[string][]byte, map[string][]byte, error) {
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedSnD := make(map[string][]privacy.Scalar)
-	if len(outputCoins) == 0 {
-		return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
+	acceptedIndexOutput := make(map[string][]byte)
+	acceptedEphemeralPubKey := make(map[string][]byte)
+
+	if len(outputCoinsWithIndex) == 0 {
+		return acceptedCommitments, acceptedOutputcoins, acceptedSnD, acceptedIndexOutput, acceptedEphemeralPubKey, nil
 	}
 
 	// Process Output Coins (just created UTXO of this transaction)
 	// Proccessed variable: commitment, snd, outputcoins
 	// Commitment and SND must not exist before in db
 	// Outputcoins will be stored as new utxo for next transaction
-	for _, outputCoin := range outputCoins {
-		item := &outputCoin
-		commitment := item.CoinDetails.GetCoinCommitment().ToBytesS()
-		pubkey := item.CoinDetails.GetPublicKey().ToBytesS()
+	for _, outputCoinWithIndex := range outputCoinsWithIndex {
+		item := &outputCoinWithIndex
+		outCoin := item.OutputCoin
+		commitment := outCoin.CoinDetails.GetCoinCommitment().ToBytesS()
+		pubkey := outCoin.CoinDetails.GetPublicKey().ToBytesS()
 		pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 		ok, err := db.HasCommitment(*tokenID, commitment, shardID)
 		if err != nil {
-			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, err
+			return acceptedCommitments, acceptedOutputcoins, acceptedSnD, acceptedIndexOutput, acceptedEphemeralPubKey, err
 		}
 		if !ok {
-			pubkeyStr := base58.Base58Check{}.Encode(pubkey, common.ZeroByte)
 			if acceptedCommitments[pubkeyStr] == nil {
 				acceptedCommitments[pubkeyStr] = make([][]byte, 0)
 			}
 			// get data for commitments
-			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], item.CoinDetails.GetCoinCommitment().ToBytesS())
+			acceptedCommitments[pubkeyStr] = append(acceptedCommitments[pubkeyStr], commitment)
 
 			// get data for output coin
 			if acceptedOutputcoins[pubkeyStr] == nil {
 				acceptedOutputcoins[pubkeyStr] = make([]privacy.OutputCoin, 0)
 			}
-			acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], *item)
+			acceptedOutputcoins[pubkeyStr] = append(acceptedOutputcoins[pubkeyStr], outCoin)
 		}
 
 		// get data for Snderivators
-		snD := item.CoinDetails.GetSNDerivator()
-		ok, err = db.HasSNDerivator(*tokenID, snD.ToBytesS())
-		if !ok && err == nil {
-			acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+		snD := outCoin.CoinDetails.GetSNDerivatorRandom()
+		if snD != nil && !snD.IsZero() {
+			ok, err = db.HasSNDerivator(*tokenID, snD.ToBytesS())
+			if !ok && err == nil {
+				acceptedSnD[pubkeyStr] = append(acceptedSnD[pubkeyStr], *snD)
+			}
 		}
+
+		// get ephemeral Public key and index output in tx
+		ephemeralPubKey := item.EphemeralPubKey
+		if ephemeralPubKey != nil {
+			acceptedEphemeralPubKey[pubkeyStr] = ephemeralPubKey
+
+			if acceptedIndexOutput[pubkeyStr] == nil {
+				acceptedIndexOutput[pubkeyStr] = make([]byte, 0)
+			}
+			acceptedIndexOutput[pubkeyStr] = append(acceptedIndexOutput[pubkeyStr], item.IndexInTx)
+		}
+
 	}
-	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, nil
+	return acceptedCommitments, acceptedOutputcoins, acceptedSnD, acceptedIndexOutput, acceptedEphemeralPubKey, nil
 }
 
 func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.DatabaseInterface, block *ShardBlock) error {
@@ -391,6 +550,9 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	acceptedOutputcoins := make(map[string][]privacy.OutputCoin)
 	acceptedCommitments := make(map[string][][]byte)
 	acceptedSnD := make(map[string][][]byte)
+	acceptedIndexOutput := make(map[string][]byte)
+	acceptedEphemeralPubKey := make(map[string][]byte)
+
 	prvCoinID := &common.Hash{}
 	prvCoinID.SetBytes(common.PRVCoinID[:])
 	//@NOTICE: this function just work for Normal Transaction
@@ -401,12 +563,13 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 		shardIDs = append(shardIDs, int(k))
 	}
 	sort.Ints(shardIDs)
+	view.blockHeight = block.GetHeight()
 
 	indexOut := 0
 	for _, shardID := range shardIDs {
 		crossTransactions := allShardCrossTransactions[byte(shardID)]
 		for _, crossTransaction := range crossTransactions {
-			commitments, outCoins, snDs, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoin, prvCoinID)
+			commitments, outCoins, snDs, indexOuts, ephemeralPubKeys, err := view.processFetchCrossOutputViewPoint(block.Header.ShardID, db, crossTransaction.OutputCoinWithIndex, prvCoinID)
 			if err != nil {
 				return NewBlockChainError(UnExpectedError, err)
 			}
@@ -430,6 +593,15 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 					acceptedSnD[pubkey] = append(acceptedSnD[pubkey], snd.ToBytesS())
 				}
 			}
+			for pubkey, data := range indexOuts {
+				if acceptedIndexOutput[pubkey] == nil {
+					acceptedIndexOutput[pubkey] = make([]byte, 0)
+				}
+				acceptedIndexOutput[pubkey] = append(acceptedIndexOutput[pubkey], data...)
+			}
+			for pubkey, data := range ephemeralPubKeys {
+				acceptedEphemeralPubKey[pubkey] = data
+			}
 			if crossTransaction.TokenPrivacyData != nil && len(crossTransaction.TokenPrivacyData) > 0 {
 				for _, tokenPrivacyData := range crossTransaction.TokenPrivacyData {
 					subView := NewTxViewPoint(block.Header.ShardID)
@@ -437,13 +609,14 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 					if err != nil {
 						return err
 					}
+					subView.blockHeight = view.blockHeight
 					subView.tokenID = temp
 					subView.privacyCustomTokenMetadata.TokenID = *temp
 					subView.privacyCustomTokenMetadata.PropertyName = tokenPrivacyData.PropertyName
 					subView.privacyCustomTokenMetadata.PropertySymbol = tokenPrivacyData.PropertySymbol
 					subView.privacyCustomTokenMetadata.Amount = tokenPrivacyData.Amount
 					subView.privacyCustomTokenMetadata.Mintable = tokenPrivacyData.Mintable
-					commitmentsP, outCoinsP, snDsP, err := subView.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoin, subView.tokenID)
+					commitmentsP, outCoinsP, snDsP, indexOutputP, ephemeralPubKeyP, err := subView.processFetchCrossOutputViewPoint(block.Header.ShardID, db, tokenPrivacyData.OutputCoinWithIndex, subView.tokenID)
 					if err != nil {
 						return NewBlockChainError(UnExpectedError, err)
 					}
@@ -468,6 +641,15 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 							subView.mapSnD[pubkey] = append(subView.mapSnD[pubkey], temp)
 						}
 					}
+					for pubkey, data := range indexOutputP {
+						if subView.indexOutCoinInTx[pubkey] == nil {
+							subView.indexOutCoinInTx[pubkey] = make([]byte, 0)
+						}
+						subView.indexOutCoinInTx[pubkey] = append(subView.indexOutCoinInTx[pubkey], data...)
+					}
+					for pubkey, data := range ephemeralPubKeyP {
+						subView.ephemeralPubKey[pubkey] = data
+					}
 					view.privacyCustomTokenViewPoint[int32(indexOut)] = subView
 					indexOut++
 				}
@@ -484,5 +666,12 @@ func (view *TxViewPoint) fetchCrossTransactionViewPointFromBlock(db database.Dat
 	if len(acceptedSnD) > 0 {
 		view.mapSnD = acceptedSnD
 	}
+	if len(acceptedIndexOutput) > 0 {
+		view.indexOutCoinInTx = acceptedIndexOutput
+	}
+	if len(acceptedEphemeralPubKey) > 0 {
+		view.ephemeralPubKey = acceptedEphemeralPubKey
+	}
+
 	return nil
 }

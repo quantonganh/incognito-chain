@@ -24,7 +24,7 @@ func TestTxCustomToken(t *testing.T) {
 	in1 := ConvertOutputCoinToInputCoin(tx2.(*Tx).Proof.GetOutputCoins())
 	serialNumber := new(privacy.Point).Derive(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex],
 		new(privacy.Scalar).FromBytesS(key.KeySet.PrivateKey),
-		in1[0].CoinDetails.GetSNDerivator())
+		in1[0].CoinDetails.GetSNDerivatorRandom())
 	in1[0].CoinDetails.SetSerialNumber(serialNumber)
 
 	tx := TxNormalToken{}

@@ -50,6 +50,10 @@ const (
 	TxCustomTokenType        = "t"  // token  tx with no supporting privacy
 	TxCustomTokenPrivacyType = "tp" // token  tx with supporting privacy
 )
+const (
+	TxVersion1 = 1
+	TxVersion2 = 2
+)
 
 var (
 	MaxTxSize    = uint64(100)  // unit KB = 100KB

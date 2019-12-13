@@ -118,6 +118,7 @@ func buildTradeResTx(
 			false,
 			shardID,
 			nil,
+			common.TxVersion2,
 		),
 	)
 	if initErr != nil {
@@ -297,6 +298,7 @@ func (blockGenerator *BlockGenerator) buildPDEWithdrawalTx(
 			false,
 			shardID,
 			nil,
+			common.TxVersion2,
 		),
 	)
 	if initErr != nil {
@@ -391,6 +393,7 @@ func (blockGenerator *BlockGenerator) buildPDERefundContributionTx(
 			false,
 			shardID,
 			nil,
+			common.TxVersion2,
 		),
 	)
 	if initErr != nil {
