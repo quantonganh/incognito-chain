@@ -291,20 +291,23 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 		panic(err)
 	}
 	hwPID := hwPeerInfo.ID
-
-	first := true
 	net := cm.LocalHost.Host.Network()
-	disconnected := true
+
+	// Connect to highway
+	disconnected := false
+	ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
+	if err = cm.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
+		Logger.Errorf("Could not connect to highway: %v %v", err, hwPeerInfo)
+		disconnected = true
+	}
+	// Notify that first attempt had finished
+	connectedOnce <- err
+
 	for ; true; <-time.Tick(10 * time.Second) {
 		// Reconnect if not connected
-		var err error
 		if net.Connectedness(hwPID) != network.Connected {
 			disconnected = true
 			Logger.Info("Not connected to highway, connecting")
-			ctx, _ := context.WithTimeout(context.Background(), 2*time.Second)
-			if err = cm.LocalHost.Host.Connect(ctx, *hwPeerInfo); err != nil {
-				Logger.Errorf("Could not connect to highway: %v %v", err, hwPeerInfo)
-			}
 		}
 
 		if disconnected && net.Connectedness(hwPID) == network.Connected {
@@ -314,11 +317,6 @@ func (cm *ConnManager) keepHighwayConnection(connectedOnce chan error) {
 			disconnected = false
 		}
 
-		// Notify that first attempt had finished
-		if first {
-			connectedOnce <- err
-			first = false
-		}
 	}
 }
 
