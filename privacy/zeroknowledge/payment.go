@@ -112,7 +112,10 @@ func (paymentProof *PaymentProof) SetOutputCoins(v []*privacy.OutputCoin) {
 }
 
 func (paymentProof PaymentProof) GetEphemeralPubKey() *privacy.Point {
-	return paymentProof.ephemeralPubKey
+	if paymentProof.ephemeralPubKey != nil {
+		return paymentProof.ephemeralPubKey
+	}
+	return nil
 }
 
 func (paymentProof* PaymentProof) SetEphemeralPubKey(ephemeralPubKey * privacy.Point){
