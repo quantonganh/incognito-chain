@@ -395,7 +395,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 			{
 				customTokenPrivacyTx := tx.(*transaction.TxCustomTokenPrivacy)
 				//==================Proof Process
-				ephemeralPubKey := customTokenPrivacyTx.GetProof().GetEphemeralPubKey()
+
 				if customTokenPrivacyTx.GetProof() != nil {
 					for i, outCoin := range customTokenPrivacyTx.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
@@ -404,6 +404,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 						outCoinWithIndex := new(CrossOutputCoinWithIndex)
 						outCoinWithIndex.OutputCoin = *outCoin
 
+						ephemeralPubKey := customTokenPrivacyTx.GetProof().GetEphemeralPubKey()
 						if ephemeralPubKey != nil {
 							outCoinWithIndex.EphemeralPubKey = ephemeralPubKey.ToBytesS()
 							outCoinWithIndex.IndexInTx = byte(i)
@@ -412,7 +413,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 					}
 				}
 				//==================Tx Token Privacy Data Process
-				ephemeralPubKeyPToken := customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof().GetEphemeralPubKey()
+
 				if customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof() != nil {
 					for i, outCoin := range customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof().GetOutputCoins() {
 						lastByte := outCoin.CoinDetails.GetPubKeyLastByte()
@@ -429,6 +430,7 @@ func getCrossShardDataHash(txList []metadata.Transaction) []common.Hash {
 						outCoinWithIndex := new(CrossOutputCoinWithIndex)
 						outCoinWithIndex.OutputCoin = *outCoin
 
+						ephemeralPubKeyPToken := customTokenPrivacyTx.TxPrivacyTokenData.TxNormal.GetProof().GetEphemeralPubKey()
 						if ephemeralPubKeyPToken != nil {
 							outCoinWithIndex.EphemeralPubKey = ephemeralPubKeyPToken.ToBytesS()
 							outCoinWithIndex.IndexInTx = byte(i)
@@ -511,7 +513,7 @@ func getCrossShardData(txList []metadata.Transaction, shardID byte) ([]CrossOutp
 							contentCrossTokenPrivacyData := cloneTxTokenPrivacyDataForCrossShard(customTokenPrivacyTx.TxPrivacyTokenData)
 							txTokenPrivacyDataMap[customTokenPrivacyTx.TxPrivacyTokenData.PropertyID] = &contentCrossTokenPrivacyData
 						}
-						crossOutCoinWithIndex :=  new(CrossOutputCoinWithIndex)
+						crossOutCoinWithIndex := new(CrossOutputCoinWithIndex)
 						crossOutCoinWithIndex.OutputCoin = *outCoin
 						if ephemeralPubKeyPToken != nil {
 							crossOutCoinWithIndex.IndexInTx = byte(i)
