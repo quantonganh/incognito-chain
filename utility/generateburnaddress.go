@@ -10,7 +10,7 @@ import (
 func main() {
 	temp := 0
 	for i := 0; ; i++ {
-		burnPubKeyE := privacy.RandomPoint()
+		burnPubKeyE := privacy.HashToPointFromIndex(int64(i), privacy.CStringBurningAddress)
 		burnPubKey := burnPubKeyE.ToBytesS()
 		if burnPubKey[len(burnPubKey)-1] == 0 {
 			burnKey := wallet.KeyWallet{
@@ -22,8 +22,12 @@ func main() {
 			}
 			burnPaymentAddress := burnKey.Base58CheckSerialize(wallet.PaymentAddressType)
 			fmt.Printf("Special payment address : %s %d\n", burnPaymentAddress, i)
-			keyWalletBurningAdd, _ := wallet.Base58CheckDeserialize(burnPaymentAddress)
+			keyWalletBurningAdd, err := wallet.Base58CheckDeserialize(burnPaymentAddress)
+			if err != nil {
+				fmt.Println("err: ", err)
+			}
 			fmt.Println("======================================")
+			fmt.Println(keyWalletBurningAdd)
 			fmt.Println(keyWalletBurningAdd.KeySet.PaymentAddress.Pk)
 			fmt.Println("======================================")
 			temp += 1
