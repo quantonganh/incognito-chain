@@ -154,6 +154,15 @@ func CheckSNDerivatorExistence(tokenID *common.Hash, snd *privacy.Scalar, db dat
 	return ok, nil
 }
 
+// CheckEphemeralPubKeyExistence return true if ephemeralpubkey exists in ephemeralpubkey list
+func CheckEphemeralPubKeyExistence(tokenID *common.Hash, ephemeralPubKey *privacy.Point, db database.DatabaseInterface) (bool, error) {
+	ok, err := db.HasEphemeralPubKey(*tokenID, ephemeralPubKey.ToBytesS())
+	if err != nil {
+		return false, err
+	}
+	return ok, nil
+}
+
 type EstimateTxSizeParam struct {
 	inputCoins               []*privacy.OutputCoin
 	payments                 []*privacy.PaymentInfo

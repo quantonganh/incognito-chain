@@ -548,8 +548,15 @@ func (tx *Tx) Init(params *TxPrivacyInitParams) error {
 		ephemeralPrivKey := new(privacy.Scalar)
 		ephemeralPubKey := new(privacy.Point).Identity()
 		if len(params.paymentInfo) > 0 && params.hasPrivacy {
-			ephemeralPrivKey = privacy.RandomScalar()
-			ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
+			for true {
+				ephemeralPrivKey = privacy.RandomScalar()
+				ephemeralPubKey.ScalarMult(privacy.PedCom.G[privacy.PedersenPrivateKeyIndex], ephemeralPrivKey)
+
+				ok, err := CheckEphemeralPubKeyExistence(params.tokenID, ephemeralPubKey, params.db)
+				if err == nil && !ok {
+					break
+				}
+			}
 			fmt.Printf("ephemeralPubKey when initing tx: %v\n", ephemeralPubKey)
 		}
 
@@ -840,6 +847,16 @@ func (tx *Tx) ValidateTransaction(hasPrivacy bool, db database.DatabaseInterface
 					Logger.log.Errorf("snd existed: %d\n", i)
 					return false, NewTransactionErr(SndExistedError, err, fmt.Sprintf("snd existed: %d\n", i))
 				}
+			}
+		}
+		if hasPrivacy && tx.Version == common.TxVersion2 {
+			// Check output coins' SND is not exists in SND list (Database)
+			if ok, err := CheckEphemeralPubKeyExistence(tokenID, tx.Proof.GetEphemeralPubKey(), db); ok || err != nil {
+				if err != nil {
+					Logger.log.Error(err)
+				}
+				Logger.log.Errorf("ephemeral pubkey existed: %d\n", tx.Proof.GetEphemeralPubKey())
+				return false, NewTransactionErr(EphemeralPubKeyExistedError, err, fmt.Sprintf("ephemeral pubkey existed: %d\n", tx.Proof.GetEphemeralPubKey()))
 			}
 		}
 

@@ -42,6 +42,7 @@ const (
 	TxProofVerifyFailError
 	VerifyMinerCreatedTxBeforeGettingInBlockError
 	CommitOutputCoinError
+	EphemeralPubKeyExistedError
 
 	NormalTokenPRVJsonError
 	NormalTokenJsonError
@@ -98,6 +99,7 @@ var ErrCodeMessage = map[int]struct {
 	ExceedSizeInfoOutCoinError:                    {-1031, "Size of output coin's info exceed max size info"},
 	GenOneTimeAddrError:                           {-1032, "Can not generate one time address"},
 	InvalidVersionTxError:                         {-1033, "Invalid version tx"},
+	EphemeralPubKeyExistedError: 					{-1034, "Ephemeral pubkey existed: %s"},
 
 	// for PRV
 	InvalidSanityDataPRVError:  {-2000, "Invalid sanity data for PRV"},
