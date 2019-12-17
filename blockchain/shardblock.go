@@ -90,7 +90,7 @@ func (shardBlock *ShardBlock) BuildShardBlockBody(instructions [][]string, cross
 	shardBlock.Body.Transactions = append(shardBlock.Body.Transactions, transactions...)
 }
 
-func (crossShardBlock CrossShardBlock) GetCurrentEpoch() uint64 {
+func (crossShardBlock CrossShardBlock) GetEpoch() uint64 {
 	return crossShardBlock.Header.Epoch
 }
 
@@ -99,7 +99,7 @@ func (crossShardBlock *CrossShardBlock) Hash() *common.Hash {
 	return &hash
 }
 
-func (shardToBeaconBlock ShardToBeaconBlock) GetCurrentEpoch() uint64 {
+func (shardToBeaconBlock ShardToBeaconBlock) GetEpoch() uint64 {
 	return shardToBeaconBlock.Header.Epoch
 }
 
@@ -406,7 +406,7 @@ func (block *ShardBlock) AddValidationField(validationData string) error {
 	return nil
 }
 
-func (block ShardBlock) GetCurrentEpoch() uint64 {
+func (block ShardBlock) GetEpoch() uint64 {
 	return block.Header.Epoch
 }
 
@@ -543,4 +543,14 @@ func (block CrossShardBlock) GetBlockTimestamp() int64 {
 
 func (block ShardToBeaconBlock) GetBlockTimestamp() int64 {
 	return block.Header.Timestamp
+}
+
+func (block ShardBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
+}
+func (block CrossShardBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
+}
+func (block ShardToBeaconBlock) GetBeaconHeight() uint64 {
+	return block.Header.BeaconHeight
 }

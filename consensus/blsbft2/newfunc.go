@@ -103,7 +103,7 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 
 	view, err := e.Chain.GetViewByHash(block.GetPreviousViewHash())
 	if err != nil {
-		if block.GetHeight() > e.Chain.GetBestView().CurrentHeight() {
+		if block.GetHeight() > e.Chain.GetBestView().GetHeight() {
 			//request block
 			return nil
 		}
@@ -118,7 +118,7 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 	if err != nil {
 		return err
 	}
-	// if view.CurrentHeight() == e.Chain.GetBestView().CurrentHeight() {
+	// if view.GetHeight() == e.Chain.GetBestView().GetHeight() {
 	if err := e.validateProducer(block, view, int64(consensusSlottime.Seconds()), view.GetCommittee(), e.Logger); err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (e BLSBFT) processProposeMsg(proposeMsg *BFTPropose) error {
 			}
 		}
 	} else {
-		err := view.ValidatePreSignBlock(block)
+		err := view.ValidateBlock(block, true)
 		if err != nil {
 			return err
 		}
@@ -309,7 +309,7 @@ func (blockCI *blockConsensusInstance) createAndSendVote() error {
 }
 
 func validateProposeBlock(block common.BlockInterface, view blockchain.ChainViewInterface) (BFTVote, error) {
-	err := view.ValidatePreSignBlock(block)
+	err := view.ValidateBlock(block, true)
 	if err != nil {
 		return BFTVote{}, err
 	}
@@ -428,13 +428,17 @@ func (blockCI *blockConsensusInstance) FinalizeBlock() error {
 	if err != nil {
 		return err
 	}
-
-	if err := blockCI.View.InsertAndBroadcastBlock(blockCI.Block); err != nil {
+	view, err := blockCI.View.ConnectBlockAndCreateView(blockCI.Block)
+	if err != nil {
 		if blockchainError, ok := err.(*blockchain.BlockChainError); ok {
 			if blockchainError.Code == blockchain.ErrCodeMessage[blockchain.DuplicateShardBlockError].Code {
 				return nil
 			}
 		}
+		return err
+	}
+	err = blockCI.Engine.Chain.AddView(view)
+	if err != nil {
 		return err
 	}
 

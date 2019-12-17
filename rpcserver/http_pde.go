@@ -841,7 +841,7 @@ func convertPrice(
 }
 
 func (httpServer *HttpServer) handleConvertPDEPrices(params interface{}, closeChan <-chan struct{}) (interface{}, *rpcservice.RPCError) {
-	latestBcHeight := httpServer.config.BlockChain.Chains[common.BeaconChainKey].GetBestView().CurrentHeight()
+	latestBcHeight := httpServer.config.BlockChain.Chains[common.BeaconChainKey].GetBestView().GetHeight()
 
 	arrayParams := common.InterfaceSlice(params)
 	data, ok := arrayParams[0].(map[string]interface{})

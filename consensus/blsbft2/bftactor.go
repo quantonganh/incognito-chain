@@ -144,7 +144,7 @@ func (e *BLSBFT) Start() error {
 					}
 				}
 				finalView := e.Chain.GetFinalView()
-				finalViewHeight := finalView.CurrentHeight()
+				finalViewHeight := finalView.GetHeight()
 				for _, block := range e.onGoingBlocks {
 					if block.Block.GetHeight() <= finalViewHeight {
 						go func(blockHash string) {

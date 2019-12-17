@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,7 +28,7 @@ import (
 )
 
 type BlockChain struct {
-	Chains map[string]ChainInterface
+	Chains map[string]ChainManagerInterface
 	// FinalView *FinalView
 	config    Config
 	chainLock sync.Mutex
@@ -1584,75 +1583,76 @@ func GetNumberOfByteToRead(value []byte) (int, error) {
 	}
 	return int(result), nil
 }
+
 func (blockchain *BlockChain) BackupShardChain(writer io.Writer, shardID byte) error {
-	bestStateBytes, err := blockchain.config.DataBase.FetchShardBestState(shardID)
-	if err != nil {
-		return err
-	}
-	shardBestState := &ShardView{}
-	err = json.Unmarshal(bestStateBytes, shardBestState)
-	bestShardHeight := shardBestState.ShardHeight
-	var i uint64
-	for i = 1; i < bestShardHeight; i++ {
-		block, err := blockchain.GetShardBlockByHeight(i, shardID)
-		if err != nil {
-			return err
-		}
-		data, err := json.Marshal(block)
-		if err != nil {
-			return err
-		}
-		_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
-		if err != nil {
-			return err
-		}
-		_, err = writer.Write(data)
-		if err != nil {
-			return err
-		}
-		if i%100 == 0 {
-			log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
-		}
-		if i == bestShardHeight-1 {
-			log.Printf("Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
-		}
-	}
+	// bestStateBytes, err := blockchain.config.DataBase.FetchShardBestState(shardID)
+	// if err != nil {
+	// 	return err
+	// }
+	// shardBestState := &ShardView{}
+	// err = json.Unmarshal(bestStateBytes, shardBestState)
+	// bestShardHeight := shardBestState.ShardHeight
+	// var i uint64
+	// for i = 1; i < bestShardHeight; i++ {
+	// 	block, err := blockchain.GetShardBlockByHeight(i, shardID)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	data, err := json.Marshal(block)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	_, err = writer.Write(CalculateNumberOfByteToRead(len(data)))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	_, err = writer.Write(data)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if i%100 == 0 {
+	// 		log.Printf("Backup Shard %+v Block %+v", block.Header.ShardID, i)
+	// 	}
+	// 	if i == bestShardHeight-1 {
+	// 		log.Printf("Finish Backup Shard %+v with Block %+v", block.Header.ShardID, i)
+	// 	}
+	// }
 	return nil
 }
 func (blockchain *BlockChain) BackupBeaconChain(writer io.Writer) error {
-	bestStateBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
-	if err != nil {
-		return err
-	}
-	beaconBestState := &BeaconView{}
-	err = json.Unmarshal(bestStateBytes, beaconBestState)
-	bestBeaconHeight := beaconBestState.BeaconHeight
-	var i uint64
-	for i = 1; i < bestBeaconHeight; i++ {
-		block, err := blockchain.GetBeaconBlockByHeight(i)
-		if err != nil {
-			return err
-		}
-		data, err := json.Marshal(block)
-		if err != nil {
-			return err
-		}
-		numOfByteToRead := CalculateNumberOfByteToRead(len(data))
-		_, err = writer.Write(numOfByteToRead)
-		if err != nil {
-			return err
-		}
-		_, err = writer.Write(data)
-		if err != nil {
-			return err
-		}
-		if i%100 == 0 {
-			log.Printf("Backup Beacon Block %+v", i)
-		}
-		if i == bestBeaconHeight-1 {
-			log.Printf("Finish Backup Beacon with Block %+v", i)
-		}
-	}
+	// bestStateBytes, err := blockchain.config.DataBase.FetchBeaconBestState()
+	// if err != nil {
+	// 	return err
+	// }
+	// beaconBestState := &BeaconView{}
+	// err = json.Unmarshal(bestStateBytes, beaconBestState)
+	// bestBeaconHeight := beaconBestState.BeaconHeight
+	// var i uint64
+	// for i = 1; i < bestBeaconHeight; i++ {
+	// 	block, err := blockchain.GetBeaconBlockByHeight(i)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	data, err := json.Marshal(block)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	numOfByteToRead := CalculateNumberOfByteToRead(len(data))
+	// 	_, err = writer.Write(numOfByteToRead)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	_, err = writer.Write(data)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if i%100 == 0 {
+	// 		log.Printf("Backup Beacon Block %+v", i)
+	// 	}
+	// 	if i == bestBeaconHeight-1 {
+	// 		log.Printf("Finish Backup Beacon with Block %+v", i)
+	// 	}
+	// }
 	return nil
 }
 

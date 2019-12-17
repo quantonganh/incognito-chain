@@ -16,7 +16,7 @@ import (
 )
 
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
-	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
+	return time.Since(time.Unix(int64(e.Chain.GetTimeStamp()), 0))
 }
 
 func (e *BLSBFT) waitForNextRound() bool {
@@ -43,7 +43,7 @@ func (e *BLSBFT) getCurrentRound() int {
 }
 
 func (e *BLSBFT) isInTimeFrame() bool {
-	if e.Chain.CurrentHeight()+1 != e.RoundData.NextHeight {
+	if e.Chain.GetHeight()+1 != e.RoundData.NextHeight {
 		return false
 	}
 
@@ -146,7 +146,7 @@ func (e *BLSBFT) InitRoundData() {
 	if _, ok := e.Blocks[roundKey]; ok {
 		delete(e.Blocks, roundKey)
 	}
-	e.RoundData.NextHeight = e.Chain.CurrentHeight() + 1
+	e.RoundData.NextHeight = e.Chain.GetHeight() + 1
 	e.RoundData.Round = e.getCurrentRound()
 	e.RoundData.Votes = make(map[string]vote)
 	e.RoundData.Block = nil

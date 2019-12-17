@@ -94,7 +94,7 @@ func (blockchain *BlockChain) BuildRewardInstructionByEpoch(blkHeight, epoch uin
 	var instRewardForBeacons [][]string
 	var instRewardForIncDAO [][]string
 	var instRewardForShards [][]string
-	numberOfActiveShards := blockchain.Chains[common.BeaconChainKey].GetActiveShardNumber()
+	numberOfActiveShards := blockchain.Chains[common.BeaconChainKey].GetBestView().GetActiveShardNumber()
 	allCoinID, err := blockchain.GetAllCoinID()
 	if err != nil {
 		return nil, err

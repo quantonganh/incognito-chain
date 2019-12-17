@@ -26,47 +26,35 @@ func (chain *ShardChain) GetGenesisTime() int64 {
 	return chain.bestView.GenesisTime
 }
 
-func (chain *ShardChain) GetLastBlockTimeStamp() int64 {
-	return chain.finalView.BestBlock.Header.Timestamp
-}
-
-func (chain *ShardChain) GetMinBlkInterval() time.Duration {
-	return chain.finalView.BlockInterval
-}
-
-func (chain *ShardChain) GetMaxBlkCreateTime() time.Duration {
-	return chain.finalView.BlockMaxCreateTime
-}
-
 func (chain *ShardChain) IsReady() bool {
 	return chain.Blockchain.Synker.IsLatest(true, chain.finalView.ShardID)
 }
 
-func (chain *ShardChain) CurrentHeight() uint64 {
-	return chain.finalView.BestBlock.Header.Height
-}
+// func (chain *ShardChain) GetHeight() uint64 {
+// 	return chain.finalView.BestBlock.Header.Height
+// }
 
-func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
-	result := []incognitokey.CommitteePublicKey{}
-	return append(result, chain.finalView.ShardCommittee...)
-}
+// func (chain *ShardChain) GetCommittee() []incognitokey.CommitteePublicKey {
+// 	result := []incognitokey.CommitteePublicKey{}
+// 	return append(result, chain.finalView.ShardCommittee...)
+// }
 
-func (chain *ShardChain) GetCommitteeSize() int {
-	return len(chain.finalView.ShardCommittee)
-}
+// func (chain *ShardChain) GetCommitteeSize() int {
+// 	return len(chain.finalView.ShardCommittee)
+// }
 
-func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
-	for index, key := range chain.finalView.ShardCommittee {
-		if key.GetMiningKeyBase58(chain.finalView.ConsensusAlgorithm) == pubkey {
-			return index
-		}
-	}
-	return -1
-}
+// func (chain *ShardChain) GetPubKeyCommitteeIndex(pubkey string) int {
+// 	for index, key := range chain.finalView.ShardCommittee {
+// 		if key.GetMiningKeyBase58(chain.finalView.ConsensusAlgorithm) == pubkey {
+// 			return index
+// 		}
+// 	}
+// 	return -1
+// }
 
-func (chain *ShardChain) GetLastProposerIndex() int {
-	return chain.finalView.ShardProposerIdx
-}
+// func (chain *ShardChain) GetLastProposerIndex() int {
+// 	return chain.finalView.ShardProposerIdx
+// }
 
 func (chain *ShardChain) CreateNewBlock(round int) (common.BlockInterface, error) {
 	chain.lock.Lock()
@@ -134,7 +122,7 @@ func (chain *ShardChain) GetShardID() int {
 }
 
 func (chain *ShardChain) GetPubkeyRole(pubkey string, round int) (string, byte) {
-	return chain.finalView.GetPubkeyRole(pubkey, round), chain.finalView.ShardID
+	return chain.finalView.GetPubkeyRole(pubkey, round)
 }
 
 func (chain *ShardChain) UnmarshalBlock(blockString []byte) (common.BlockInterface, error) {
@@ -214,4 +202,31 @@ func (chain *ShardChain) GetAllTipBlocksHash() []*common.Hash {
 		result = append(result, view.GetTipBlock().Hash())
 	}
 	return result
+}
+
+func (chain *ShardChain) AddView(view ChainViewInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	chain.addView(view.(*ShardView))
+	return nil
+}
+
+func (chain *ShardChain) addView(view *ShardView) error {
+	chain.views[view.Hash().String()] = view
+	return nil
+}
+
+func (chain *ShardChain) ConnectBlockAndAddView(block common.BlockInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	view, ok := chain.views[block.GetPreviousViewHash().String()]
+	if !ok {
+		return NewBlockChainError(ViewNotExistError, fmt.Errorf("View %v isn't exist", block.GetPreviousViewHash().String()))
+	}
+	newView, err := view.ConnectBlockAndCreateView(block)
+	if err != nil {
+		return NewBlockChainError(ConnectBlockError, fmt.Errorf("Can't connect block %v", block.Hash().String()))
+	}
+	chain.views[newView.Hash().String()] = newView.(*ShardView)
+	return nil
 }

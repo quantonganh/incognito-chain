@@ -9,7 +9,7 @@ import (
 )
 
 func (e *BLSBFT) getTimeSinceLastBlock() time.Duration {
-	return time.Since(time.Unix(int64(e.Chain.GetLastBlockTimeStamp()), 0))
+	return time.Since(time.Unix(int64(e.Chain.GetTimeStamp()), 0))
 }
 
 func (e *BLSBFT) waitForNextTimeslot() bool {

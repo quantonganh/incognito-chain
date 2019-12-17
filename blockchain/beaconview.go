@@ -47,7 +47,6 @@ type BeaconView struct {
 	CurrentRandomNumber                    int64                                      `json:"CurrentRandomNumber"`
 	CurrentRandomTimeStamp                 int64                                      `json:"CurrentRandomTimeStamp"` // random timestamp for this epoch
 	IsGetRandomNumber                      bool                                       `json:"IsGetRandomNumber"`
-	Params                                 map[string]string                          `json:"Params,omitempty"` // TODO: review what does this field do
 	MaxBeaconCommitteeSize                 int                                        `json:"MaxBeaconCommitteeSize"`
 	MinBeaconCommitteeSize                 int                                        `json:"MinBeaconCommitteeSize"`
 	MaxShardCommitteeSize                  int                                        `json:"MaxShardCommitteeSize"`
@@ -68,11 +67,12 @@ type BeaconView struct {
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 
-	lock               sync.RWMutex
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
-	GenesisTime        int64 //use for consensus to get timeslot
-	IsBest             bool
+	lock sync.RWMutex
+
+	BlockInterval      time.Duration `json:"BlockInterval"`
+	BlockMaxCreateTime time.Duration `json:"BlockMaxCreateTime"`
+	GenesisTime        int64         `json:"GenesisTime"` //use for consensus to get timeslot
+	isBest             bool
 }
 
 func NewBeaconView() *BeaconView {
@@ -97,7 +97,6 @@ func NewBeaconViewWithConfig(netparam *Params) *BeaconView {
 	view.ShardCommittee = make(map[byte][]incognitokey.CommitteePublicKey)
 	view.ShardPendingValidator = make(map[byte][]incognitokey.CommitteePublicKey)
 	view.AutoStaking = make(map[string]bool)
-	view.Params = make(map[string]string)
 	view.CurrentRandomNumber = -1
 	view.MaxBeaconCommitteeSize = netparam.MaxBeaconCommitteeSize
 	view.MinBeaconCommitteeSize = netparam.MinBeaconCommitteeSize
@@ -297,7 +296,6 @@ func (view *BeaconView) GetBytes() []byte {
 	view.lock.RLock()
 	defer view.lock.RUnlock()
 	var keys []int
-	var keyStrs []string
 	res := []byte{}
 	res = append(res, view.BestBlockHash.GetBytes()...)
 	res = append(res, view.PreviousBestBlockHash.GetBytes()...)
@@ -422,14 +420,6 @@ func (view *BeaconView) GetBytes() []byte {
 	} else {
 		res = append(res, []byte("false")...)
 	}
-	for k := range view.Params {
-		keyStrs = append(keyStrs, k)
-	}
-	sort.Strings(keyStrs)
-	for _, key := range keyStrs {
-		res = append(res, []byte(view.Params[key])...)
-	}
-
 	keys = []int{}
 	for k := range view.ShardHandle {
 		keys = append(keys, int(k))
@@ -649,7 +639,7 @@ func (view *BeaconView) getAllCommitteeValidatorCandidateFlattenList() []string 
 func (view *BeaconView) GetConsensusType() string {
 	return ""
 }
-func (view *BeaconView) GetPubKeyCommitteeIndex(string) int {
+func (view *BeaconView) GetCommitteeIndex(string) int {
 	return 0
 }
 func (view *BeaconView) GetLastProposerIndex() int {
@@ -680,8 +670,8 @@ func (view *BeaconView) GetConsensusConfig() string {
 	return view.ConsensusConfig
 }
 
-func (view *BeaconView) CurrentHeight() uint64 {
-	return 0
+func (view *BeaconView) GetHeight() uint64 {
+	return view.BestBlock.GetHeight()
 }
 
 func (view *BeaconView) GetBlkMaxCreateTime() time.Duration {
@@ -692,7 +682,7 @@ func (view *BeaconView) GetBlkMinInterval() time.Duration {
 	return 0
 }
 
-func (view *BeaconView) GetLastBlockTimeStamp() int64 {
+func (view *BeaconView) GetTimeStamp() int64 {
 	return 0
 }
 func (view *BeaconView) GetCommittee() []incognitokey.CommitteePublicKey {
@@ -700,7 +690,6 @@ func (view *BeaconView) GetCommittee() []incognitokey.CommitteePublicKey {
 	result = append([]incognitokey.CommitteePublicKey{}, view.BeaconCommittee...)
 	return result
 }
-func (view *BeaconView) GetLastProposerIdx() int { return 0 }
 
 func (view *BeaconView) GetTimeslot() uint64 { return 0 }
 
@@ -709,13 +698,13 @@ func (view *BeaconView) GetEpoch() uint64 {
 }
 
 func (view *BeaconView) IsBestView() bool {
-	return view.IsBest
+	return view.isBest
 }
 
 func (view *BeaconView) SetViewIsBest(isBest bool) {
 	view.lock.Lock()
 	defer view.lock.Unlock()
-	view.IsBest = isBest
+	view.isBest = isBest
 }
 
 func (view *BeaconView) GetTipBlock() common.BlockInterface {
@@ -734,4 +723,26 @@ func (view *BeaconView) GetCommitteeHash() *common.Hash {
 
 func (view *BeaconView) GetGenesisTime() int64 {
 	return view.GenesisTime
+}
+
+func (view *BeaconView) GetPreviousViewHash() *common.Hash {
+	return nil
+}
+
+func (view *BeaconView) UpdateViewWithBlock(block common.BlockInterface) error {
+	return nil
+}
+func (view *BeaconView) CloneViewFrom(viewToClone *ChainViewInterface) error {
+	return nil
+}
+
+func (view *BeaconView) ValidateBlock(block common.BlockInterface, isPreSign bool) error {
+	return nil
+}
+func (view *BeaconView) ConnectBlockAndCreateView(block common.BlockInterface) (ChainViewInterface, error) {
+	return nil, nil
+}
+
+func (view BeaconView) GetActiveShardNumber() int {
+	panic("implement me")
 }

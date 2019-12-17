@@ -25,19 +25,13 @@ import (
 // shared by all callers.
 
 type ShardView struct {
-	BestBlockHash          common.Hash                       `json:"BestBlockHash"` // hash of block.
-	BestBlock              *ShardBlock                       `json:"BestBlock"`     // block data
-	BestBeaconHash         common.Hash                       `json:"BestBeaconHash"`
-	BeaconHeight           uint64                            `json:"BeaconHeight"`
+	TipBlock               *ShardBlock                       `json:"TipBlock"` // block data
 	ShardID                byte                              `json:"ShardID"`
-	Epoch                  uint64                            `json:"Epoch"`
-	ShardHeight            uint64                            `json:"ShardHeight"`
-	MaxShardCommitteeSize  int                               `json:"MaxShardCommitteeSize"`
-	MinShardCommitteeSize  int                               `json:"MinShardCommitteeSize"`
-	ShardProposerIdx       int                               `json:"ShardProposerIdx"`
-	ShardCommitteeHash     string                            `json:"CommitteeHash"`
-	ShardCommittee         []incognitokey.CommitteePublicKey `json:"ShardCommittee"`
-	ShardPendingValidator  []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
+	MaxCommitteeSize       int                               `json:"MaxCommitteeSize"`
+	MinCommitteeSize       int                               `json:"MinCommitteeSize"`
+	CommitteeHash          string                            `json:"CommitteeHash"`
+	Committee              []incognitokey.CommitteePublicKey `json:"Committee"`
+	PendingValidator       []incognitokey.CommitteePublicKey `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64                   `json:"BestCrossShard"` // Best cross shard block by heigh
 	StakingTx              map[string]string                 `json:"StakingTx"`
 	NumTxns                uint64                            `json:"NumTxns"`                // The number of txns in the block.
@@ -50,11 +44,11 @@ type ShardView struct {
 	// Number of blocks produced by producers in epoch
 	NumOfBlocksByProducers map[string]uint64 `json:"NumOfBlocksByProducers"`
 
-	BlockInterval      time.Duration
-	BlockMaxCreateTime time.Duration
+	BlockInterval      time.Duration `json:"BlockInterval"`
+	BlockMaxCreateTime time.Duration `json:"BlockMaxCreateTime"`
 
-	GenesisTime int64 //use for consensus to get timeslot
-	IsBest      bool
+	GenesisTime int64 `json:"GenesisTime"` //use for consensus to get timeslot
+	isBest      bool  `json:"IsBest"`
 	// MetricBlockHeight uint64
 	lock sync.RWMutex
 }
@@ -65,62 +59,41 @@ func NewShardView() *ShardView {
 }
 func NewShardViewWithConfig(shardID byte, netparam *Params) *ShardView {
 	var view ShardView
-	err := view.BestBlockHash.SetBytes(make([]byte, 32))
-	if err != nil {
-		panic(err)
-	}
-	err = view.BestBeaconHash.SetBytes(make([]byte, 32))
-	if err != nil {
-		panic(err)
-	}
-	view.BestBlock = nil
-	view.ShardCommittee = []incognitokey.CommitteePublicKey{}
-	view.MaxShardCommitteeSize = netparam.MaxShardCommitteeSize
-	view.MinShardCommitteeSize = netparam.MinShardCommitteeSize
-	view.ShardPendingValidator = []incognitokey.CommitteePublicKey{}
+	view.TipBlock = nil
+	view.Committee = []incognitokey.CommitteePublicKey{}
+	view.MaxCommitteeSize = netparam.MaxShardCommitteeSize
+	view.MinCommitteeSize = netparam.MinShardCommitteeSize
+	view.PendingValidator = []incognitokey.CommitteePublicKey{}
 	view.ActiveShards = netparam.ActiveShards
 	view.BestCrossShard = make(map[byte]uint64)
 	view.StakingTx = make(map[string]string)
-	view.ShardHeight = 1
-	view.BeaconHeight = 1
 	view.BlockInterval = netparam.MinShardBlockInterval
 	view.BlockMaxCreateTime = netparam.MaxShardBlockCreation
+	view.GenesisTime = netparam.GenesisShardBlock.GetBlockTimestamp()
+	view.isBest = false
+	view.NumOfBlocksByProducers = make(map[string]uint64)
 	return &view
 }
 
 // Get role of a public key base on best state shard
 func (view *ShardView) GetBytes() []byte {
 	res := []byte{}
-	res = append(res, view.BestBlockHash.GetBytes()...)
-	res = append(res, view.BestBlock.Hash().GetBytes()...)
-	res = append(res, view.BestBeaconHash.GetBytes()...)
-	beaconHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(beaconHeightBytes, view.BeaconHeight)
-	res = append(res, beaconHeightBytes...)
+	res = append(res, view.TipBlock.Hash().GetBytes()...)
 	res = append(res, view.ShardID)
-	epochBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(epochBytes, view.Epoch)
-	res = append(res, epochBytes...)
-	shardHeightBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(shardHeightBytes, view.ShardHeight)
-	res = append(res, shardHeightBytes...)
-	shardCommitteeSizeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(shardCommitteeSizeBytes, uint32(view.MaxShardCommitteeSize))
-	res = append(res, shardCommitteeSizeBytes...)
-	minShardCommitteeSizeBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(minShardCommitteeSizeBytes, uint32(view.MinShardCommitteeSize))
-	res = append(res, minShardCommitteeSizeBytes...)
-	proposerIdxBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(proposerIdxBytes, uint32(view.ShardProposerIdx))
-	res = append(res, proposerIdxBytes...)
-	for _, value := range view.ShardCommittee {
+	CommitteeSizeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(CommitteeSizeBytes, uint32(view.MaxCommitteeSize))
+	res = append(res, CommitteeSizeBytes...)
+	MinCommitteeSizeBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(MinCommitteeSizeBytes, uint32(view.MinCommitteeSize))
+	res = append(res, MinCommitteeSizeBytes...)
+	for _, value := range view.Committee {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
 		}
 		res = append(res, valueBytes...)
 	}
-	for _, value := range view.ShardPendingValidator {
+	for _, value := range view.PendingValidator {
 		valueBytes, err := value.Bytes()
 		if err != nil {
 			return nil
@@ -166,55 +139,55 @@ func (view *ShardView) Hash() common.Hash {
 	return common.HashH(view.GetBytes())
 }
 
-func (view *ShardView) SetMaxShardCommitteeSize(maxShardCommitteeSize int) bool {
+func (view *ShardView) SetMaxCommitteeSize(MaxCommitteeSize int) bool {
 	view.lock.Lock()
 	defer view.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
-	if maxShardCommitteeSize < MinCommitteeSize {
+	if MaxCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// max committee size can't be lower than current min committee size
-	if maxShardCommitteeSize >= view.MinShardCommitteeSize {
-		view.MaxShardCommitteeSize = maxShardCommitteeSize
+	if MaxCommitteeSize >= view.MinCommitteeSize {
+		view.MaxCommitteeSize = MaxCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (view *ShardView) SetMinShardCommitteeSize(minShardCommitteeSize int) bool {
+func (view *ShardView) SetMinCommitteeSize(MinCommitteeSize int) bool {
 	view.lock.Lock()
 	defer view.lock.Unlock()
 	// check input params, below MinCommitteeSize failed to acheive consensus
-	if minShardCommitteeSize < MinCommitteeSize {
+	if MinCommitteeSize < MinCommitteeSize {
 		return false
 	}
 	// min committee size can't be greater than current min committee size
-	if minShardCommitteeSize <= view.MaxShardCommitteeSize {
-		view.MinShardCommitteeSize = minShardCommitteeSize
+	if MinCommitteeSize <= view.MaxCommitteeSize {
+		view.MinCommitteeSize = MinCommitteeSize
 		return true
 	}
 	return false
 }
 
-func (view *ShardView) GetPubkeyRole(pubkey string, round int) string {
-	keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.ShardCommittee, view.ConsensusAlgorithm)
-	// fmt.Printf("pubkey %v key list %v\n\n\n\n", pubkey, keyList)
-	found := common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		tmpID := (view.ShardProposerIdx + round) % len(keyList)
-		if found == tmpID {
-			return common.ProposerRole
-		} else {
-			return common.ValidatorRole
-		}
-	}
+func (view *ShardView) GetPubkeyRole(pubkey string, round int) (string, byte) {
+	// keyList, _ := incognitokey.ExtractPublickeysFromCommitteeKeyList(view.Committee, view.ConsensusAlgorithm)
+	// // fmt.Printf("pubkey %v key list %v\n\n\n\n", pubkey, keyList)
+	// found := common.IndexOfStr(pubkey, keyList)
+	// if found > -1 {
+	// 	tmpID := (view.ShardProposerIdx + round) % len(keyList)
+	// 	if found == tmpID {
+	// 		return common.ProposerRole
+	// 	} else {
+	// 		return common.ValidatorRole
+	// 	}
+	// }
 
-	keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(view.ShardPendingValidator, view.ConsensusAlgorithm)
-	found = common.IndexOfStr(pubkey, keyList)
-	if found > -1 {
-		return common.PendingRole
-	}
-	return common.EmptyString
+	// keyList, _ = incognitokey.ExtractPublickeysFromCommitteeKeyList(view.ShardPendingValidator, view.ConsensusAlgorithm)
+	// found = common.IndexOfStr(pubkey, keyList)
+	// if found > -1 {
+	// 	return common.PendingRole
+	// }
+	return common.EmptyString, 0
 }
 
 func (view *ShardView) MarshalJSON() ([]byte, error) {
@@ -232,25 +205,21 @@ func (view *ShardView) MarshalJSON() ([]byte, error) {
 	return b, err
 }
 
-func (view ShardView) GetShardHeight() uint64 {
-	return view.ShardHeight
-}
-
 func (view ShardView) GetBeaconHeight() uint64 {
-	return view.BeaconHeight
+	return view.TipBlock.GetBeaconHeight()
 }
 
 func (view *ShardView) cloneShardViewFrom(target ChainViewInterface) error {
 	tempMarshal, err := json.Marshal(target)
 	if err != nil {
-		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.CurrentHeight(), err))
+		return NewBlockChainError(MashallJsonShardBestStateError, fmt.Errorf("Shard Best State %+v get %+v", target.GetHeight(), err))
 	}
 	err = json.Unmarshal(tempMarshal, view)
 	if err != nil {
-		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.CurrentHeight(), err))
+		return NewBlockChainError(UnmashallJsonShardBestStateError, fmt.Errorf("Clone Shard Best State %+v get %+v", target.GetHeight(), err))
 	}
 	if reflect.DeepEqual(*view, ShardView{}) {
-		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.CurrentHeight()))
+		return NewBlockChainError(CloneShardBestStateError, fmt.Errorf("Shard Best State %+v clone failed", target.GetHeight()))
 	}
 	return nil
 }
@@ -265,95 +234,140 @@ func (view *ShardView) GetStakingTx() map[string]string {
 }
 
 func (view *ShardView) GetConsensusType() string {
-	return ""
-}
-func (view *ShardView) GetPubKeyCommitteeIndex(string) int {
-	return 0
-}
-func (view *ShardView) GetLastProposerIndex() int {
-	return 0
+	return view.ConsensusAlgorithm
 }
 func (view *ShardView) CreateNewBlock(timeslot uint64) (common.BlockInterface, error) {
 	return nil, nil
 }
-func (view *ShardView) InsertBlk(block common.BlockInterface) error {
-	return nil
-}
-func (view *ShardView) InsertAndBroadcastBlock(block common.BlockInterface) error {
-	return nil
-}
-func (view *ShardView) ValidatePreSignBlock(block common.BlockInterface) error {
-	return nil
-}
+
+// func (view *ShardView) InsertBlk(block common.BlockInterface) error {
+// 	return nil
+// }
+// func (view *ShardView) InsertAndBroadcastBlock(block common.BlockInterface) error {
+// 	return nil
+// }
+// func (view *ShardView) ValidatePreSignBlock(block common.BlockInterface) error {
+// 	return nil
+// }
 
 func (view *ShardView) DeleteView() error {
 	return nil
 }
 
-func (view *ShardView) GetConsensusConfig() string {
+func (view ShardView) GetConsensusConfig() string {
 	return view.ConsensusConfig
 }
 
-func (view *ShardView) CurrentHeight() uint64 {
-	return 0
+func (view ShardView) GetHeight() uint64 {
+	return view.TipBlock.GetHeight()
 }
 
-func (view *ShardView) GetBlkMaxCreateTime() time.Duration {
-	return 0
+func (view ShardView) GetBlkMaxCreateTime() time.Duration {
+	return view.BlockMaxCreateTime
 }
 
-func (view *ShardView) GetBlkMinInterval() time.Duration {
-	return 0
+func (view ShardView) GetBlkMinInterval() time.Duration {
+	return view.BlockInterval
 }
 
-func (view *ShardView) GetLastBlockTimeStamp() int64 {
-	return 0
+func (view ShardView) GetTimeStamp() int64 {
+	return view.TipBlock.GetBlockTimestamp()
 }
-func (view *ShardView) GetCommittee() []incognitokey.CommitteePublicKey {
+func (view ShardView) GetCommittee() []incognitokey.CommitteePublicKey {
 	result := []incognitokey.CommitteePublicKey{}
-	result = append([]incognitokey.CommitteePublicKey{}, view.ShardCommittee...)
+	result = append([]incognitokey.CommitteePublicKey{}, view.Committee...)
 	return result
 }
-func (view *ShardView) GetLastProposerIdx() int { return 0 }
 
-func (view *ShardView) GetTimeslot() uint64 { return 0 }
+func (view *ShardView) SetCommittee(newCommittee []incognitokey.CommitteePublicKey) error {
+	if len(newCommittee) > view.MaxCommitteeSize {
+		return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("newCommittee lenght: %v MaxCommitteeSize: %v", len(newCommittee), view.MaxCommitteeSize))
+	}
+	if len(newCommittee) < view.MinCommitteeSize {
+		return NewBlockChainError(ShardCommitteeLengthAndCommitteeIndexError, fmt.Errorf("newCommittee lenght: %v MaxCommitteeSize: %v", len(newCommittee), view.MinCommitteeSize))
+	}
+	res := []byte{}
+	for _, value := range newCommittee {
+		valueBytes, err := value.Bytes()
+		if err != nil {
+			return err
+		}
+		res = append(res, valueBytes...)
+	}
 
-func (view *ShardView) GetEpoch() uint64 {
-	return 0
+	view.Committee = append([]incognitokey.CommitteePublicKey{}, newCommittee...)
+	view.CommitteeHash = common.HashH(res).String()
+
+	return nil
 }
 
-func (view ShardView) GetTxsInBestBlock() []metadata.Transaction {
+func (view ShardView) GetTimeslot() uint64 {
+	return view.TipBlock.GetTimeslot()
+}
+
+func (view ShardView) GetEpoch() uint64 {
+	return view.TipBlock.GetEpoch()
+}
+
+func (view ShardView) GetTxsInView() []metadata.Transaction {
 	view.lock.RLock()
 	defer view.lock.RUnlock()
 	var result []metadata.Transaction
-	copy(result, view.BestBlock.Body.Transactions)
+	copy(result, view.TipBlock.Body.Transactions)
 	return result
 }
 
 func (view *ShardView) IsBestView() bool {
-	return view.IsBest
+	return view.isBest
 }
 
 func (view *ShardView) SetViewIsBest(isBest bool) {
 	view.lock.Lock()
 	defer view.lock.Unlock()
-	view.IsBest = isBest
+	view.isBest = isBest
 }
 
 func (view *ShardView) GetTipBlock() common.BlockInterface {
-	return view.BestBlock
+	return view.TipBlock
 }
 
 func (view *ShardView) GetCommitteeHash() *common.Hash {
 	view.lock.RLock()
 	defer view.lock.RUnlock()
-	result, err := common.Hash{}.NewHashFromStr(view.ShardCommitteeHash)
+	result, err := common.Hash{}.NewHashFromStr(view.CommitteeHash)
 	if err != nil {
 		panic(err)
 	}
 	return result
 }
 
-func (view *ShardView) GetGenesisTime() int64 {
+func (view ShardView) GetGenesisTime() int64 {
 	return view.GenesisTime
+}
+
+func (view ShardView) GetCommitteeIndex(string) int {
+	return 0
+}
+
+func (view ShardView) GetPreviousViewHash() *common.Hash {
+	return nil
+}
+
+func (view ShardView) UpdateViewWithBlock(block common.BlockInterface) error {
+	return nil
+}
+func (view ShardView) CloneViewFrom(viewToClone *ChainViewInterface) error {
+	return nil
+}
+
+func (view ShardView) ValidateBlock(block common.BlockInterface, isPreSign bool) error {
+	return nil
+}
+
+func (view ShardView) ConnectBlockAndCreateView(block common.BlockInterface) (ChainViewInterface, error) {
+	return nil, nil
+}
+
+func (view ShardView) GetActiveShardNumber() int {
+	panic("implement me")
 }

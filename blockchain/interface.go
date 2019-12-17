@@ -93,61 +93,63 @@ type FeeEstimator interface {
 	RegisterBlock(block *ShardBlock) error
 }
 
-type ChainInterface interface {
+type ChainManagerInterface interface {
 	GetChainName() string
+	GetShardID() int
+	GetGenesisTime() int64
 
-	IsReady() bool
-	GetActiveShardNumber() int
-	GetPubkeyRole(pubkey string, round int) (string, byte)
-
-	GetConsensusType() string                        //TO_BE_DELETE
-	GetLastBlockTimeStamp() int64                    //TO_BE_DELETE
-	GetMinBlkInterval() time.Duration                //TO_BE_DELETE
-	GetMaxBlkCreateTime() time.Duration              //TO_BE_DELETE
-	CurrentHeight() uint64                           //TO_BE_DELETE
-	GetCommitteeSize() int                           //TO_BE_DELETE
-	GetCommittee() []incognitokey.CommitteePublicKey //TO_BE_DELETE
-	GetPubKeyCommitteeIndex(string) int              //TO_BE_DELETE
-	GetLastProposerIndex() int                       //TO_BE_DELETE
+	// IsReady() bool                                         //TO_BE_DELETE
+	// GetActiveShardNumber() int                             //TO_BE_DELETE
+	// GetPubkeyRole(pubkey string, round int) (string, byte) //TO_BE_DELETE
+	// GetConsensusType() string                              //TO_BE_DELETE
+	// GetTimeStamp() int64                                   //TO_BE_DELETE
+	// GetMinBlkInterval() time.Duration                      //TO_BE_DELETE
+	// GetMaxBlkCreateTime() time.Duration                    //TO_BE_DELETE
+	// GetHeight() uint64                                     //TO_BE_DELETE
+	// GetCommitteeSize() int                                 //TO_BE_DELETE
+	// GetCommittee() []incognitokey.CommitteePublicKey       //TO_BE_DELETE
+	// GetPubKeyCommitteeIndex(string) int                    //TO_BE_DELETE
+	// GetLastProposerIndex() int                             //TO_BE_DELETE
 
 	UnmarshalBlock(blockString []byte) (common.BlockInterface, error)
-
 	ValidateBlockSignatures(block common.BlockInterface, committee []incognitokey.CommitteePublicKey) error
-
-	GetShardID() int
 
 	GetBestView() ChainViewInterface
 	GetFinalView() ChainViewInterface
 	GetAllViews() map[string]ChainViewInterface
 	GetViewByHash(*common.Hash) (ChainViewInterface, error)
-	GetGenesisTime() int64
 	GetAllTipBlocksHash() []*common.Hash
+	AddView(view ChainViewInterface) error
+	ConnectBlockAndAddView(block common.BlockInterface) error
 }
 
 type ChainViewInterface interface {
-	GetLastBlockTimeStamp() int64
+	GetGenesisTime() int64
+	GetConsensusConfig() string
+	GetConsensusType() string
 	GetBlkMinInterval() time.Duration
 	GetBlkMaxCreateTime() time.Duration
-	CurrentHeight() uint64
+	GetPubkeyRole(pubkey string, round int) (string, byte)
 	GetCommittee() []incognitokey.CommitteePublicKey
 	GetCommitteeHash() *common.Hash
-	GetLastProposerIdx() int
-
-	GetEpoch() uint64
+	GetCommitteeIndex(string) int
+	GetTipBlock() common.BlockInterface
+	GetHeight() uint64
+	GetTimeStamp() int64
 	GetTimeslot() uint64
-	GetConsensusType() string
-	GetPubKeyCommitteeIndex(string) int
-	GetLastProposerIndex() int
-	CreateNewBlock(timeslot uint64) (common.BlockInterface, error)
-	InsertBlk(block common.BlockInterface) error
-	InsertAndBroadcastBlock(block common.BlockInterface) error
-	ValidatePreSignBlock(block common.BlockInterface) error
+	GetEpoch() uint64
+	Hash() common.Hash
+	GetPreviousViewHash() *common.Hash
+	GetActiveShardNumber() int
 
-	DeleteView() error
-	GetConsensusConfig() string
 	IsBestView() bool
 	SetViewIsBest(isBest bool)
-	GetTipBlock() common.BlockInterface
-	GetGenesisTime() int64
-	Hash() common.Hash
+
+	DeleteView() error
+	UpdateViewWithBlock(block common.BlockInterface) error
+	CloneViewFrom(view *ChainViewInterface) error
+
+	ValidateBlock(block common.BlockInterface, isPreSign bool) error
+	CreateNewBlock(timeslot uint64) (common.BlockInterface, error)
+	ConnectBlockAndCreateView(block common.BlockInterface) (ChainViewInterface, error)
 }

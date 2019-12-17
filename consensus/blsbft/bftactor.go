@@ -203,7 +203,7 @@ func (e *BLSBFT) Start() error {
 				case listenPhase:
 					// timeout or vote nil?
 					//fmt.Println("CONSENSUS: listen phase 1")
-					if e.Chain.CurrentHeight() == e.RoundData.NextHeight {
+					if e.Chain.GetHeight() == e.RoundData.NextHeight {
 						e.enterNewRound()
 						continue
 					}
@@ -280,7 +280,7 @@ func (e *BLSBFT) Start() error {
 							}
 							continue
 						}
-						// metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetLastBlockTimeStamp(), 0)).Seconds())
+						// metrics.SetGlobalParam("CommitTime", time.Since(time.Unix(e.Chain.GetTimeStamp(), 0)).Seconds())
 						// e.Node.PushMessageToAll()
 						e.logger.Infof("Commit block %+v hash=%+v \n Wait for next round", e.RoundData.Block.GetHeight(), e.RoundData.Block.Hash().String())
 						e.enterNewRound()

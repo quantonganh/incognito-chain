@@ -26,7 +26,7 @@ func (chain *BeaconChain) GetGenesisTime() int64 {
 	return chain.bestView.GenesisTime
 }
 
-func (chain *BeaconChain) GetLastBlockTimeStamp() int64 {
+func (chain *BeaconChain) GetTimeStamp() int64 {
 	return chain.finalView.BestBlock.Header.Timestamp
 }
 
@@ -42,7 +42,7 @@ func (chain *BeaconChain) IsReady() bool {
 	return chain.Blockchain.Synker.IsLatest(false, 0)
 }
 
-func (chain *BeaconChain) CurrentHeight() uint64 {
+func (chain *BeaconChain) GetHeight() uint64 {
 	return chain.finalView.BestBlock.Header.Height
 }
 
@@ -246,4 +246,31 @@ func (chain *BeaconChain) GetAllTipBlocksHash() []*common.Hash {
 		result = append(result, view.GetTipBlock().Hash())
 	}
 	return result
+}
+
+func (chain *BeaconChain) AddView(view ChainViewInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	chain.addView(view.(*BeaconView))
+	return nil
+}
+
+func (chain *BeaconChain) addView(view *BeaconView) error {
+	chain.views[view.Hash().String()] = view
+	return nil
+}
+
+func (chain *BeaconChain) ConnectBlockAndAddView(block common.BlockInterface) error {
+	chain.lock.Lock()
+	defer chain.lock.Unlock()
+	view, ok := chain.views[block.GetPreviousViewHash().String()]
+	if !ok {
+		return NewBlockChainError(ViewNotExistError, fmt.Errorf("View %v isn't exist", block.GetPreviousViewHash().String()))
+	}
+	newView, err := view.ConnectBlockAndCreateView(block)
+	if err != nil {
+		return NewBlockChainError(ConnectBlockError, fmt.Errorf("Can't connect block %v", block.Hash().String()))
+	}
+	chain.views[newView.Hash().String()] = newView.(*BeaconView)
+	return nil
 }

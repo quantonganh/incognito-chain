@@ -56,11 +56,11 @@ func (blockchain *BlockChain) GetTxChainHeight(tx metadata.Transaction) (uint64,
 }
 
 func (blockchain *BlockChain) GetChainHeight(shardID byte) uint64 {
-	return blockchain.Chains[common.GetShardChainKey(shardID)].GetFinalView().CurrentHeight()
+	return blockchain.Chains[common.GetShardChainKey(shardID)].GetFinalView().GetHeight()
 }
 
 func (blockchain *BlockChain) GetBeaconHeight() uint64 {
-	return blockchain.Chains[common.BeaconChainKey].GetFinalView().CurrentHeight()
+	return blockchain.Chains[common.BeaconChainKey].GetFinalView().GetHeight()
 }
 
 func ListPubKeyFromListPayment(listPaymentAddresses []privacy.PaymentAddress) [][]byte {

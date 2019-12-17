@@ -88,7 +88,7 @@ func (tp *TxPool) ValidateTxList(txs []metadata.Transaction) error {
 		}
 
 		shardID := common.GetShardIDFromLastByte(tx.GetSenderAddrLastByte())
-		bestHeight := tp.config.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().CurrentHeight()
+		bestHeight := tp.config.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().GetHeight()
 		txFee := tx.GetTxFee()
 		txFeeToken := tx.GetTxFeeToken()
 		txD := createTxDescMempool(tx, bestHeight, txFee, txFeeToken)

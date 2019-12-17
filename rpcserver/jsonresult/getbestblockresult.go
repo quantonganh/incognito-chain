@@ -16,26 +16,26 @@ type GetBestBlockItem struct {
 	Time           int64  `json:"Time"`
 }
 
-func NewGetBestBlockItemFromShard(bestState *blockchain.ShardView) *GetBestBlockItem {
+func NewGetBestBlockItemFromShard(bestView *blockchain.ShardView) *GetBestBlockItem {
 	result := &GetBestBlockItem{
-		Height:         bestState.BestBlock.Header.Height,
-		Hash:           bestState.BestBlockHash.String(),
-		TotalTxs:       bestState.TotalTxns,
-		BlockProducer:  bestState.BestBlock.Header.Producer,
-		ValidationData: bestState.BestBlock.GetValidationField(),
-		Time:           bestState.BestBlock.Header.Timestamp,
+		Height:         bestView.BestBlock.Header.Height,
+		Hash:           bestView.BestBlockHash.String(),
+		TotalTxs:       bestView.TotalTxns,
+		BlockProducer:  bestView.BestBlock.Header.Producer,
+		ValidationData: bestView.BestBlock.GetValidationField(),
+		Time:           bestView.BestBlock.Header.Timestamp,
 	}
 	return result
 }
 
-func NewGetBestBlockItemFromBeacon(bestState *blockchain.BeaconView) *GetBestBlockItem {
+func NewGetBestBlockItemFromBeacon(bestView *blockchain.BeaconView) *GetBestBlockItem {
 	result := &GetBestBlockItem{
-		Height:         bestState.BestBlock.Header.Height,
-		Hash:           bestState.BestBlock.Hash().String(),
-		BlockProducer:  bestState.BestBlock.Header.Producer,
-		ValidationData: bestState.BestBlock.GetValidationField(),
-		Epoch:          bestState.Epoch,
-		Time:           bestState.BestBlock.Header.Timestamp,
+		Height:         bestView.BestBlock.Header.Height,
+		Hash:           bestView.BestBlock.Hash().String(),
+		BlockProducer:  bestView.BestBlock.Header.Producer,
+		ValidationData: bestView.BestBlock.GetValidationField(),
+		Epoch:          bestView.Epoch,
+		Time:           bestView.BestBlock.Header.Timestamp,
 	}
 	return result
 }

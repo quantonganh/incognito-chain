@@ -11,7 +11,7 @@ import (
 type NodeInterface interface {
 	// RequestSyncBlockByHash(blockHash *common.Hash, isUnknownView bool, tipBlocksHash []common.Hash, peerID libp2p.ID) error
 	// PushBlockToPeer(block common.BlockInterface, isShard bool, peerID libp2p.ID) error
-	PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error
+	PushMessageToChain(msg wire.Message, chain blockchain.ChainManagerInterface) error
 	PushMessageToPeer(msg wire.Message, peerId libp2p.ID) error
 
 	UpdateConsensusState(role string, userPbk string, currentShard *byte, beaconCommittee []string, shardCommittee map[byte][]string)
@@ -23,7 +23,7 @@ type NodeInterface interface {
 
 type ConsensusInterface interface {
 	// NewInstance - Create a new instance of this consensus
-	NewInstance(chain blockchain.ChainInterface, chainKey string, node NodeInterface, logger common.Logger) ConsensusInterface
+	NewInstance(chain blockchain.ChainManagerInterface, chainKey string, node NodeInterface, logger common.Logger) ConsensusInterface
 	// GetConsensusName - retrieve consensus name
 	GetConsensusName() string
 
@@ -54,8 +54,8 @@ type ConsensusInterface interface {
 	ExtractBridgeValidationData(block common.BlockInterface) ([][]byte, []int, error)
 }
 
-type BeaconInterface interface {
-	blockchain.ChainInterface
+type BeaconManagerInterface interface {
+	blockchain.ChainManagerInterface
 	GetAllCommittees() map[string]map[string][]incognitokey.CommitteePublicKey
 	GetBeaconPendingList() []incognitokey.CommitteePublicKey
 	GetShardsPendingList() map[string]map[string][]incognitokey.CommitteePublicKey
