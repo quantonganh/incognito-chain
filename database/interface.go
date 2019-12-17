@@ -208,6 +208,8 @@ type DatabaseInterface interface {
 	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
 	TrackPDEStatus(prefix []byte, suffix []byte, status byte) error
 	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
+	TrackPDEContributionStatus(prefix []byte, suffix []byte, statusContent []byte) error
+	GetPDEContributionStatus(prefix []byte, suffix []byte) ([]byte, error)
 
 	// transaction v2
 	StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey []byte) error
@@ -221,6 +223,6 @@ type DatabaseInterface interface {
 
 	StoreTxByPubKeyV2(blockHeight uint64, shardIDReceiver byte, shardIDSender byte, publicKey []byte, txID common.Hash, indexOutputInTx byte, ephemeralPubKey []byte, isPToken bool) error
 	GetTxByViewKeyV2(viewKey privacy.ViewingKey, blockHeight uint64, shardIDSender byte) ([]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error)
-	GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64, shardIDSender byte)(
+	GetTxByViewKeyV2InBlocks(viewKey privacy.ViewingKey, fromBlockHeight uint64, toBlockHeight uint64, shardIDSender byte) (
 		[]common.Hash, map[common.Hash][]byte, map[common.Hash][]byte, error)
 }

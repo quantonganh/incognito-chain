@@ -169,13 +169,14 @@ var HttpHandler = map[string]httpHandler{
 	createAndSendTxWithPTokenContribution: (*HttpServer).handleCreateAndSendTxWithPTokenContribution,
 	createAndSendTxWithPRVContribution:    (*HttpServer).handleCreateAndSendTxWithPRVContribution,
 	getPDEContributionStatus:              (*HttpServer).handleGetPDEContributionStatus,
+	getPDEContributionStatusV2:            (*HttpServer).handleGetPDEContributionStatusV2,
 	getPDETradeStatus:                     (*HttpServer).handleGetPDETradeStatus,
 	getPDEWithdrawalStatus:                (*HttpServer).handleGetPDEWithdrawalStatus,
 	convertPDEPrices:                      (*HttpServer).handleConvertPDEPrices,
 	extractPDEInstsFromBeaconBlock:        (*HttpServer).handleExtractPDEInstsFromBeaconBlock,
 
 	// transaction v2
-	listOutputCoinsV2:                         (*HttpServer).handleListOutputCoinsV2,
+	listOutputCoinsV2: (*HttpServer).handleListOutputCoinsV2,
 }
 
 // Commands that are available to a limited user

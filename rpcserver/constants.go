@@ -173,13 +173,14 @@ const (
 	convertNativeTokenToPrivacyToken      = "convertnativetokentoprivacytoken"
 	convertPrivacyTokenToNativeToken      = "convertprivacytokentonativetoken"
 	getPDEContributionStatus              = "getpdecontributionstatus"
+	getPDEContributionStatusV2            = "getpdecontributionstatusv2"
 	getPDETradeStatus                     = "getpdetradestatus"
 	getPDEWithdrawalStatus                = "getpdewithdrawalstatus"
 	convertPDEPrices                      = "convertpdeprices"
 	extractPDEInstsFromBeaconBlock        = "extractpdeinstsfrombeaconblock"
 
 	// transaction v2
-	listOutputCoinsV2                            = "listoutputcoinsv2"
+	listOutputCoinsV2 = "listoutputcoinsv2"
 )
 
 const (
