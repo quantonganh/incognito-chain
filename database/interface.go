@@ -208,6 +208,8 @@ type DatabaseInterface interface {
 	GetLatestPDEPoolForPair(tokenIDToBuyStr string, tokenIDToSellStr string) ([]byte, error)
 	TrackPDEStatus(prefix []byte, suffix []byte, status byte) error
 	GetPDEStatus(prefix []byte, suffix []byte) (byte, error)
+	TrackPDEContributionStatus(prefix []byte, suffix []byte, statusContent []byte) error
+	GetPDEContributionStatus(prefix []byte, suffix []byte) ([]byte, error)
 
 	// transaction v2
 	StoreOutputCoinsV2(tokenID common.Hash, shardID byte, blockHeight uint64, publicKey []byte, outputCoinBytes [][]byte, indexOutputInTx []byte, ephemeralPubKey []byte) error
