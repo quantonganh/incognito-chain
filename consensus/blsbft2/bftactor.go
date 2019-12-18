@@ -15,7 +15,7 @@ import (
 )
 
 type BLSBFT struct {
-	Chain    blockchain.ChainInterface
+	Chain    blockchain.ChainManagerInterface
 	Node     consensus.NodeInterface
 	ChainKey string
 	PeerID   string
@@ -159,7 +159,7 @@ func (e *BLSBFT) Start() error {
 	return nil
 }
 
-func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
+func (e BLSBFT) NewInstance(chain blockchain.ChainManagerInterface, chainKey string, node consensus.NodeInterface, logger common.Logger) consensus.ConsensusInterface {
 	var newInstance BLSBFT
 	newInstance.Chain = chain
 	newInstance.ChainKey = chainKey

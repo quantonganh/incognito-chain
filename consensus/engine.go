@@ -114,7 +114,7 @@ func (engine *Engine) watchConsensusCommittee() {
 					engine.CurrentMiningChain = chainName
 					shardID := getShardFromChainName(chainName)
 					if engine.config.Blockchain.Chains[common.GetShardChainKey(shardID)].GetBestView().GetHeight() > engine.config.Blockchain.Chains[common.BeaconChainKey].GetBestView().(*blockchain.BeaconView).GetBestHeightOfShard(shardID) {
-						role, shardID := engine.config.Blockchain.Chains[chainName].GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
+						role, shardID := engine.config.Blockchain.Chains[chainName].GetBestView().GetPubkeyRole(publickey.GetMiningKeyBase58(consensusType), 0)
 						if role == common.ProposerRole || role == common.ValidatorRole {
 							engine.updateUserState(&publickey, common.ShardRole, common.CommitteeRole, shardID)
 						} else {
@@ -135,8 +135,8 @@ func (engine *Engine) watchConsensusCommittee() {
 	}
 
 	for chainName, chain := range engine.config.Blockchain.Chains {
-		if _, ok := AvailableConsensus[chain.GetConsensusType()]; ok {
-			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetConsensusType()].NewInstance(chain, chainName, engine.config.Node, Logger.log)
+		if _, ok := AvailableConsensus[chain.GetBestView().GetConsensusType()]; ok {
+			engine.ChainConsensusList[chainName] = AvailableConsensus[chain.GetBestView().GetConsensusType()].NewInstance(chain, chainName, engine.config.Node, Logger.log)
 		}
 	}
 
@@ -154,7 +154,7 @@ func (engine *Engine) watchConsensusCommittee() {
 		case <-engine.cQuit:
 		case chainName := <-engine.chainCommitteeChange:
 			Logger.log.Critical("chain committee change", chainName)
-			consensusType := engine.config.Blockchain.Chains[chainName].GetConsensusType()
+			consensusType := engine.config.Blockchain.Chains[chainName].GetBestView().GetConsensusType()
 			userCurrentPublicKey, ok := engine.userCurrentState.KeysBase58[consensusType]
 			var userMiningKey incognitokey.CommitteePublicKey
 			if !ok {
@@ -182,7 +182,7 @@ func (engine *Engine) watchConsensusCommittee() {
 								userLayer = common.ShardRole
 								//member still in shard committee on beacon beststate but not on shard beststate
 								if engine.config.Blockchain.Chains[common.GetShardChainKey(shardID)].GetBestView().GetHeight() > engine.config.Blockchain.Chains[common.BeaconChainKey].GetBestView().(*blockchain.BeaconView).GetBestHeightOfShard(shardID) {
-									role, _ := engine.config.Blockchain.Chains[chainname].GetPubkeyRole(userCurrentPublicKey, 0)
+									role, _ := engine.config.Blockchain.Chains[chainname].GetBestView().GetPubkeyRole(userCurrentPublicKey, 0)
 									if role == common.EmptyString {
 										isSkip = true
 										engine.CurrentMiningChain = common.EmptyString
@@ -202,7 +202,7 @@ func (engine *Engine) watchConsensusCommittee() {
 							if chainname == engine.CurrentMiningChain && chainname != common.BeaconChainKey {
 								shardID := getShardFromChainName(chainname)
 								if engine.config.Blockchain.Chains[common.GetShardChainKey(shardID)].GetBestView().GetHeight() > engine.config.Blockchain.Chains[common.BeaconChainKey].GetBestView().(*blockchain.BeaconView).GetBestHeightOfShard(shardID) {
-									role, _ := engine.config.Blockchain.Chains[chainname].GetPubkeyRole(userCurrentPublicKey, 0)
+									role, _ := engine.config.Blockchain.Chains[chainname].GetBestView().GetPubkeyRole(userCurrentPublicKey, 0)
 									if role == common.ValidatorRole || role == common.ProposerRole {
 										isSkip = true
 										engine.updateUserState(&userMiningKey, common.ShardRole, common.CommitteeRole, shardID)
@@ -261,7 +261,7 @@ func (engine *Engine) watchConsensusCommittee() {
 					engine.updateUserState(&userMiningKey, common.EmptyString, common.EmptyString, 0)
 				}
 			} else {
-				role, shardID := engine.config.Blockchain.Chains[chainName].GetPubkeyRole(userCurrentPublicKey, 0)
+				role, shardID := engine.config.Blockchain.Chains[chainName].GetBestView().GetPubkeyRole(userCurrentPublicKey, 0)
 				if role != common.EmptyString {
 					if role == common.ValidatorRole || role == common.ProposerRole {
 						role = common.CommitteeRole
@@ -479,8 +479,8 @@ func (engine *Engine) updateConsensusState() {
 		}
 	}
 	if userLayer == common.ShardRole {
-		committee := engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetCommittee()
-		keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetConsensusType())
+		committee := engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetBestView().GetCommittee()
+		keyList, _ := incognitokey.ExtractMiningPublickeysFromCommitteeKeyList(committee, engine.config.Blockchain.Chains[engine.CurrentMiningChain].GetBestView().GetConsensusType())
 		shardCommittee[getShardFromChainName(engine.CurrentMiningChain)] = keyList
 	}
 

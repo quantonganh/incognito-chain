@@ -302,7 +302,7 @@ func (serverObj *Server) NewServer(listenAddrs string, db database.DatabaseInter
 	mempool.InitShardToBeaconPool()
 	// or if it cannot be loaded, create a new one.
 	serverObj.feeEstimator = make(map[byte]*mempool.FeeEstimator)
-	for shardID := byte(0); shardID < byte(serverObj.blockChain.Chains[common.BeaconChainKey].GetActiveShardNumber()); shardID++ {
+	for shardID := byte(0); shardID < byte(serverObj.blockChain.Chains[common.BeaconChainKey].GetBestView().GetActiveShardNumber()); shardID++ {
 		feeEstimatorData, err := serverObj.dataBase.GetFeeEstimator(shardID)
 		if err == nil && len(feeEstimatorData) > 0 {
 			feeEstimator, err := mempool.RestoreFeeEstimator(feeEstimatorData)
@@ -669,7 +669,7 @@ func (serverObj Server) Start() {
 }
 
 func (serverObj *Server) GetActiveShardNumber() int {
-	return serverObj.blockChain.Chains[common.BeaconChainKey].GetActiveShardNumber()
+	return serverObj.blockChain.Chains[common.BeaconChainKey].GetBestView().GetActiveShardNumber()
 }
 
 // func (serverObj *Server) GetNodePubKey() string {
@@ -1704,9 +1704,9 @@ func (serverObj *Server) BoardcastNodeState() error {
 	}
 	for _, shardID := range serverObj.blockChain.Synker.GetCurrentSyncShards() {
 		msg.(*wire.MessagePeerState).Shards[shardID] = blockchain.ChainState{
-			serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).BestBlock.Header.Timestamp,
-			serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).ShardHeight,
-			serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).BestBlockHash,
+			serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).TipBlock.Header.Timestamp,
+			serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).GetHeight(),
+			*serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).TipBlock.Hash(),
 			serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).Hash(),
 		}
 	}
@@ -1723,9 +1723,9 @@ func (serverObj *Server) BoardcastNodeState() error {
 	userKey, _ := serverObj.consensusEngine.GetCurrentMiningPublicKey()
 	if userKey != "" {
 		// metrics.SetGlobalParam("MINING_PUBKEY", userKey)
-		userRole, shardID := serverObj.blockChain.Chains[common.BeaconChainKey].GetPubkeyRole(userKey, 0)
+		userRole, shardID := serverObj.blockChain.Chains[common.BeaconChainKey].GetBestView().GetPubkeyRole(userKey, 0)
 		if (cfg.NodeMode == common.NodeModeAuto || cfg.NodeMode == common.NodeModeShard) && userRole == common.ShardRole {
-			userRole, _ = serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetPubkeyRole(userKey, 0)
+			userRole, _ = serverObj.blockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().GetPubkeyRole(userKey, 0)
 			if userRole == common.ProposerRole || userRole == common.ValidatorRole {
 				msg.(*wire.MessagePeerState).CrossShardPool[shardID] = serverObj.crossShardPool[shardID].GetValidBlockHeight()
 			}
@@ -1813,7 +1813,7 @@ func (serverObj *Server) GetPrivateKey() string {
 	return serverObj.privateKey
 }
 
-func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainInterface) error {
+func (serverObj *Server) PushMessageToChain(msg wire.Message, chain blockchain.ChainManagerInterface) error {
 	chainID := chain.GetShardID()
 	if chainID == -1 {
 		serverObj.PushMessageToBeacon(msg, map[libp2p.ID]bool{})
@@ -1856,7 +1856,7 @@ func (serverObj *Server) PushBlockToAll(block common.BlockInterface, isBeacon bo
 		msgShardToBeacon.(*wire.MessageShardToBeacon).Block = shardToBeaconBlk
 		serverObj.PushMessageToBeacon(msgShardToBeacon, map[libp2p.ID]bool{})
 
-		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.Chains[common.BeaconChainKey].GetActiveShardNumber())
+		crossShardBlks := shardBlock.CreateAllCrossShardBlock(serverObj.blockChain.Chains[common.BeaconChainKey].GetBestView().GetActiveShardNumber())
 		for shardID, crossShardBlk := range crossShardBlks {
 			msgCrossShardShard, err := wire.MakeEmptyMessage(wire.CmdCrossShard)
 			if err != nil {

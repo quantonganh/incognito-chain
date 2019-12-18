@@ -58,28 +58,28 @@ func (blockService BlockService) GetShardBestBlocks() map[byte]blockchain.ShardB
 	bestBlocks := make(map[byte]blockchain.ShardBlock)
 	shards := blockService.BlockChain.GetClonedAllShardFinalView()
 	for shardID, best := range shards {
-		bestBlocks[shardID] = *best.BestBlock
+		bestBlocks[shardID] = *best.TipBlock
 	}
 	return bestBlocks
 }
 
 func (blockService BlockService) GetShardBestBlockByShardID(shardID byte) (blockchain.ShardBlock, common.Hash, error) {
 	shard, err := blockService.BlockChain.GetClonedAShardFinalView(shardID)
-	return *shard.BestBlock, shard.BestBlockHash, err
+	return *shard.TipBlock, *shard.TipBlock.Hash(), err
 }
 
 func (blockService BlockService) GetShardBestBlockHashes() map[int]common.Hash {
 	bestBlockHashes := make(map[int]common.Hash)
 	shards := blockService.BlockChain.GetClonedAllShardFinalView()
 	for shardID, best := range shards {
-		bestBlockHashes[int(shardID)] = best.BestBlockHash
+		bestBlockHashes[int(shardID)] = *best.TipBlock.Hash()
 	}
 	return bestBlockHashes
 }
 
 func (blockService BlockService) GetShardBestBlockHashByShardID(shardID byte) common.Hash {
 	shards := blockService.BlockChain.GetClonedAllShardFinalView()
-	return shards[shardID].BestBlockHash
+	return *shards[shardID].TipBlock.Hash()
 }
 
 func (blockService BlockService) GetBeaconBestState() (*blockchain.BeaconView, error) {
@@ -149,7 +149,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 		}
 		result.Data = hex.EncodeToString(data)
 	} else if verbosity == "1" {
-		best := blockService.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).BestBlock
+		best := blockService.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).TipBlock
 
 		blockHeight := block.Header.Height
 		// Get next block hash unless there are none.
@@ -194,7 +194,7 @@ func (blockService BlockService) RetrieveShardBlock(hashString string, verbosity
 			result.TxHashes = append(result.TxHashes, tx.Hash().String())
 		}
 	} else if verbosity == "2" {
-		best := blockService.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).BestBlock
+		best := blockService.BlockChain.Chains[common.GetShardChainKey(shardID)].GetBestView().(*blockchain.ShardView).TipBlock
 
 		blockHeight := block.Header.Height
 		// Get next block hash unless there are none.
@@ -329,7 +329,7 @@ func (blockService BlockService) GetBlocks(shardIDParam int, numBlock int) (inte
 			if err != nil {
 				return nil, NewRPCError(GetClonedShardBestStateError, err)
 			}
-			bestBlock := clonedShardBestState.BestBlock
+			bestBlock := clonedShardBestState.TipBlock
 			previousHash := bestBlock.Hash()
 			for numBlock > 0 {
 				numBlock--
@@ -464,7 +464,7 @@ func (blockService BlockService) CheckHashValue(hashStr string) (isTransaction b
 }
 
 func (blockService BlockService) GetActiveShards() int {
-	return blockService.BlockChain.Chains[common.BeaconChainKey].GetActiveShardNumber()
+	return blockService.BlockChain.Chains[common.BeaconChainKey].GetBestView().GetActiveShardNumber()
 }
 
 func (blockService BlockService) ListPrivacyCustomToken() (map[common.Hash]transaction.TxCustomTokenPrivacy, map[common.Hash]blockchain.CrossShardTokenPrivacyMetaData, error) {
@@ -567,13 +567,13 @@ func (blockService BlockService) GetMinerRewardFromMiningKey(incPublicKey []byte
 	return rewardAmountResult, nil
 }
 
-func (blockService BlockService) RevertBeacon() error {
-	return blockService.BlockChain.RevertBeaconState()
-}
+// func (blockService BlockService) RevertBeacon() error {
+// 	return blockService.BlockChain.RevertBeaconState()
+// }
 
-func (blockService BlockService) RevertShard(shardID byte) error {
-	return blockService.BlockChain.RevertShardState(shardID)
-}
+// func (blockService BlockService) RevertShard(shardID byte) error {
+// 	return blockService.BlockChain.RevertShardState(shardID)
+// }
 
 func (blockService BlockService) ListCustomToken() (map[common.Hash]transaction.TxNormalToken, error) {
 	return blockService.BlockChain.ListCustomToken()
@@ -714,7 +714,7 @@ func (blockService BlockService) GetBlockHeader(getBy string, blockParam string,
 
 		var blockHeader = blockchain.ShardHeader{}
 		var blockHash = ""
-		if uint64(blockNum-1) > shard.BestBlock.Header.Height || blockNum <= 0 {
+		if uint64(blockNum-1) > shard.TipBlock.Header.Height || blockNum <= 0 {
 			Logger.log.Debugf("handleGetBlockHeader result: %+v", nil)
 			return nil, 0, "", NewRPCError(GetShardBestBlockError, errors.New("Block not exist"))
 		}

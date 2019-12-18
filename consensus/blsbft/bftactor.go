@@ -17,7 +17,7 @@ import (
 )
 
 type BLSBFT struct {
-	Chain    blockchain.ChainInterface
+	Chain    blockchain.ChainMInterface
 	Node     consensus.NodeInterface
 	ChainKey string
 	PeerID   string
@@ -432,6 +432,6 @@ func (e BLSBFT) NewInstance(chain blockchain.ChainInterface, chainKey string, no
 	return &newInstance
 }
 
-func init() {
-	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
-}
+// func init() {
+// 	consensus.RegisterConsensus(common.BlsConsensus, &BLSBFT{})
+// }

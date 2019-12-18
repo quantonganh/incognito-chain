@@ -32,7 +32,7 @@ func NewGetMiningInfoResult(txMemPool mempool.TxPool, blChain blockchain.BlockCh
 	result.ShardID = shardID
 	if shardID >= 0 {
 		result.ShardHeight = blChain.Chains[common.GetShardChainKey(byte(shardID))].GetBestView().GetHeight()
-		result.CurrentShardBlockTx = len(blChain.Chains[common.GetShardChainKey(byte(shardID))].GetBestView().(*blockchain.ShardView).GetTxsInBestBlock())
+		result.CurrentShardBlockTx = len(blChain.Chains[common.GetShardChainKey(byte(shardID))].GetBestView().(*blockchain.ShardView).GetTxsInView())
 	}
 
 	return result

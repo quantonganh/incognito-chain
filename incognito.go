@@ -21,7 +21,7 @@ import (
 	"github.com/incognitochain/incognito-chain/limits"
 	"github.com/incognitochain/incognito-chain/wallet"
 
-	_ "github.com/incognitochain/incognito-chain/consensus/blsbft"
+	_ "github.com/incognitochain/incognito-chain/consensus/blsbft2"
 )
 
 //go:generate mockery -dir=database/ -name=DatabaseInterface

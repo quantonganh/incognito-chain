@@ -18,12 +18,12 @@ type GetBestBlockItem struct {
 
 func NewGetBestBlockItemFromShard(bestView *blockchain.ShardView) *GetBestBlockItem {
 	result := &GetBestBlockItem{
-		Height:         bestView.BestBlock.Header.Height,
-		Hash:           bestView.BestBlockHash.String(),
+		Height:         bestView.TipBlock.Header.Height,
+		Hash:           bestView.TipBlock.Hash().String(),
 		TotalTxs:       bestView.TotalTxns,
-		BlockProducer:  bestView.BestBlock.Header.Producer,
-		ValidationData: bestView.BestBlock.GetValidationField(),
-		Time:           bestView.BestBlock.Header.Timestamp,
+		BlockProducer:  bestView.TipBlock.Header.Producer,
+		ValidationData: bestView.TipBlock.GetValidationField(),
+		Time:           bestView.TipBlock.Header.Timestamp,
 	}
 	return result
 }

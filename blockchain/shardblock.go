@@ -548,9 +548,22 @@ func (block ShardToBeaconBlock) GetBlockTimestamp() int64 {
 func (block ShardBlock) GetBeaconHeight() uint64 {
 	return block.Header.BeaconHeight
 }
+
+func (block ShardBlock) GetBeaconHash() common.Hash {
+	return block.Header.BeaconHash
+}
+
 func (block CrossShardBlock) GetBeaconHeight() uint64 {
 	return block.Header.BeaconHeight
 }
+
+func (block CrossShardBlock) GetBeaconHash() common.Hash {
+	return block.Header.BeaconHash
+}
+
 func (block ShardToBeaconBlock) GetBeaconHeight() uint64 {
 	return block.Header.BeaconHeight
+}
+func (block ShardToBeaconBlock) GetBeaconHash() common.Hash {
+	return block.Header.BeaconHash
 }

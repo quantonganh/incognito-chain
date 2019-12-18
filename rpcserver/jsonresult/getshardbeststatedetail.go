@@ -29,28 +29,27 @@ type GetShardBestStateDetail struct {
 
 func NewGetShardBestStateDetail(data *blockchain.ShardView) *GetShardBestStateDetail {
 	result := &GetShardBestStateDetail{
-		Epoch:                 data.Epoch,
+		Epoch:                 data.TipBlock.GetEpoch(),
 		ShardID:               data.ShardID,
-		MinShardCommitteeSize: data.MinShardCommitteeSize,
+		MinShardCommitteeSize: data.MinCommitteeSize,
 		ActiveShards:          data.ActiveShards,
-		BeaconHeight:          data.BeaconHeight,
-		BestBeaconHash:        data.BestBeaconHash,
-		BestBlockHash:         data.BestBlockHash,
-		MaxShardCommitteeSize: data.MaxShardCommitteeSize,
+		BeaconHeight:          data.TipBlock.GetBeaconHeight(),
+		BestBeaconHash:        data.TipBlock.GetBeaconHash(),
+		BestBlockHash:         *data.TipBlock.Hash(),
+		MaxShardCommitteeSize: data.MaxCommitteeSize,
 		// MetricBlockHeight:      data.MetricBlockHeight,
 		NumTxns:                data.NumTxns,
-		ShardHeight:            data.ShardHeight,
-		ShardProposerIdx:       data.ShardProposerIdx,
+		ShardHeight:            data.TipBlock.GetHeight(),
 		TotalTxns:              data.TotalTxns,
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
 	}
 
-	tempShardCommittee := incognitokey.CommitteeKeyListToMapString(data.ShardCommittee)
-	result.ShardCommittee = make([]incognitokey.CommitteeKeyString, len(data.ShardCommittee))
+	tempShardCommittee := incognitokey.CommitteeKeyListToMapString(data.Committee)
+	result.ShardCommittee = make([]incognitokey.CommitteeKeyString, len(data.Committee))
 	copy(result.ShardCommittee, tempShardCommittee)
 
-	tempShardPendingValidator := incognitokey.CommitteeKeyListToMapString(data.ShardPendingValidator)
-	result.ShardPendingValidator = make([]incognitokey.CommitteeKeyString, len(data.ShardPendingValidator))
+	tempShardPendingValidator := incognitokey.CommitteeKeyListToMapString(data.PendingValidator)
+	result.ShardPendingValidator = make([]incognitokey.CommitteeKeyString, len(data.PendingValidator))
 	copy(result.ShardPendingValidator, tempShardPendingValidator)
 
 	result.BestCrossShard = make(map[byte]uint64)

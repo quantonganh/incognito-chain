@@ -15,7 +15,6 @@ type GetShardBestState struct {
 	ShardHeight            uint64            `json:"ShardHeight"`
 	MaxShardCommitteeSize  int               `json:"MaxShardCommitteeSize"`
 	MinShardCommitteeSize  int               `json:"MinShardCommitteeSize"`
-	ShardProposerIdx       int               `json:"ShardProposerIdx"`
 	ShardCommittee         []string          `json:"ShardCommittee"`
 	ShardPendingValidator  []string          `json:"ShardPendingValidator"`
 	BestCrossShard         map[byte]uint64   `json:"BestCrossShard"` // Best cross shard block by heigh
@@ -29,32 +28,31 @@ type GetShardBestState struct {
 
 func NewGetShardBestState(data *blockchain.ShardView) *GetShardBestState {
 	result := &GetShardBestState{
-		Epoch:                 data.Epoch,
+		Epoch:                 data.TipBlock.GetEpoch(),
 		ShardID:               data.ShardID,
-		MinShardCommitteeSize: data.MinShardCommitteeSize,
+		MinShardCommitteeSize: data.MinCommitteeSize,
 		ActiveShards:          data.ActiveShards,
-		BeaconHeight:          data.BeaconHeight,
-		BestBeaconHash:        data.BestBeaconHash,
-		BestBlockHash:         data.BestBlockHash,
-		MaxShardCommitteeSize: data.MaxShardCommitteeSize,
+		BeaconHeight:          data.TipBlock.GetBeaconHeight(),
+		BestBeaconHash:        data.TipBlock.GetBeaconHash(),
+		BestBlockHash:         *data.TipBlock.Hash(),
+		MaxShardCommitteeSize: data.MaxCommitteeSize,
 		// MetricBlockHeight:      data.MetricBlockHeight,
 		NumTxns:                data.NumTxns,
-		ShardHeight:            data.ShardHeight,
-		ShardProposerIdx:       data.ShardProposerIdx,
+		ShardHeight:            data.TipBlock.GetHeight(),
 		TotalTxns:              data.TotalTxns,
 		TotalTxnsExcludeSalary: data.TotalTxnsExcludeSalary,
 	}
 
-	result.ShardCommittee = make([]string, len(data.ShardCommittee))
+	result.ShardCommittee = make([]string, len(data.Committee))
 
-	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(data.ShardCommittee)
+	shardCommitteeStr, err := incognitokey.CommitteeKeyListToString(data.Committee)
 	if err != nil {
 		panic(err)
 	}
 	copy(result.ShardCommittee, shardCommitteeStr)
-	result.ShardPendingValidator = make([]string, len(data.ShardPendingValidator))
+	result.ShardPendingValidator = make([]string, len(data.PendingValidator))
 
-	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(data.ShardPendingValidator)
+	shardPendingValidatorStr, err := incognitokey.CommitteeKeyListToString(data.PendingValidator)
 	if err != nil {
 		panic(err)
 	}

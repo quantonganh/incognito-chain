@@ -2,6 +2,8 @@ package rpcserver
 
 import (
 	"errors"
+	"log"
+
 	"github.com/incognitochain/incognito-chain/common"
 	"github.com/incognitochain/incognito-chain/common/base58"
 	"github.com/incognitochain/incognito-chain/incognitokey"
@@ -9,7 +11,6 @@ import (
 	"github.com/incognitochain/incognito-chain/rpcserver/rpcservice"
 	"github.com/incognitochain/incognito-chain/transaction"
 	"github.com/incognitochain/incognito-chain/wallet"
-	"log"
 )
 
 // handleGetBestBlock implements the getbestblock command.
@@ -23,8 +24,8 @@ func (httpServer *HttpServer) handleGetBestBlock(params interface{}, closeChan <
 	shardBestStates := httpServer.blockService.GetShardBestStates()
 	for shardID, best := range shardBestStates {
 		result.BestBlocks[int(shardID)] = jsonresult.GetBestBlockItem{
-			Height:   best.BestBlock.Header.Height,
-			Hash:     best.BestBlockHash.String(),
+			Height:   best.TipBlock.Header.Height,
+			Hash:     best.TipBlock.Hash().String(),
 			TotalTxs: shardBestStates[shardID].TotalTxns,
 		}
 	}
@@ -206,7 +207,7 @@ func (httpServer *HttpServer) handleGetBlockCount(params interface{}, closeChan 
 	if err != nil {
 		return nil, rpcservice.NewRPCError(rpcservice.GetClonedShardBestStateError, err)
 	}
-	result := shardById.BestBlock.Header.Height + 1
+	result := shardById.TipBlock.Header.Height + 1
 	Logger.log.Debugf("handleGetBlockChainInfo result: %+v", result)
 	return result, nil
 }
