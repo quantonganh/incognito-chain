@@ -11,13 +11,19 @@ func ParseListenner(s, defaultIP string, defaultPort int) (string, int) {
 	if s == "" {
 		return defaultIP, defaultPort
 	}
+
 	splitStr := strings.Split(s, ":")
 	if len(splitStr) > 1 {
-		p, e := strconv.Atoi(splitStr[1])
+		ip := splitStr[0]
+		if ip == "" {
+			ip = defaultIP
+		}
+
+		port, e := strconv.Atoi(splitStr[1])
 		if e != nil {
 			panic(e)
 		}
-		return splitStr[0], p
+		return ip, port
 	}
 	return splitStr[0], 0
 }
